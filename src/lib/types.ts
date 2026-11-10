@@ -622,3 +622,305 @@ export interface ExamAuditEvent {
   created_at: string;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 5: Analytics, Revisions, Notifications, Recommendations & Audit Types
+// ---------------------------------------------------------------------------
+
+export type RecommendationType =
+  | "Revise Topic"
+  | "Practice Questions"
+  | "Review Mistakes"
+  | "Take Mock Exam"
+  | "Pending Target";
+
+export type RecommendationStatus = "Active" | "Accepted" | "Dismissed";
+export type RecommendationPriority = "High" | "Medium" | "Low";
+
+export interface StudentStudyRecommendation {
+  id: string;
+  student_id: string;
+  exam_id: string | null;
+  subject_id: string | null;
+  topic_id: string | null;
+  recommendation_type: RecommendationType;
+  title: string;
+  reason: string;
+  action_url: string | null;
+  priority: RecommendationPriority;
+  status: RecommendationStatus;
+  created_at: string;
+  updated_at: string;
+  topic?: {
+    id: string;
+    title: string;
+    chapter?: {
+      title: string;
+      subject?: {
+        name: string;
+      };
+    };
+  };
+}
+
+export type NotificationCategory =
+  | "upcoming_task"
+  | "incomplete_task"
+  | "revision_due"
+  | "upcoming_exam"
+  | "new_published_exam"
+  | "mock_result_ready"
+  | "recommendation"
+  | "admin_announcement";
+
+export interface StudentNotification {
+  id: string;
+  student_id: string;
+  category: NotificationCategory;
+  title: string;
+  message: string;
+  link: string | null;
+  is_read: boolean;
+  entity_type: string | null;
+  entity_id: string | null;
+  created_at: string;
+}
+
+export interface StudentNotificationPreferences {
+  student_id: string;
+  upcoming_tasks: boolean;
+  incomplete_tasks: boolean;
+  revisions_due: boolean;
+  upcoming_exams: boolean;
+  new_published_exams: boolean;
+  mock_results_ready: boolean;
+  study_recommendations: boolean;
+  admin_announcements: boolean;
+  browser_notifications_enabled: boolean;
+  quiet_hours_enabled: boolean;
+  quiet_hours_start: string | null;
+  quiet_hours_end: string | null;
+  timezone: string;
+  updated_at: string;
+}
+
+export interface ReminderJobRun {
+  id: string;
+  job_type: string;
+  status: "Success" | "Failed" | "Partial";
+  records_processed: number;
+  details: Record<string, any> | null;
+  executed_at: string;
+}
+
+export type AdminAuditAction =
+  | "CREATE"
+  | "UPDATE"
+  | "DELETE"
+  | "PUBLISH"
+  | "UNPUBLISH"
+  | "IMPORT"
+  | "REJECT"
+  | "RELEASE_RESULTS"
+  | "ROLE_CHANGE"
+  | "SYSTEM_CONFIG";
+
+export type AdminAuditEntity =
+  | "EXAM"
+  | "SYLLABUS"
+  | "QUESTION"
+  | "MOCK_EXAM"
+  | "USER"
+  | "SYSTEM";
+
+export interface AdminAuditLog {
+  id: string;
+  admin_id: string;
+  action_type: AdminAuditAction;
+  target_entity: AdminAuditEntity;
+  target_id: string | null;
+  metadata: Record<string, any> | null;
+  created_at: string;
+  admin?: {
+    email: string;
+    full_name: string | null;
+  };
+}
+
+export interface StudentAiInteraction {
+  id: string;
+  student_id: string;
+  category: "REVISION_PLAN" | "WEAK_AREA_EXPLANATION" | "PRACTICE_ADVICE" | "PROGRESS_SUMMARY" | "GENERAL_ASSIST";
+  prompt_summary: string;
+  response_text: string;
+  created_at: string;
+}
+
+export interface StudentWeakAreaDismissal {
+  id: string;
+  student_id: string;
+  topic_id: string;
+  dismissed_until: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export type RevisionConfidenceRating =
+  | "Understood"
+  | "Needs more practice"
+  | "Not understood"
+  | "Completed";
+
+export interface RevisionScheduleItem {
+  id: string;
+  student_id: string;
+  topic_id: string;
+  exam_id: string | null;
+  revision_number: number;
+  scheduled_date: string;
+  completed_date: string | null;
+  is_completed: boolean;
+  notes: string | null;
+  confidence_rating?: RevisionConfidenceRating | null;
+  interval_days?: number;
+  next_revision_date?: string | null;
+  created_at: string;
+  updated_at: string;
+  topic?: {
+    id: string;
+    title: string;
+    chapter?: {
+      title: string;
+      subject?: {
+        name: string;
+      };
+    };
+  };
+}
+
+export interface StudentPerformanceAnalytics {
+  totalExaminationsSelected: number;
+  totalSyllabusTopics: number;
+  completedTopics: number;
+  pendingTopics: number;
+  syllabusCompletionPercentage: number;
+  totalStudyHours: number;
+  tasksCompleted: number;
+  incompleteTasks: number;
+  mcqsAttempted: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  overallAccuracy: number;
+  totalMockExaminationsAttempted: number;
+  bestMockScore: number;
+  averageMockScore: number;
+  recentPerformanceTrend: {
+    date: string;
+    accuracy: number;
+    questionsAttempted: number;
+    studyMinutes: number;
+  }[];
+}
+
+export interface SubjectAnalyticsSummary {
+  subjectId: string;
+  subjectName: string;
+  examCategory: string | null;
+  totalTopics: number;
+  completedTopics: number;
+  pendingTopics: number;
+  completionPercentage: number;
+  questionsAttempted: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  accuracyPercentage: number;
+  averageTimePerQuestionSeconds: number;
+  recentTestScores: {
+    examTitle: string;
+    score: number;
+    maxMarks: number;
+    percentage: number;
+    date: string;
+  }[];
+  revisionCount: number;
+}
+
+export interface TopicAnalyticsSummary {
+  topicId: string;
+  topicTitle: string;
+  chapterTitle: string;
+  subjectName: string;
+  examName: string;
+  completionStatus: "Completed" | "In Progress" | "Pending";
+  questionsAttempted: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  accuracyPercentage: number;
+  lastStudiedDate: string | null;
+  lastRevisionDate: string | null;
+  upcomingRevisionDate: string | null;
+  needsPractice: boolean;
+  reason: string | null;
+}
+
+export interface WeakAreaTopic {
+  topicId: string;
+  topicTitle: string;
+  chapterTitle: string;
+  subjectName: string;
+  examName: string;
+  accuracyPercentage: number;
+  questionsAttempted: number;
+  incorrectAnswers: number;
+  reason: string;
+  recommendedAction: "Revise Topic" | "Practise Questions" | "Review Mistakes" | "Schedule Test";
+  isDismissed?: boolean;
+}
+
+export interface AdminAnalyticsSummary {
+  totalRegisteredStudents: number;
+  newRegistrationsThisMonth: number;
+  activeStudentsThisWeek: number;
+  totalExaminations: number;
+  totalSyllabusSubjects: number;
+  totalChapters: number;
+  totalTopics: number;
+  publishedQuestions: number;
+  pendingQuestionReviews: number;
+  aiGeneratedQuestions: number;
+  questionsImported: number;
+  totalPracticeSessions: number;
+  totalExaminationAttempts: number;
+  publishedMockExams: number;
+  registrationTrends: {
+    month: string;
+    count: number;
+  }[];
+  practiceActivityTrends: {
+    date: string;
+    sessions: number;
+    questionsAttempted: number;
+  }[];
+  mockExamActivityTrends: {
+    date: string;
+    attempts: number;
+  }[];
+}
+
+export interface AdminContentQualityReport {
+  totalQuestions: number;
+  publishedQuestions: number;
+  draftQuestions: number;
+  pendingReview: number;
+  rejectedQuestions: number;
+  questionsWithoutExplanation: number;
+  questionsWithoutValidTopic: number;
+  syllabusTopicsWithoutQuestions: {
+    topicId: string;
+    topicTitle: string;
+    subjectName: string;
+  }[];
+  duplicateQuestionsCount: number;
+  questionsMappedToMultipleExams: number;
+}
+
+

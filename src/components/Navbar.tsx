@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { GraduationCap, LogOut, User, ShieldCheck } from "lucide-react";
+import { GraduationCap, LogOut, User, ShieldCheck, Bell } from "lucide-react";
 import { logoutAction } from "@/app/auth/actions";
 import type { Profile } from "@/lib/types";
 
@@ -58,6 +58,18 @@ export default function Navbar({ profile }: NavbarProps) {
                   "Student"
                 )}
               </span>
+
+              {/* Notification Center Link */}
+              {profile.role === "student" && (
+                <Link
+                  href="/student/notifications"
+                  className="relative p-2 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition"
+                  title="Notification Center"
+                >
+                  <Bell className="h-4 w-4" />
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-indigo-600 ring-2 ring-white" />
+                </Link>
+              )}
 
               {/* Profile link */}
               <Link

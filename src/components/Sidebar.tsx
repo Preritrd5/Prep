@@ -29,6 +29,10 @@ import {
   Award,
   Play,
   Activity,
+  BarChart3,
+  Bell,
+  Download,
+  ShieldAlert,
 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 
@@ -47,6 +51,37 @@ export default function Sidebar({ role }: SidebarProps) {
       href: "/student/dashboard",
       icon: LayoutDashboard,
       active: pathname === "/student/dashboard",
+    },
+    // PHASE 5: ADVANCED ANALYTICS, REVISIONS & ASSISTANT
+    {
+      name: "Performance Analytics",
+      href: "/student/analytics",
+      icon: BarChart3,
+      active: pathname === "/student/analytics",
+    },
+    {
+      name: "AI Study Assistant",
+      href: "/student/assistant",
+      icon: Sparkles,
+      active: pathname === "/student/assistant",
+    },
+    {
+      name: "Spaced Revisions",
+      href: "/student/revisions",
+      icon: RotateCcw,
+      active: pathname === "/student/revisions",
+    },
+    {
+      name: "Preparation Reports",
+      href: "/student/reports",
+      icon: FileText,
+      active: pathname === "/student/reports",
+    },
+    {
+      name: "Notification Center",
+      href: "/student/notifications",
+      icon: Bell,
+      active: pathname.startsWith("/student/notifications"),
     },
     // PHASE 4: ONLINE EXAMINATION & MOCK TEST SYSTEM
     {
@@ -148,16 +183,10 @@ export default function Sidebar({ role }: SidebarProps) {
       active: pathname === "/student/calendar",
     },
     {
-      name: "Exam Schedule",
-      href: "/student/schedule",
-      icon: CalendarDays,
-      active: pathname === "/student/schedule",
-    },
-    {
-      name: "Revisions",
-      href: "/student/revisions",
-      icon: RotateCcw,
-      active: pathname === "/student/revisions",
+      name: "Data Export",
+      href: "/student/export",
+      icon: Download,
+      active: pathname === "/student/export",
     },
     {
       name: "Account Profile",
@@ -173,6 +202,25 @@ export default function Sidebar({ role }: SidebarProps) {
       href: "/admin/dashboard",
       icon: LayoutDashboard,
       active: pathname === "/admin/dashboard",
+    },
+    // PHASE 5: ADMIN ADVANCED ANALYTICS & AUDIT
+    {
+      name: "Platform Analytics",
+      href: "/admin/analytics",
+      icon: BarChart3,
+      active: pathname === "/admin/analytics",
+    },
+    {
+      name: "Content Quality",
+      href: "/admin/questions/quality",
+      icon: ShieldAlert,
+      active: pathname === "/admin/questions/quality",
+    },
+    {
+      name: "System Audit Logs",
+      href: "/admin/audit-logs",
+      icon: History,
+      active: pathname === "/admin/audit-logs",
     },
     // PHASE 4: ONLINE EXAMINATIONS & CBT TESTS
     {

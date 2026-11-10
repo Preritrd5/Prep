@@ -5,6 +5,10 @@ import {
   getExamScheduleEvents,
   getExamSyllabus,
 } from "@/lib/data/syllabus";
+import {
+  getStudentPerformanceAnalytics,
+  getStudentStudyRecommendations,
+} from "@/lib/data/analytics";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
@@ -22,14 +26,18 @@ import {
   Layers,
   CalendarDays,
   Plus,
+  BarChart3,
+  Bot,
 } from "lucide-react";
 
 export default async function StudentDashboardPage() {
   const { profile, user } = await requireRole("student");
 
-  const [enrolledExams, tasks] = await Promise.all([
+  const [enrolledExams, tasks, recommendations, analytics] = await Promise.all([
     getStudentExams(user.id),
     getStudentTasks(user.id),
+    getStudentStudyRecommendations(user.id),
+    getStudentPerformanceAnalytics(user.id),
   ]);
 
   const examIds = enrolledExams.map((se) => se.exam_id);
@@ -57,7 +65,7 @@ export default async function StudentDashboardPage() {
               <div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/30 px-3 py-1 text-xs font-medium text-indigo-200 border border-indigo-400/30 mb-2">
                   <Sparkles className="h-3.5 w-3.5" />
-                  <span>Syllabus & Study Management (Phase 2 Active)</span>
+                  <span>PrepTrack v1.0 — Production Analytics & CBT Engine</span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
                   Welcome back, {displayName}!
@@ -65,23 +73,30 @@ export default async function StudentDashboardPage() {
                 <p className="mt-1 text-sm text-indigo-200 max-w-2xl leading-relaxed">
                   Your personalized competitive exam workspace is active. You have{" "}
                   <strong>{enrolledExams.length} examination(s)</strong> enrolled with{" "}
-                  <strong>{pendingTasksCount} pending study task(s)</strong>.
+                  <strong>{analytics.completedTopics} of {analytics.totalSyllabusTopics} syllabus topics completed ({analytics.syllabusCompletionPercentage}%)</strong>.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <Link
-                  href="/student/planner"
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-indigo-900 shadow-sm hover:bg-indigo-50 transition"
+                  href="/student/analytics"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-2 text-xs font-bold text-indigo-900 shadow-sm hover:bg-indigo-50 transition"
                 >
-                  <Sparkles className="h-4 w-4 text-indigo-600" />
-                  Auto-Planner
+                  <BarChart3 className="h-4 w-4 text-indigo-600" />
+                  Analytics
                 </Link>
                 <Link
-                  href="/student/exams"
-                  className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur border border-white/20 hover:bg-white/20 transition"
+                  href="/student/assistant"
+                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-700/60 px-3.5 py-2 text-xs font-semibold text-white border border-indigo-500/40 hover:bg-indigo-700 transition"
                 >
-                  Manage Exams
+                  <Bot className="h-4 w-4" />
+                  AI Assistant
+                </Link>
+                <Link
+                  href="/student/exams/online"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3.5 py-2 text-xs font-semibold text-white backdrop-blur border border-white/20 hover:bg-white/20 transition"
+                >
+                  Mock Tests
                 </Link>
               </div>
             </div>
@@ -170,6 +185,59 @@ export default async function StudentDashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* Module 6: Automatic Study Recommendations */}
+          {recommendations.length > 0 && (
+            <div className="rounded-2xl border border-indigo-100 bg-white p-6 shadow-sm mb-8 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900">
+                      Personalized Study Recommendations
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Deterministic suggestions formulated from your syllabus targets, weak areas, and mock test scores.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/student/analytics"
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hidden sm:inline-block"
+                >
+                  View Weak Areas →
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                {recommendations.slice(0, 3).map((rec) => (
+                  <div
+                    key={rec.id}
+                    className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 flex flex-col justify-between space-y-3"
+                  >
+                    <div>
+                      <span className="rounded-full bg-indigo-50 border border-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
+                        {rec.recommendation_type}
+                      </span>
+                      <h4 className="text-xs font-bold text-slate-900 mt-2">{rec.title}</h4>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{rec.reason}</p>
+                    </div>
+
+                    {rec.action_url && (
+                      <Link
+                        href={rec.action_url}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition"
+                      >
+                        Take Action <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Main Dashboard Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
