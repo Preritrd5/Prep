@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { GoogleGenAI } from "@google/genai";
+import { getGeminiClient, DEFAULT_GEMINI_MODEL } from "@/lib/ai/gemini";
 import type {
   RevisionConfidenceRating,
   RecommendationStatus,
@@ -317,9 +317,9 @@ Your role:
 
   if (apiKey) {
     try {
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = getGeminiClient();
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: DEFAULT_GEMINI_MODEL,
         contents: [
           { role: "user", parts: [{ text: `${systemInstruction}\n\n${studentContext}\n\nStudent Request: ${userQuery}` }] },
         ],

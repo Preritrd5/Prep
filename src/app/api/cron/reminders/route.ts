@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sweepExpiredExamAttempts } from "@/app/actions/exams-online";
 
 export async function POST(request: Request) {
   // 1. Authorization: Verify bearer token against process.env.CRON_SECRET
@@ -151,7 +152,12 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. Log execution into reminder_job_runs
+    // 3. Background Sweep: Finalize any expired exam attempts (students who closed browser/never returned)
+    const sweptExamsCount = await sweepExpiredExamAttempts();
+    details.expiredExamsAutoSubmitted = sweptExamsCount;
+    recordsProcessed += sweptExamsCount;
+
+    // 4. Log execution into reminder_job_runs
     await adminClient.from("reminder_job_runs").insert({
       job_type: "DAILY_REMINDER_BATCH",
       status: "Success",

@@ -739,3 +739,37 @@ async function internalEvaluateAndFinalizeAttempt(
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Background / Admin sweep: automatically finalizes any abandoned exam attempts
+ * whose server timer (expires_at) has passed, without requiring the student to return.
+ */
+export async function sweepExpiredExamAttempts(): Promise<number> {
+  const adminDb = createAdminClient();
+  const now = new Date().toISOString();
+  try {
+    const { data: expiredAttempts } = await adminDb
+      .from("exam_attempts")
+      .select("id")
+      .eq("status", "In Progress")
+      .lt("expires_at", now);
+
+    if (!expiredAttempts || expiredAttempts.length === 0) return 0;
+
+    let finalized = 0;
+    for (const att of expiredAttempts) {
+      const res = await internalEvaluateAndFinalizeAttempt(att.id, "Auto Submitted");
+      if (res.success) finalized++;
+    }
+    return finalized;
+  } catch {
+    return 0;
+  }
+}
+
+export async function adminSweepExpiredAttemptsAction() {
+  await requireRole("admin");
+  const count = await sweepExpiredExamAttempts();
+  revalidatePath("/admin/exams/monitor");
+  return { success: true, count };
+}
