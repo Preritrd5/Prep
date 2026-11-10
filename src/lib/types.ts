@@ -31,7 +31,7 @@ export interface StudentExam {
   student_id: string;
   exam_id: string;
   target_date: string | null;
-  priority: 1 | 2 | 3; // 1 = High, 2 = Medium, 3 = Low
+  priority: 1 | 2 | 3;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -151,8 +151,8 @@ export interface RoutineTemplate {
   exam_id: string | null;
   subject_id: string | null;
   topic_id: string | null;
-  start_time: string; // HH:mm:ss
-  end_time: string;   // HH:mm:ss
+  start_time: string;
+  end_time: string;
   duration_minutes: number;
   priority: 1 | 2 | 3;
   is_active: boolean;
@@ -177,9 +177,9 @@ export interface StudyTask {
   topic_id: string | null;
   title: string;
   description: string | null;
-  scheduled_date: string; // YYYY-MM-DD
-  start_time: string | null; // HH:mm:ss
-  end_time: string | null;   // HH:mm:ss
+  scheduled_date: string;
+  start_time: string | null;
+  end_time: string | null;
   duration_minutes: number;
   priority: 1 | 2 | 3;
   status: TaskStatus;
@@ -244,4 +244,165 @@ export interface PersonalNote {
   created_at: string;
   updated_at: string;
   topic?: Topic;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3: MCQ Question Bank & Practice System Types
+// ---------------------------------------------------------------------------
+
+export type DifficultyLevel = "Easy" | "Medium" | "Hard";
+
+export type QuestionSource =
+  | "Manual"
+  | "CSV Import"
+  | "Excel Import"
+  | "AI Generated"
+  | "Previous Year Question"
+  | "Student Created";
+
+export type QuestionStatus =
+  | "Draft"
+  | "Pending Review"
+  | "Approved"
+  | "Published"
+  | "Archived"
+  | "Rejected";
+
+export type OptionLabel = "A" | "B" | "C" | "D";
+
+export interface QuestionBank {
+  id: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  is_published: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuestionOption {
+  id: string;
+  question_id: string;
+  option_label: OptionLabel;
+  option_text: string;
+  order_index: number;
+  created_at: string;
+}
+
+export interface QuestionAnswerKey {
+  id: string;
+  question_id: string;
+  correct_option: OptionLabel;
+  explanation: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Question {
+  id: string;
+  bank_id: string | null;
+  question_text: string;
+  subject_id: string | null;
+  chapter_id: string | null;
+  topic_id: string | null;
+  difficulty: DifficultyLevel;
+  source_type: QuestionSource;
+  pyq_exam_name: string | null;
+  pyq_year: number | null;
+  source_reference: string | null;
+  status: QuestionStatus;
+  is_personal: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  options?: QuestionOption[];
+  subject?: Subject;
+  chapter?: Chapter;
+  topic?: Topic;
+  applicable_exams?: Exam[];
+  is_bookmarked?: boolean;
+}
+
+export interface QuestionExamMapping {
+  id: string;
+  question_id: string;
+  exam_id: string;
+  is_verified_pyq: boolean;
+  created_at: string;
+  exam?: Exam;
+}
+
+export interface QuestionBookmark {
+  id: string;
+  student_id: string;
+  question_id: string;
+  created_at: string;
+  question?: Question;
+}
+
+export type PracticeMode = "Learn" | "Test";
+export type PracticeSessionStatus = "In Progress" | "Completed" | "Abandoned";
+
+export interface PracticeSession {
+  id: string;
+  student_id: string;
+  mode: PracticeMode;
+  exam_id: string | null;
+  subject_id: string | null;
+  topic_id: string | null;
+  total_questions: number;
+  attempted_questions: number;
+  correct_answers: number;
+  incorrect_answers: number;
+  score_percent: number;
+  status: PracticeSessionStatus;
+  started_at: string;
+  completed_at: string | null;
+  exam?: Exam;
+  subject?: Subject;
+  topic?: Topic;
+}
+
+export interface QuestionAttempt {
+  id: string;
+  session_id: string | null;
+  student_id: string;
+  question_id: string;
+  selected_option: OptionLabel | null;
+  is_correct: boolean;
+  time_spent_seconds: number;
+  created_at: string;
+  question?: Question;
+  correct_option?: OptionLabel;
+  explanation?: string;
+}
+
+export interface QuestionImportBatch {
+  id: string;
+  file_name: string;
+  file_type: "CSV" | "XLSX";
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  duplicate_rows: number;
+  imported_by: string | null;
+  created_at: string;
+}
+
+export interface AIQuestionGenerationJob {
+  id: string;
+  exam_id: string | null;
+  subject_id: string | null;
+  chapter_id: string | null;
+  topic_id: string | null;
+  prompt: string | null;
+  requested_count: number;
+  generated_count: number;
+  difficulty: string;
+  language: string;
+  status: "Pending" | "Processing" | "Completed" | "Failed";
+  error_message: string | null;
+  created_by: string | null;
+  created_at: string;
 }

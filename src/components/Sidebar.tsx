@@ -21,6 +21,12 @@ import {
   RotateCcw,
   CalendarDays,
   FileText,
+  Upload,
+  Bookmark,
+  AlertCircle,
+  FolderPlus,
+  History,
+  Award,
 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 
@@ -40,6 +46,56 @@ export default function Sidebar({ role }: SidebarProps) {
       icon: LayoutDashboard,
       active: pathname === "/student/dashboard",
     },
+    // PHASE 3: MCQ QUESTION BANK & PRACTICE SYSTEM
+    {
+      name: "Topic Practice",
+      href: "/student/practice/topic",
+      icon: CheckSquare,
+      active: pathname === "/student/practice/topic",
+    },
+    {
+      name: "Subject Practice",
+      href: "/student/practice/subject",
+      icon: Layers,
+      active: pathname === "/student/practice/subject",
+    },
+    {
+      name: "Exam Practice",
+      href: "/student/practice/exam",
+      icon: Award,
+      active: pathname === "/student/practice/exam",
+    },
+    {
+      name: "PYQ Archive",
+      href: "/student/practice/pyq",
+      icon: FileQuestion,
+      active: pathname === "/student/practice/pyq",
+    },
+    {
+      name: "Saved Bookmarks",
+      href: "/student/practice/bookmarks",
+      icon: Bookmark,
+      active: pathname === "/student/practice/bookmarks",
+    },
+    {
+      name: "Mistake Notebook",
+      href: "/student/practice/incorrect",
+      icon: AlertCircle,
+      active: pathname === "/student/practice/incorrect",
+    },
+    {
+      name: "Private Banks",
+      href: "/student/practice/banks",
+      icon: FolderPlus,
+      active: pathname === "/student/practice/banks",
+    },
+    {
+      name: "Practice History",
+      href: "/student/practice/history",
+      icon: History,
+      active: pathname === "/student/practice/history",
+    },
+    // PHASE 2 & 1 FOUNDATION
     {
       name: "My Examinations",
       href: "/student/exams",
@@ -103,6 +159,32 @@ export default function Sidebar({ role }: SidebarProps) {
       icon: LayoutDashboard,
       active: pathname === "/admin/dashboard",
     },
+    // PHASE 3: QUESTION BANK MANAGEMENT
+    {
+      name: "Question Bank",
+      href: "/admin/questions",
+      icon: FileQuestion,
+      active: pathname === "/admin/questions",
+    },
+    {
+      name: "Bulk Import",
+      href: "/admin/questions/import",
+      icon: Upload,
+      active: pathname === "/admin/questions/import",
+    },
+    {
+      name: "AI MCQ Generator",
+      href: "/admin/questions/ai",
+      icon: Sparkles,
+      active: pathname === "/admin/questions/ai",
+    },
+    {
+      name: "Review Queue",
+      href: "/admin/questions/review",
+      icon: Clock,
+      active: pathname === "/admin/questions/review",
+    },
+    // PHASE 2 & 1 FOUNDATION
     {
       name: "Exam Management",
       href: "/admin/exams",
@@ -150,76 +232,101 @@ export default function Sidebar({ role }: SidebarProps) {
         </button>
       </div>
 
-      {/* Backdrop for mobile */}
+      {/* Mobile drawer backdrop */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+          className="lg:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
-      {/* Sidebar container */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200 bg-white pt-16 transition-all duration-300 lg:static lg:pt-0 ${
-          isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0"
-        } ${isCollapsed ? "lg:w-20" : "lg:w-64"}`}
+      {/* Mobile drawer */}
+      <div
+        className={`lg:hidden fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-        {/* Collapse toggle (desktop only) */}
-        <div className="hidden lg:flex items-center justify-end px-3 py-3 border-b border-slate-100">
+        <div className="h-full flex flex-col py-6 px-4">
+          <div className="flex items-center justify-between mb-6 px-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              {role === "admin" ? "Admin Controls" : "Student Portal"}
+            </span>
+            <button
+              onClick={() => setIsMobileOpen(false)}
+              className="p-1 rounded-md text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <nav className="flex-1 space-y-1 overflow-y-auto">
+            {links.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setIsMobileOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                    link.active
+                      ? "bg-indigo-50 text-indigo-600 font-semibold"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 ${link.active ? "text-indigo-600" : "text-slate-400"}`} />
+                  <span>{link.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Desktop sidebar */}
+      <aside
+        className={`hidden lg:flex flex-col border-r border-slate-200 bg-white transition-all duration-300 ease-in-out ${
+          isCollapsed ? "w-20" : "w-64"
+        }`}
+      >
+        <div className="p-4 flex items-center justify-between border-b border-slate-100">
+          {!isCollapsed && (
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 truncate">
+              {role === "admin" ? "Admin Controls" : "Student Portal"}
+            </span>
+          )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 mx-auto transition"
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
         </div>
 
-        {/* Navigation list */}
-        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
-          {links.map((item) => {
-            const Icon = item.icon;
-
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {links.map((link) => {
+            const Icon = link.icon;
             return (
               <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setIsMobileOpen(false)}
-                className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  item.active
-                    ? "bg-indigo-50 text-indigo-700 font-semibold"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-                title={isCollapsed ? item.name : undefined}
+                key={link.name}
+                href={link.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition group ${
+                  link.active
+                    ? "bg-indigo-50 text-indigo-600 font-semibold"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                } ${isCollapsed ? "justify-center px-2" : ""}`}
+                title={isCollapsed ? link.name : undefined}
               >
                 <Icon
-                  className={`h-5 w-5 shrink-0 ${
-                    item.active
-                      ? "text-indigo-600"
-                      : "text-slate-400 group-hover:text-slate-600"
+                  className={`h-5 w-5 shrink-0 transition ${
+                    link.active ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"
                   }`}
                 />
-                {!isCollapsed && <span className="flex-1 truncate">{item.name}</span>}
+                {!isCollapsed && <span className="truncate">{link.name}</span>}
               </Link>
             );
           })}
         </nav>
-
-        {/* Footer info in sidebar */}
-        {!isCollapsed && (
-          <div className="border-t border-slate-200 p-4">
-            <div className="rounded-lg bg-slate-50 p-2.5 border border-slate-200/70 text-xs">
-              <p className="font-semibold text-slate-800">PrepTrack v2.0</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Syllabus & Study Management
-              </p>
-            </div>
-          </div>
-        )}
       </aside>
     </>
   );
