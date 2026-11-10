@@ -1,4 +1,10 @@
 import { requireRole } from "@/lib/auth";
+import {
+  getStudentExams,
+  getStudentTasks,
+  getExamScheduleEvents,
+  getExamSyllabus,
+} from "@/lib/data/syllabus";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
@@ -13,10 +19,27 @@ import {
   ArrowRight,
   UserCheck,
   ListTodo,
+  Layers,
+  CalendarDays,
+  Plus,
 } from "lucide-react";
 
 export default async function StudentDashboardPage() {
-  const { profile } = await requireRole("student");
+  const { profile, user } = await requireRole("student");
+
+  const [enrolledExams, tasks] = await Promise.all([
+    getStudentExams(user.id),
+    getStudentTasks(user.id),
+  ]);
+
+  const examIds = enrolledExams.map((se) => se.exam_id);
+  const events = await getExamScheduleEvents(examIds);
+
+  // Calculate real metrics
+  const completedTasksCount = tasks.filter((t) => t.status === "Completed").length;
+  const pendingTasksCount = tasks.filter(
+    (t) => t.status === "Upcoming" || t.status === "In Progress"
+  ).length;
 
   const displayName = profile.full_name || profile.email.split("@")[0];
 
@@ -34,60 +57,71 @@ export default async function StudentDashboardPage() {
               <div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/30 px-3 py-1 text-xs font-medium text-indigo-200 border border-indigo-400/30 mb-2">
                   <Sparkles className="h-3.5 w-3.5" />
-                  <span>Student Preparation Workspace</span>
+                  <span>Syllabus & Study Management (Phase 2 Active)</span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
                   Welcome back, {displayName}!
                 </h1>
                 <p className="mt-1 text-sm text-indigo-200 max-w-2xl leading-relaxed">
-                  Your personalized competitive exam prep portal is ready. Track your study
-                  goals, syllabus completion, and scheduled mock tests in real time.
+                  Your personalized competitive exam workspace is active. You have{" "}
+                  <strong>{enrolledExams.length} examination(s)</strong> enrolled with{" "}
+                  <strong>{pendingTasksCount} pending study task(s)</strong>.
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
                 <Link
-                  href="/profile"
-                  className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur border border-white/20 hover:bg-white/20 transition"
+                  href="/student/planner"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-indigo-900 shadow-sm hover:bg-indigo-50 transition"
                 >
-                  <UserCheck className="h-4 w-4" />
-                  Manage Profile
+                  <Sparkles className="h-4 w-4 text-indigo-600" />
+                  Auto-Planner
+                </Link>
+                <Link
+                  href="/student/exams"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur border border-white/20 hover:bg-white/20 transition"
+                >
+                  Manage Exams
                 </Link>
               </div>
             </div>
           </div>
 
-          {/* Real Metrics & Realistic Empty States Grid */}
+          {/* Real Metrics Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {/* Metric 1: Selected Exam */}
+            {/* Metric 1: Selected Exam Count */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Target Examination
+                  Target Examinations
                 </span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
                   <BookOpen className="h-4 w-4" />
                 </div>
               </div>
-              <p className="mt-3 text-lg font-bold text-slate-900">Not Selected</p>
+              <p className="mt-3 text-2xl font-bold text-slate-900">
+                {enrolledExams.length}
+              </p>
               <p className="mt-1 text-xs text-slate-500">
-                Examination syllabus enrollment arrives in Phase 2
+                {enrolledExams.length > 0
+                  ? "Active preparation targets"
+                  : "No examinations selected yet"}
               </p>
             </div>
 
-            {/* Metric 2: Completed Topics */}
+            {/* Metric 2: Completed Tasks */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Topics Completed
+                  Tasks Completed
                 </span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
               </div>
-              <p className="mt-3 text-2xl font-bold text-slate-900">0</p>
+              <p className="mt-3 text-2xl font-bold text-slate-900">{completedTasksCount}</p>
               <p className="mt-1 text-xs text-slate-500">
-                Progress tracking starts once syllabus is active
+                Finished study sessions and assignments
               </p>
             </div>
 
@@ -101,9 +135,9 @@ export default async function StudentDashboardPage() {
                   <ListTodo className="h-4 w-4" />
                 </div>
               </div>
-              <p className="mt-3 text-2xl font-bold text-slate-900">0</p>
+              <p className="mt-3 text-2xl font-bold text-slate-900">{pendingTasksCount}</p>
               <p className="mt-1 text-xs text-slate-500">
-                No pending tasks scheduled for today
+                Eligible for automatic carry-forward
               </p>
             </div>
 
@@ -111,113 +145,228 @@ export default async function StudentDashboardPage() {
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Overall Readiness
+                  Preparation Pace
                 </span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                   <TrendingUp className="h-4 w-4" />
                 </div>
               </div>
-              <p className="mt-3 text-2xl font-bold text-slate-900">0%</p>
+              <p className="mt-3 text-2xl font-bold text-slate-900">
+                {tasks.length > 0
+                  ? `${Math.round((completedTasksCount / tasks.length) * 100)}%`
+                  : "0%"}
+              </p>
               <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full bg-indigo-600 rounded-full" style={{ width: "0%" }} />
+                <div
+                  className="h-full bg-indigo-600 rounded-full"
+                  style={{
+                    width: `${
+                      tasks.length > 0
+                        ? Math.round((completedTasksCount / tasks.length) * 100)
+                        : 0
+                    }%`,
+                  }}
+                />
               </div>
             </div>
           </div>
 
-          {/* Main Dashboard Content Layout */}
+          {/* Main Dashboard Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left 2 Columns: Daily Prep Overview & Recent Activity */}
+            {/* Left 2 Cols: Enrolled Exams & Tasks preview */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Daily Preparation Overview */}
+              {/* Enrolled Examinations Card */}
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-semibold text-slate-900">
-                    Daily Preparation Overview
+                  <h2 className="text-base font-bold text-slate-900">
+                    Selected Examination Portfolios
                   </h2>
-                  <span className="text-xs text-slate-500">Today</span>
+                  <Link
+                    href="/student/exams"
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                  >
+                    Manage Exams →
+                  </Link>
                 </div>
 
-                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 mb-3">
-                    <Clock className="h-6 w-6" />
+                {enrolledExams.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {enrolledExams.map((se) => (
+                      <div
+                        key={se.id}
+                        className="rounded-xl border border-slate-200 p-4 hover:border-indigo-300 transition flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="rounded bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
+                              Priority {se.priority}
+                            </span>
+                            {se.target_date && (
+                              <span className="text-[10px] text-slate-500 font-medium">
+                                Target: {se.target_date}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="mt-2 text-sm font-bold text-slate-900">
+                            {se.exam?.name || "Examination"}
+                          </h4>
+                        </div>
+
+                        <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                          <Link
+                            href={`/student/syllabus?examId=${se.exam_id}`}
+                            className="text-indigo-600 font-semibold hover:underline"
+                          >
+                            Browse Syllabus
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <h3 className="text-sm font-semibold text-slate-800">
-                    Daily Study Session Not Initiated
-                  </h3>
-                  <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
-                    Your daily study schedule and revision planner will populate here as exam
-                    curricula are configured in Phase 2.
-                  </p>
-                </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-slate-500">
+                    <p className="text-sm font-semibold">No examinations selected</p>
+                    <Link
+                      href="/student/exams"
+                      className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Enroll in an examination
+                    </Link>
+                  </div>
+                )}
               </div>
 
-              {/* Recent Activity Placeholder */}
+              {/* Tasks Preview */}
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-semibold text-slate-900">Recent Activity</h2>
-                  <span className="text-xs text-slate-400">Activity Log</span>
+                  <h2 className="text-base font-bold text-slate-900">Upcoming Study Tasks</h2>
+                  <Link
+                    href="/student/tasks"
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                  >
+                    View All Tasks →
+                  </Link>
                 </div>
 
-                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-6 text-center">
-                  <p className="text-sm text-slate-600 font-medium">
-                    Account initialized successfully
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Logged in via Supabase Auth. No practice exams or quizzes taken yet.
-                  </p>
-                </div>
+                {tasks.length > 0 ? (
+                  <div className="divide-y divide-slate-100">
+                    {tasks.slice(0, 4).map((t) => (
+                      <div key={t.id} className="py-3 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <CheckCircle2
+                            className={`h-4 w-4 ${
+                              t.status === "Completed" ? "text-emerald-600" : "text-slate-300"
+                            }`}
+                          />
+                          <div>
+                            <span
+                              className={`font-bold ${
+                                t.status === "Completed"
+                                  ? "text-slate-400 line-through"
+                                  : "text-slate-800"
+                              }`}
+                            >
+                              {t.title}
+                            </span>
+                            <span className="text-[11px] text-slate-500 block">
+                              {t.scheduled_date} • {t.duration_minutes}m
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                          {t.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-xs text-slate-400">
+                    No active tasks. Use the Study Planner to generate your schedule.
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Right Column: Upcoming Examination & Profile Info */}
+            {/* Right Column: Official Exam Events & Quick Actions */}
             <div className="space-y-6">
-              {/* Upcoming Examination Placeholder */}
+              {/* Official Schedule Milestones */}
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-semibold text-slate-900">
-                    Upcoming Examinations
-                  </h2>
-                  <Calendar className="h-4 w-4 text-slate-400" />
+                  <h2 className="text-base font-bold text-slate-900">Official Exam Calendar</h2>
+                  <Link
+                    href="/student/schedule"
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                  >
+                    Full Calendar →
+                  </Link>
                 </div>
 
-                <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800">
-                        Exam Calendar Pending
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                        Upcoming national and state competitive exam schedules will appear here
-                        once published by administrators.
-                      </p>
-                    </div>
+                {events.length > 0 ? (
+                  <div className="space-y-3">
+                    {events.slice(0, 3).map((ev) => (
+                      <div
+                        key={ev.id}
+                        className="rounded-xl border border-purple-100 bg-purple-50/50 p-3 text-xs"
+                      >
+                        <span className="rounded-full bg-purple-100 px-2 py-0.2 text-[10px] font-bold text-purple-700">
+                          {ev.event_type}
+                        </span>
+                        <h4 className="mt-1 font-bold text-slate-900">{ev.title}</h4>
+                        <p className="text-slate-500 text-[11px] mt-0.5">
+                          {new Date(ev.start_date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs text-slate-500 text-center">
+                    No upcoming examination deadlines for your enrolled exams.
+                  </div>
+                )}
               </div>
 
-              {/* Student Profile Quick Info */}
+              {/* Quick Navigation Links */}
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-base font-semibold text-slate-900 mb-3">
-                  Student Verification
-                </h2>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Student ID:</span>
-                    <span className="font-mono text-slate-700 truncate max-w-[150px]">
-                      {profile.id}
+                <h3 className="text-sm font-bold text-slate-900 mb-3">Study Management Tools</h3>
+                <div className="space-y-2 text-xs font-medium">
+                  <Link
+                    href="/student/routine"
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 transition"
+                  >
+                    <span className="flex items-center gap-2 text-slate-700">
+                      <Clock className="h-4 w-4 text-indigo-600" />
+                      Daily Routine & Preferences
                     </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Email:</span>
-                    <span className="text-slate-700 truncate max-w-[150px]">
-                      {profile.email}
+                    <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
+                  </Link>
+
+                  <Link
+                    href="/student/calendar"
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 transition"
+                  >
+                    <span className="flex items-center gap-2 text-slate-700">
+                      <Calendar className="h-4 w-4 text-indigo-600" />
+                      Interactive Calendar
                     </span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-slate-500">Auth Status:</span>
-                    <span className="font-semibold text-emerald-600">Active (Verified)</span>
-                  </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
+                  </Link>
+
+                  <Link
+                    href="/student/revisions"
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 transition"
+                  >
+                    <span className="flex items-center gap-2 text-slate-700">
+                      <Layers className="h-4 w-4 text-indigo-600" />
+                      Revision & Notes Manager
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
+                  </Link>
                 </div>
               </div>
             </div>

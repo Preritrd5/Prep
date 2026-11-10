@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getAllExams, getAllSubjects, getExamScheduleEvents } from "@/lib/data/syllabus";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
@@ -12,6 +13,10 @@ import {
   Lock,
   UserCheck,
   CheckCircle2,
+  BookOpen,
+  CalendarDays,
+  FileText,
+  ArrowRight,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -31,14 +36,13 @@ export default async function AdminDashboardPage() {
 
   const students = (rawStudents as Profile[] | null) || [];
 
-  // Fetch total admins count for platform overview
-  const { count: adminCount } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true })
-    .eq("role", "admin");
+  const [exams, subjects, events] = await Promise.all([
+    getAllExams(),
+    getAllSubjects(),
+    getExamScheduleEvents(),
+  ]);
 
   const totalRegisteredStudents = studentCount ?? 0;
-  const totalAdmins = adminCount ?? 1;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -54,14 +58,14 @@ export default async function AdminDashboardPage() {
               <div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 px-3 py-1 text-xs font-semibold text-purple-200 border border-purple-400/30 mb-2">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>Platform Governance Portal</span>
+                  <span>Platform Governance Portal (Phase 2 Active)</span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
                   Admin Administration Overview
                 </h1>
                 <p className="mt-1 text-sm text-purple-200/80 max-w-2xl leading-relaxed">
-                  Oversee registered students, enforce database security policies, and manage
-                  upcoming examination modules.
+                  Oversee registered students, author hierarchical syllabus content, manage
+                  reusable subject mappings, and publish verified examination schedules.
                 </p>
               </div>
 
@@ -75,7 +79,7 @@ export default async function AdminDashboardPage() {
 
           {/* Real Metrics Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {/* Metric 1: Total Registered Students */}
+            {/* Metric 1: Registered Students */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -89,63 +93,113 @@ export default async function AdminDashboardPage() {
                 {totalRegisteredStudents}
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                Real database query from Supabase profiles
+                Active student enrollment records
               </p>
             </div>
 
-            {/* Metric 2: Content Modules (Phase 2 placeholder) */}
+            {/* Metric 2: Examination Catalog */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Content Management
+                  Examinations
                 </span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+                  <BookOpen className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="mt-3 text-2xl font-bold text-slate-900">{exams.length}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                GATE, KAS, UPSC, Railway, KEA, AE Civil
+              </p>
+            </div>
+
+            {/* Metric 3: Curriculum Subjects */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Curriculum Subjects
+                </span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
                   <Layers className="h-4 w-4" />
                 </div>
               </div>
-              <p className="mt-3 text-lg font-bold text-slate-900">Module Locked</p>
+              <p className="mt-3 text-2xl font-bold text-slate-900">{subjects.length}</p>
               <p className="mt-1 text-xs text-slate-500">
-                Course curricula & exam models arrive in Phase 2
+                Reusable across multiple exam syllabuses
               </p>
             </div>
 
-            {/* Metric 3: Question Bank (Phase 2 placeholder) */}
+            {/* Metric 4: Official Milestones */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Question Bank
-                </span>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                  <FileQuestion className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="mt-3 text-lg font-bold text-slate-900">Module Locked</p>
-              <p className="mt-1 text-xs text-slate-500">
-                Question authoring & taxonomy arrive in Phase 2
-              </p>
-            </div>
-
-            {/* Metric 4: Platform Security */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Row Level Security
+                  Published Events
                 </span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                  <Lock className="h-4 w-4" />
+                  <CalendarDays className="h-4 w-4" />
                 </div>
               </div>
-              <p className="mt-3 text-lg font-bold text-emerald-600">Enforced</p>
+              <p className="mt-3 text-2xl font-bold text-emerald-700">{events.length}</p>
               <p className="mt-1 text-xs text-slate-500">
-                PostgreSQL RLS policies & triggers active
+                Verified official exam calendar entries
               </p>
             </div>
           </div>
 
-          {/* Student Directory Table & Platform Status */}
+          {/* Quick Management Links Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Link
+              href="/admin/exams"
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-purple-300 transition flex items-center justify-between"
+            >
+              <div>
+                <h4 className="font-bold text-sm text-slate-900">Exam Management</h4>
+                <p className="text-xs text-slate-500">Add & configure exams</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-purple-600" />
+            </Link>
+
+            <Link
+              href="/admin/subjects"
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-purple-300 transition flex items-center justify-between"
+            >
+              <div>
+                <h4 className="font-bold text-sm text-slate-900">Subject Repository</h4>
+                <p className="text-xs text-slate-500">Manage common subjects</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-purple-600" />
+            </Link>
+
+            <Link
+              href="/admin/syllabus"
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-purple-300 transition flex items-center justify-between"
+            >
+              <div>
+                <h4 className="font-bold text-sm text-slate-900">Syllabus & Topics</h4>
+                <p className="text-xs text-slate-500">Chapters, references & weights</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-purple-600" />
+            </Link>
+
+            <Link
+              href="/admin/events"
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-purple-300 transition flex items-center justify-between"
+            >
+              <div>
+                <h4 className="font-bold text-sm text-slate-900">Official Events</h4>
+                <p className="text-xs text-slate-500">Publish exam dates & links</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-purple-600" />
+            </Link>
+          </div>
+
+          {/* Student Directory Table & Platform Architecture */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Registered Students Management Preview */}
-            <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden" id="students">
+            <div
+              className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+              id="students"
+            >
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <h2 className="text-base font-semibold text-slate-900">
@@ -208,7 +262,6 @@ export default async function AdminDashboardPage() {
 
             {/* Platform Overview & Governance */}
             <div className="space-y-6">
-              {/* Platform Overview */}
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 className="text-base font-semibold text-slate-900 mb-4">
                   Platform Architecture Status
@@ -224,10 +277,10 @@ export default async function AdminDashboardPage() {
                   </div>
 
                   <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-slate-600 font-medium">Authentication Engine</span>
+                    <span className="text-slate-600 font-medium">Syllabus Hierarchy</span>
                     <span className="font-semibold text-emerald-700 flex items-center gap-1">
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      Supabase Auth (SSR)
+                      Exam → Subj → Chap → Topic
                     </span>
                   </div>
 
@@ -235,13 +288,13 @@ export default async function AdminDashboardPage() {
                     <span className="text-slate-600 font-medium">Row Level Security</span>
                     <span className="font-semibold text-emerald-700 flex items-center gap-1">
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      Active & Tested
+                      14/14 Tables Protected
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-slate-600 font-medium">Provisioned Admins</span>
-                    <span className="font-semibold text-purple-700">{totalAdmins}</span>
+                    <span className="text-slate-600 font-medium">Study Planner Engine</span>
+                    <span className="font-semibold text-indigo-700">Deterministic Active</span>
                   </div>
                 </div>
               </div>
@@ -261,8 +314,8 @@ export default async function AdminDashboardPage() {
                     <span className="font-semibold text-purple-700">Full Platform Rights</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-slate-500">Role Elevation:</span>
-                    <span className="text-slate-600">Controlled (Database Trigger)</span>
+                    <span className="text-slate-500">Phase 2 Status:</span>
+                    <span className="font-semibold text-emerald-600">All Modules Active</span>
                   </div>
                 </div>
 

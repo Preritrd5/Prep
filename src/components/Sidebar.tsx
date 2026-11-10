@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   BookOpen,
   CheckSquare,
-  Calendar,
+  Calendar as CalendarIcon,
   Users,
   FileQuestion,
   Layers,
@@ -16,7 +16,11 @@ import {
   ChevronRight,
   Menu,
   X,
-  Lock,
+  Clock,
+  Sparkles,
+  RotateCcw,
+  CalendarDays,
+  FileText,
 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 
@@ -37,28 +41,55 @@ export default function Sidebar({ role }: SidebarProps) {
       active: pathname === "/student/dashboard",
     },
     {
-      name: "Examinations",
-      href: "#",
+      name: "My Examinations",
+      href: "/student/exams",
       icon: BookOpen,
-      badge: "Phase 2",
-      active: false,
+      active: pathname === "/student/exams",
+    },
+    {
+      name: "Syllabus Tracker",
+      href: "/student/syllabus",
+      icon: Layers,
+      active: pathname.startsWith("/student/syllabus"),
+    },
+    {
+      name: "Daily Routine",
+      href: "/student/routine",
+      icon: Clock,
+      active: pathname === "/student/routine",
     },
     {
       name: "Study Tasks",
-      href: "#",
+      href: "/student/tasks",
       icon: CheckSquare,
-      badge: "Phase 2",
-      active: false,
+      active: pathname.startsWith("/student/tasks"),
+    },
+    {
+      name: "Study Planner",
+      href: "/student/planner",
+      icon: Sparkles,
+      active: pathname === "/student/planner",
+    },
+    {
+      name: "Calendar",
+      href: "/student/calendar",
+      icon: CalendarIcon,
+      active: pathname === "/student/calendar",
     },
     {
       name: "Exam Schedule",
-      href: "#",
-      icon: Calendar,
-      badge: "Phase 2",
-      active: false,
+      href: "/student/schedule",
+      icon: CalendarDays,
+      active: pathname === "/student/schedule",
     },
     {
-      name: "Profile",
+      name: "Revisions",
+      href: "/student/revisions",
+      icon: RotateCcw,
+      active: pathname === "/student/revisions",
+    },
+    {
+      name: "Account Profile",
       href: "/profile",
       icon: User,
       active: pathname === "/profile",
@@ -73,27 +104,31 @@ export default function Sidebar({ role }: SidebarProps) {
       active: pathname === "/admin/dashboard",
     },
     {
-      name: "Student Directory",
-      href: "/admin/dashboard#students",
-      icon: Users,
-      active: false,
+      name: "Exam Management",
+      href: "/admin/exams",
+      icon: BookOpen,
+      active: pathname === "/admin/exams",
     },
     {
-      name: "Content Management",
-      href: "#",
+      name: "Subject Directory",
+      href: "/admin/subjects",
       icon: Layers,
-      badge: "Phase 2",
-      active: false,
+      active: pathname === "/admin/subjects",
     },
     {
-      name: "Question Bank",
-      href: "#",
-      icon: FileQuestion,
-      badge: "Phase 2",
-      active: false,
+      name: "Syllabus & Topics",
+      href: "/admin/syllabus",
+      icon: FileText,
+      active: pathname === "/admin/syllabus",
     },
     {
-      name: "Profile",
+      name: "Official Exam Events",
+      href: "/admin/events",
+      icon: CalendarDays,
+      active: pathname === "/admin/events",
+    },
+    {
+      name: "Account Profile",
       href: "/profile",
       icon: User,
       active: pathname === "/profile",
@@ -145,28 +180,19 @@ export default function Sidebar({ role }: SidebarProps) {
         </div>
 
         {/* Navigation list */}
-        <nav className="flex-1 space-y-1.5 px-3 py-4">
+        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
           {links.map((item) => {
             const Icon = item.icon;
-            const isClickable = item.href !== "#";
 
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                onClick={(e) => {
-                  if (!isClickable) {
-                    e.preventDefault();
-                  } else {
-                    setIsMobileOpen(false);
-                  }
-                }}
-                className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                onClick={() => setIsMobileOpen(false)}
+                className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   item.active
-                    ? "bg-indigo-50 text-indigo-700"
-                    : isClickable
-                    ? "text-slate-700 hover:bg-slate-100"
-                    : "text-slate-400 cursor-not-allowed hover:bg-slate-50"
+                    ? "bg-indigo-50 text-indigo-700 font-semibold"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
                 title={isCollapsed ? item.name : undefined}
               >
@@ -174,20 +200,10 @@ export default function Sidebar({ role }: SidebarProps) {
                   className={`h-5 w-5 shrink-0 ${
                     item.active
                       ? "text-indigo-600"
-                      : isClickable
-                      ? "text-slate-500 group-hover:text-slate-700"
-                      : "text-slate-300"
+                      : "text-slate-400 group-hover:text-slate-600"
                   }`}
                 />
-                {!isCollapsed && (
-                  <span className="flex-1 truncate">{item.name}</span>
-                )}
-                {!isCollapsed && item.badge && (
-                  <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">
-                    <Lock className="h-2.5 w-2.5" />
-                    {item.badge}
-                  </span>
-                )}
+                {!isCollapsed && <span className="flex-1 truncate">{item.name}</span>}
               </Link>
             );
           })}
@@ -196,10 +212,10 @@ export default function Sidebar({ role }: SidebarProps) {
         {/* Footer info in sidebar */}
         {!isCollapsed && (
           <div className="border-t border-slate-200 p-4">
-            <div className="rounded-lg bg-slate-50 p-3 border border-slate-200/70">
-              <p className="text-xs font-semibold text-slate-700">PrepTrack Platform</p>
-              <p className="mt-0.5 text-[11px] text-slate-500">
-                Phase 1: Foundation & Authentication
+            <div className="rounded-lg bg-slate-50 p-2.5 border border-slate-200/70 text-xs">
+              <p className="font-semibold text-slate-800">PrepTrack v2.0</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Syllabus & Study Management
               </p>
             </div>
           </div>
