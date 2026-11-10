@@ -27,6 +27,8 @@ import {
   FolderPlus,
   History,
   Award,
+  Play,
+  Activity,
 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 
@@ -45,6 +47,19 @@ export default function Sidebar({ role }: SidebarProps) {
       href: "/student/dashboard",
       icon: LayoutDashboard,
       active: pathname === "/student/dashboard",
+    },
+    // PHASE 4: ONLINE EXAMINATION & MOCK TEST SYSTEM
+    {
+      name: "Online Mock Tests",
+      href: "/student/exams/online",
+      icon: Play,
+      active: pathname.startsWith("/student/exams/online") && !pathname.includes("/history"),
+    },
+    {
+      name: "Test Attempts History",
+      href: "/student/exams/online/history",
+      icon: Award,
+      active: pathname === "/student/exams/online/history",
     },
     // PHASE 3: MCQ QUESTION BANK & PRACTICE SYSTEM
     {
@@ -158,6 +173,19 @@ export default function Sidebar({ role }: SidebarProps) {
       href: "/admin/dashboard",
       icon: LayoutDashboard,
       active: pathname === "/admin/dashboard",
+    },
+    // PHASE 4: ONLINE EXAMINATIONS & CBT TESTS
+    {
+      name: "Online Mock Tests",
+      href: "/admin/exams/manage",
+      icon: Play,
+      active: pathname.startsWith("/admin/exams/manage") || pathname.startsWith("/admin/exams/create"),
+    },
+    {
+      name: "Monitor Live Attempts",
+      href: "/admin/exams/monitor",
+      icon: Activity,
+      active: pathname === "/admin/exams/monitor",
     },
     // PHASE 3: QUESTION BANK MANAGEMENT
     {

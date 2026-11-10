@@ -406,3 +406,219 @@ export interface AIQuestionGenerationJob {
   created_by: string | null;
   created_at: string;
 }
+
+// ---------------------------------------------------------------------------
+// Phase 4: Online Examination & Mock Test System Types
+// ---------------------------------------------------------------------------
+
+export type ExamCategory =
+  | "GATE"
+  | "KAS"
+  | "UPSC"
+  | "Railway Examinations"
+  | "KEA Examinations"
+  | "AE Civil Engineering"
+  | "General Knowledge"
+  | "Custom";
+
+export type OnlineExamType =
+  | "Chapter Test"
+  | "Subject Test"
+  | "Sectional Test"
+  | "Full-Length Mock Test"
+  | "Previous Year Question Test"
+  | "Custom Test";
+
+export type ResultReleasePolicy = "Immediate" | "Delayed" | "Admin Controlled";
+export type ExamTemplateStatus = "Draft" | "Published" | "Archived";
+export type AttemptStatus =
+  | "In Progress"
+  | "Submitted"
+  | "Auto Submitted"
+  | "Evaluated"
+  | "Results Released"
+  | "Cancelled";
+
+export interface ExamTemplate {
+  id: string;
+  title: string;
+  description: string | null;
+  exam_category: ExamCategory;
+  exam_id: string | null;
+  exam_type: OnlineExamType;
+  instructions: string | null;
+  duration_minutes: number;
+  total_questions: number;
+  total_marks: number;
+  passing_marks: number | null;
+  max_attempts: number;
+  start_date: string | null;
+  end_date: string | null;
+  randomize_questions: boolean;
+  randomize_options: boolean;
+  has_negative_marking: boolean;
+  correct_marks: number;
+  negative_marks: number;
+  unattempted_marks: number;
+  result_release_policy: ResultReleasePolicy;
+  results_published: boolean;
+  status: ExamTemplateStatus;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  exam?: Exam;
+  sections?: ExamSection[];
+  mappings?: ExamQuestionMapping[];
+  blueprints?: ExamQuestionBlueprint[];
+  attempt_count?: number;
+}
+
+export interface ExamSection {
+  id: string;
+  template_id: string;
+  name: string;
+  subject_id: string | null;
+  question_count: number;
+  total_marks: number;
+  time_limit_minutes: number | null;
+  order_index: number;
+  correct_marks: number | null;
+  negative_marks: number | null;
+  created_at: string;
+  updated_at: string;
+  subject?: Subject;
+}
+
+export interface ExamQuestionMapping {
+  id: string;
+  template_id: string;
+  section_id: string | null;
+  question_id: string;
+  order_index: number;
+  marks: number | null;
+  negative_marks: number | null;
+  created_at: string;
+  question?: Question;
+  section?: ExamSection;
+}
+
+export interface ExamQuestionBlueprint {
+  id: string;
+  template_id: string;
+  section_id: string | null;
+  subject_id: string | null;
+  chapter_id: string | null;
+  topic_id: string | null;
+  difficulty: "Easy" | "Medium" | "Hard" | "Any" | null;
+  question_count: number;
+  marks_per_question: number;
+  negative_marks_per_question: number;
+  created_at: string;
+  subject?: Subject;
+  chapter?: Chapter;
+  topic?: Topic;
+}
+
+export interface ExamAttempt {
+  id: string;
+  student_id: string;
+  template_id: string;
+  attempt_number: number;
+  started_at: string;
+  expires_at: string;
+  submitted_at: string | null;
+  status: AttemptStatus;
+  score: number;
+  max_marks: number;
+  percentage: number;
+  correct_count: number;
+  incorrect_count: number;
+  unanswered_count: number;
+  time_taken_seconds: number;
+  result_release_status: ResultReleasePolicy | "Results Released";
+  created_at: string;
+  updated_at: string;
+  template?: ExamTemplate;
+  student?: Profile;
+  answers?: ExamAttemptAnswer[];
+  questions?: ExamAttemptQuestion[];
+  result?: ExamResult;
+}
+
+export interface ExamAttemptQuestion {
+  id: string;
+  attempt_id: string;
+  question_id: string | null;
+  section_id: string | null;
+  section_name: string | null;
+  order_index: number;
+  question_text: string;
+  options_json: { option_label: OptionLabel; option_text: string }[];
+  marks: number;
+  negative_marks: number;
+  created_at: string;
+}
+
+export interface ExamAttemptAnswer {
+  id: string;
+  attempt_id: string;
+  attempt_question_id: string;
+  selected_option: OptionLabel | null;
+  is_marked_for_review: boolean;
+  is_visited: boolean;
+  time_spent_seconds: number;
+  saved_at: string;
+}
+
+export interface ExamAttemptAnswerKey {
+  id: string;
+  attempt_id: string;
+  attempt_question_id: string;
+  correct_option: OptionLabel;
+  explanation: string | null;
+  created_at: string;
+}
+
+export interface SectionScoreSummary {
+  section_id: string | null;
+  section_name: string;
+  total_questions: number;
+  attempted: number;
+  correct: number;
+  incorrect: number;
+  score: number;
+  max_marks: number;
+}
+
+export interface ExamResult {
+  id: string;
+  attempt_id: string;
+  student_id: string;
+  template_id: string;
+  total_score: number;
+  max_marks: number;
+  positive_marks: number;
+  negative_marks: number;
+  percentage: number;
+  accuracy_percent: number;
+  total_questions: number;
+  attempted_count: number;
+  correct_count: number;
+  incorrect_count: number;
+  unanswered_count: number;
+  time_taken_seconds: number;
+  section_scores_json: SectionScoreSummary[];
+  evaluated_at: string;
+  template?: ExamTemplate;
+}
+
+export interface ExamAuditEvent {
+  id: string;
+  template_id: string | null;
+  attempt_id: string | null;
+  user_id: string | null;
+  event_type: string;
+  details_json: Record<string, any> | null;
+  created_at: string;
+}
+
