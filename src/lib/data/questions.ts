@@ -16,6 +16,12 @@ import type {
 // FALLBACK SEED QUESTIONS (Accessible if database is awaiting SQL migration)
 // ===========================================================================
 
+export function allowDemoFallback(): boolean {
+  if (process.env.ALLOW_DEMO_FALLBACK === "true") return true;
+  if (process.env.ALLOW_DEMO_FALLBACK === "false") return false;
+  return process.env.NODE_ENV !== "production";
+}
+
 export const FALLBACK_QUESTIONS: Question[] = [
   {
     id: "q1000000-0000-0000-0000-000000000001",
@@ -281,6 +287,10 @@ export async function getQuestions(filters?: {
 
     const { data, error } = await query;
     if (error || !data || data.length === 0) {
+      if (!allowDemoFallback()) {
+        if (error) console.error(`[PRODUCTION INTEGRITY GUARD] Failed to query questions: ${error.message}`);
+        return [];
+      }
       // Filter fallback questions
       let res = FALLBACK_QUESTIONS;
       if (filters?.subjectId && filters.subjectId !== "All") {
@@ -301,6 +311,7 @@ export async function getQuestions(filters?: {
     }
     return data as Question[];
   } catch {
+    if (!allowDemoFallback()) return [];
     return FALLBACK_QUESTIONS;
   }
 }
@@ -315,11 +326,13 @@ export async function getQuestionById(id: string): Promise<Question | null> {
       .single();
 
     if (error || !data) {
+      if (!allowDemoFallback()) return null;
       const fb = FALLBACK_QUESTIONS.find((q) => q.id === id);
       return fb || null;
     }
     return data as Question;
   } catch {
+    if (!allowDemoFallback()) return null;
     const fb = FALLBACK_QUESTIONS.find((q) => q.id === id);
     return fb || null;
   }
@@ -365,6 +378,7 @@ export async function getQuestionsForPractice(params: {
         .limit(limit);
 
       if (data && data.length > 0) return data as Question[];
+      if (!allowDemoFallback()) return [];
       return FALLBACK_QUESTIONS.filter((q) => bookmarkedIds.includes(q.id));
     }
 
@@ -380,6 +394,7 @@ export async function getQuestionsForPractice(params: {
         .limit(limit);
 
       if (data && data.length > 0) return data as Question[];
+      if (!allowDemoFallback()) return [];
       return FALLBACK_QUESTIONS.filter((q) => incorrectIds.includes(q.id));
     }
 
@@ -421,6 +436,8 @@ export async function getQuestionsForPractice(params: {
     const { data } = await query;
     if (data && data.length > 0) return data as Question[];
 
+    if (!allowDemoFallback()) return [];
+
     // Fallback matching
     let fb = FALLBACK_QUESTIONS.filter((q) => q.status === "Published");
     if (subjectId) fb = fb.filter((q) => q.subject_id === subjectId);
@@ -428,6 +445,7 @@ export async function getQuestionsForPractice(params: {
 
     return fb.slice(0, limit);
   } catch {
+    if (!allowDemoFallback()) return [];
     let fb = FALLBACK_QUESTIONS;
     if (subjectId) fb = fb.filter((q) => q.subject_id === subjectId);
     if (pyqOnly) fb = fb.filter((q) => q.source_type === "Previous Year Question");

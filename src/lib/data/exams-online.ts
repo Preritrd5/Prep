@@ -12,7 +12,7 @@ import type {
   OnlineExamType,
   ExamTemplateStatus,
 } from "@/lib/types";
-import { FALLBACK_QUESTIONS } from "./questions";
+import { FALLBACK_QUESTIONS, allowDemoFallback } from "./questions";
 
 // ===========================================================================
 // FALLBACK SEED EXAM TEMPLATES (Used if remote PostgreSQL is awaiting migration)
@@ -251,6 +251,10 @@ export async function getExamTemplates(filters?: {
 
     const { data, error } = await query;
     if (error || !data || data.length === 0) {
+      if (!allowDemoFallback()) {
+        if (error) console.error(`[PRODUCTION INTEGRITY GUARD] Failed to query exam templates: ${error.message}`);
+        return [];
+      }
       // Fallback
       let res = FALLBACK_EXAM_TEMPLATES;
       if (filters?.category && filters.category !== "All") {
@@ -270,6 +274,7 @@ export async function getExamTemplates(filters?: {
 
     return data as ExamTemplate[];
   } catch {
+    if (!allowDemoFallback()) return [];
     return FALLBACK_EXAM_TEMPLATES;
   }
 }
@@ -284,11 +289,13 @@ export async function getExamTemplateById(id: string): Promise<ExamTemplate | nu
       .single();
 
     if (error || !data) {
+      if (!allowDemoFallback()) return null;
       const fb = FALLBACK_EXAM_TEMPLATES.find((t) => t.id === id);
       return fb || null;
     }
     return data as ExamTemplate;
   } catch {
+    if (!allowDemoFallback()) return null;
     const fb = FALLBACK_EXAM_TEMPLATES.find((t) => t.id === id);
     return fb || null;
   }

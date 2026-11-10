@@ -7,8 +7,8 @@ export function getGeminiClient(): GoogleGenAI {
   if (!apiKey) {
     throw new Error("Missing GEMINI_API_KEY in server environment.");
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey, apiVersion: "v1beta" });
 }
 
-// Current production generally-available fast Gemini model
-export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+// Production generally-available fast Gemini model supporting JSON mode
+export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";

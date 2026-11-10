@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { allowDemoFallback } from "./questions";
 import type {
   Exam,
   StudentExam,
@@ -291,10 +292,15 @@ export async function getAllExams(): Promise<Exam[]> {
       .order("name", { ascending: true });
 
     if (error || !data || data.length === 0) {
+      if (!allowDemoFallback()) {
+        if (error) console.error(`[PRODUCTION INTEGRITY GUARD] Failed to query exams: ${error.message}`);
+        return [];
+      }
       return FALLBACK_EXAMS;
     }
     return data as Exam[];
   } catch {
+    if (!allowDemoFallback()) return [];
     return FALLBACK_EXAMS;
   }
 }
