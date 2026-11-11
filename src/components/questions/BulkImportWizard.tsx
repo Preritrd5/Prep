@@ -498,7 +498,7 @@ export default function BulkImportWizard({ subjects, exams }: BulkImportWizardPr
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Link href="/student/questions">
+                <Link href="/question-bank">
                   <Button variant="outline" size="sm" className="text-xs border-success/40">
                     View in Question Bank →
                   </Button>
@@ -775,7 +775,7 @@ export default function BulkImportWizard({ subjects, exams }: BulkImportWizardPr
                   Your custom MCQ test is ready for immediate timed simulation.
                 </p>
                 <div className="pt-2 flex justify-center gap-2">
-                  <Link href={`/student/exams/online/${createdExamId}/instructions`}>
+                  <Link href={`/online-exams/${createdExamId}/instructions`}>
                     <Button variant="primary" size="md" rightIcon={<ArrowRight className="h-4 w-4" />}>
                       Start Test Now
                     </Button>

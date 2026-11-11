@@ -604,6 +604,275 @@ export const BOOK_CHAPTERS_FALLBACK: Record<string, Chapter[]> = {
       ],
     },
   ],
+  "GK-COMP": [
+    {
+      id: "c1000000-0000-0000-0000-000000000022",
+      subject_id: "s1000000-0000-0000-0000-000000000009",
+      title: "Computer Systems & Hardware Architecture",
+      description: "CPU components, memory hierarchy, cache, and input/output peripherals",
+      order_index: 1,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000071", chapter_id: "c1000000-0000-0000-0000-000000000022", title: "CPU Architecture & Memory Organization", description: "ALU, registers, cache levels L1/L2/L3, virtual memory and buses", estimated_minutes: 60, official_syllabus_ref: "COMP-01", textbook_ref: "Computer Knowledge", textbook_page_start: 1, textbook_page_end: 30, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000072", chapter_id: "c1000000-0000-0000-0000-000000000022", title: "Storage Devices & I/O Interfaces", description: "HDD, SSD, NVMe, USB protocols, PCI Express and DMA controllers", estimated_minutes: 45, official_syllabus_ref: "COMP-02", textbook_ref: "Computer Knowledge", textbook_page_start: 31, textbook_page_end: 55, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+    {
+      id: "c1000000-0000-0000-0000-000000000023",
+      subject_id: "s1000000-0000-0000-0000-000000000009",
+      title: "Operating Systems & Networking",
+      description: "Process management, threads, OSI model, TCP/IP stack and routing",
+      order_index: 2,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000073", chapter_id: "c1000000-0000-0000-0000-000000000023", title: "Operating System Kernels & Scheduling", description: "Process scheduling algorithms, deadlocks, semaphores and paging", estimated_minutes: 75, official_syllabus_ref: "COMP-03", textbook_ref: "Computer Knowledge", textbook_page_start: 56, textbook_page_end: 90, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000074", chapter_id: "c1000000-0000-0000-0000-000000000023", title: "Computer Networks & Protocols", description: "OSI 7-layer model, TCP/UDP, IP addressing, DNS, HTTP/HTTPS and routers", estimated_minutes: 60, official_syllabus_ref: "COMP-04", textbook_ref: "Computer Knowledge", textbook_page_start: 91, textbook_page_end: 125, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+    {
+      id: "c1000000-0000-0000-0000-000000000024",
+      subject_id: "s1000000-0000-0000-0000-000000000009",
+      title: "Data Structures, DBMS & Cyber Security",
+      description: "Arrays, trees, graphs, relational schema, SQL and encryption standards",
+      order_index: 3,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000075", chapter_id: "c1000000-0000-0000-0000-000000000024", title: "Relational DBMS & SQL Queries", description: "Normalization, ACID properties, joins, transactions and indexing", estimated_minutes: 60, official_syllabus_ref: "COMP-05", textbook_ref: "Computer Knowledge", textbook_page_start: 126, textbook_page_end: 160, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000076", chapter_id: "c1000000-0000-0000-0000-000000000024", title: "Information Security & Cryptography", description: "Symmetric/asymmetric ciphers, SSL/TLS, firewalls, malware and cyber ethics", estimated_minutes: 50, official_syllabus_ref: "COMP-06", textbook_ref: "Computer Knowledge", textbook_page_start: 161, textbook_page_end: 190, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+  ],
+  "GATE-EM": [
+    {
+      id: "c1000000-0000-0000-0000-000000000025",
+      subject_id: "s1000000-0000-0000-0000-000000000014",
+      title: "Linear Algebra",
+      description: "Matrix algebra, systems of linear equations, eigenvalues and eigenvectors",
+      order_index: 1,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000077", chapter_id: "c1000000-0000-0000-0000-000000000025", title: "Matrices & Systems of Equations", description: "Rank of matrix, Gaussian elimination, consistency of linear equations", estimated_minutes: 60, official_syllabus_ref: "EM-01", textbook_ref: "Engineering Mathematics", textbook_page_start: 1, textbook_page_end: 35, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000078", chapter_id: "c1000000-0000-0000-0000-000000000025", title: "Eigenvalues & Cayley-Hamilton Theorem", description: "Characteristic equations, diagonalization, quadratic forms", estimated_minutes: 65, official_syllabus_ref: "EM-02", textbook_ref: "Engineering Mathematics", textbook_page_start: 36, textbook_page_end: 65, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+    {
+      id: "c1000000-0000-0000-0000-000000000026",
+      subject_id: "s1000000-0000-0000-0000-000000000014",
+      title: "Calculus & Differential Equations",
+      description: "Limits, continuity, partial derivatives, maxima/minima, first and higher order ODEs",
+      order_index: 2,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000079", chapter_id: "c1000000-0000-0000-0000-000000000026", title: "Differential Calculus & Vector Calculus", description: "Mean value theorems, gradient, divergence, curl, line and surface integrals", estimated_minutes: 75, official_syllabus_ref: "EM-03", textbook_ref: "Engineering Mathematics", textbook_page_start: 66, textbook_page_end: 110, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000080", chapter_id: "c1000000-0000-0000-0000-000000000026", title: "Ordinary & Partial Differential Equations", description: "First order ODE, linear ODE with constant coefficients, Laplace transforms", estimated_minutes: 70, official_syllabus_ref: "EM-04", textbook_ref: "Engineering Mathematics", textbook_page_start: 111, textbook_page_end: 150, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+    {
+      id: "c1000000-0000-0000-0000-000000000027",
+      subject_id: "s1000000-0000-0000-0000-000000000014",
+      title: "Probability & Statistics",
+      description: "Conditional probability, Bayes theorem, random variables and probability distributions",
+      order_index: 3,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000081", chapter_id: "c1000000-0000-0000-0000-000000000027", title: "Probability Distributions & Bayes Rule", description: "Discrete and continuous random variables, binomial, Poisson, normal distribution", estimated_minutes: 60, official_syllabus_ref: "EM-05", textbook_ref: "Engineering Mathematics", textbook_page_start: 151, textbook_page_end: 185, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+  ],
+  "CE-STRUCT": [
+    {
+      id: "c1000000-0000-0000-0000-000000000028",
+      subject_id: "s1000000-0000-0000-0000-000000000012",
+      title: "Strength of Materials & Mechanics",
+      description: "Stresses, strains, Mohr's circle, shear force and bending moment diagrams",
+      order_index: 1,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000082", chapter_id: "c1000000-0000-0000-0000-000000000028", title: "Stress, Strain & Principal Stresses", description: "Axial loading, elastic constants, Mohr's stress circle and thin cylinders", estimated_minutes: 65, official_syllabus_ref: "STR-01", textbook_ref: "Structural Engineering", textbook_page_start: 1, textbook_page_end: 40, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000083", chapter_id: "c1000000-0000-0000-0000-000000000028", title: "Bending, Shear & Deflection of Beams", description: "Bending stress equation, shear center, conjugate beam and double integration", estimated_minutes: 70, official_syllabus_ref: "STR-02", textbook_ref: "Structural Engineering", textbook_page_start: 41, textbook_page_end: 85, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+    {
+      id: "c1000000-0000-0000-0000-000000000029",
+      subject_id: "s1000000-0000-0000-0000-000000000012",
+      title: "Design of Concrete & Steel Structures",
+      description: "Limit state method, beam/column design, trusses and connection design",
+      order_index: 2,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000084", chapter_id: "c1000000-0000-0000-0000-000000000029", title: "Reinforced Concrete Design (IS 456)", description: "Singular/doubly reinforced beams, shear design, bond and columns", estimated_minutes: 75, official_syllabus_ref: "STR-03", textbook_ref: "Structural Engineering", textbook_page_start: 86, textbook_page_end: 130, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000085", chapter_id: "c1000000-0000-0000-0000-000000000029", title: "Steel Structures & Connections (IS 800)", description: "Bolted/welded connections, tension members, compression members, roof trusses", estimated_minutes: 60, official_syllabus_ref: "STR-04", textbook_ref: "Structural Engineering", textbook_page_start: 131, textbook_page_end: 170, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+  ],
+  "CE-GEO": [
+    {
+      id: "c1000000-0000-0000-0000-000000000030",
+      subject_id: "s1000000-0000-0000-0000-000000000013",
+      title: "Soil Mechanics",
+      description: "Index properties, permeability, effective stress, compaction and shear strength",
+      order_index: 1,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000086", chapter_id: "c1000000-0000-0000-0000-000000000030", title: "Soil Properties & Classification", description: "Phase relationships, Atterberg limits, Indian Standard soil classification", estimated_minutes: 55, official_syllabus_ref: "GEO-01", textbook_ref: "Geotechnical Engineering", textbook_page_start: 1, textbook_page_end: 35, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000087", chapter_id: "c1000000-0000-0000-0000-000000000030", title: "Permeability, Compaction & Shear Strength", description: "Darcy's law, seepage, Proctor test, Mohr-Coulomb failure criterion", estimated_minutes: 65, official_syllabus_ref: "GEO-02", textbook_ref: "Geotechnical Engineering", textbook_page_start: 36, textbook_page_end: 80, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+    {
+      id: "c1000000-0000-0000-0000-000000000031",
+      subject_id: "s1000000-0000-0000-0000-000000000013",
+      title: "Foundation Engineering & Surveying",
+      description: "Shallow and deep foundations, bearing capacity, levelling and total station",
+      order_index: 2,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000088", chapter_id: "c1000000-0000-0000-0000-000000000031", title: "Bearing Capacity & Deep Foundations", description: "Terzaghi theory, Meyerhof equation, pile load capacity and settlement", estimated_minutes: 65, official_syllabus_ref: "GEO-03", textbook_ref: "Geotechnical Engineering", textbook_page_start: 81, textbook_page_end: 120, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000089", chapter_id: "c1000000-0000-0000-0000-000000000031", title: "Surveying, Levelling & Contouring", description: "Chain/compass surveying, levelling techniques, curves, GIS & GPS basics", estimated_minutes: 55, official_syllabus_ref: "GEO-04", textbook_ref: "Geotechnical Engineering", textbook_page_start: 121, textbook_page_end: 160, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+  ],
+  "GK-ENV": [
+    {
+      id: "c1000000-0000-0000-0000-000000000032",
+      subject_id: "s1000000-0000-0000-0000-000000000004",
+      title: "Ecology & Biodiversity Conservation",
+      description: "Ecosystem structure, food webs, ecological succession and conservation reserves",
+      order_index: 1,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000090", chapter_id: "c1000000-0000-0000-0000-000000000032", title: "Ecosystem Fundamentals & Biogeochemical Cycles", description: "Food chains, trophic levels, carbon and nitrogen cycles, ecological pyramids", estimated_minutes: 50, official_syllabus_ref: "ENV-01", textbook_ref: "Environment & Ecology", textbook_page_start: 1, textbook_page_end: 30, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000091", chapter_id: "c1000000-0000-0000-0000-000000000032", title: "Biodiversity Hotspots & Wildlife Protection", description: "National parks, biosphere reserves, IUCN Red List categories, Wildlife Act 1972", estimated_minutes: 60, official_syllabus_ref: "ENV-02", textbook_ref: "Environment & Ecology", textbook_page_start: 31, textbook_page_end: 65, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+    {
+      id: "c1000000-0000-0000-0000-000000000033",
+      subject_id: "s1000000-0000-0000-0000-000000000004",
+      title: "Climate Change, Pollution & Global Treaties",
+      description: "Greenhouse effect, air/water pollution acts, UNFCCC, Kyoto and Paris accords",
+      order_index: 2,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000092", chapter_id: "c1000000-0000-0000-0000-000000000033", title: "Environmental Pollution & Control Acts", description: "AQI parameters, biomagnification, solid waste management, EPA 1986", estimated_minutes: 50, official_syllabus_ref: "ENV-03", textbook_ref: "Environment & Ecology", textbook_page_start: 66, textbook_page_end: 100, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000093", chapter_id: "c1000000-0000-0000-0000-000000000033", title: "Global Climate Summits & Renewable Energy", description: "COP summits, Net Zero targets, ISA, solar/wind missions in India", estimated_minutes: 55, official_syllabus_ref: "ENV-04", textbook_ref: "Environment & Ecology", textbook_page_start: 101, textbook_page_end: 135, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+  ],
+  "GK-ECON": [
+    {
+      id: "c1000000-0000-0000-0000-000000000034",
+      subject_id: "s1000000-0000-0000-0000-000000000006",
+      title: "Macroeconomics & Banking System",
+      description: "National income, inflation indices, RBI monetary policy and financial institutions",
+      order_index: 1,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000094", chapter_id: "c1000000-0000-0000-0000-000000000034", title: "National Income & Inflation Dynamics", description: "GDP, GNP, NNP calculations, CPI, WPI, headline vs core inflation", estimated_minutes: 60, official_syllabus_ref: "ECON-01", textbook_ref: "Indian Economy", textbook_page_start: 1, textbook_page_end: 35, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000095", chapter_id: "c1000000-0000-0000-0000-000000000034", title: "Monetary Policy & Commercial Banking", description: "Repo, Reverse Repo, CRR, SLR, NPA resolution and digital banking systems", estimated_minutes: 60, official_syllabus_ref: "ECON-02", textbook_ref: "Indian Economy", textbook_page_start: 36, textbook_page_end: 75, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+    {
+      id: "c1000000-0000-0000-0000-000000000035",
+      subject_id: "s1000000-0000-0000-0000-000000000006",
+      title: "Public Finance, Budget & Planning",
+      description: "Union budget, taxation system, fiscal deficit, balance of payments and NITI Aayog",
+      order_index: 2,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000096", chapter_id: "c1000000-0000-0000-0000-000000000035", title: "Union Budget & Fiscal Policy", description: "Revenue and capital receipts, GST slabs, direct taxes and FRBM Act", estimated_minutes: 55, official_syllabus_ref: "ECON-03", textbook_ref: "Indian Economy", textbook_page_start: 76, textbook_page_end: 110, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000097", chapter_id: "c1000000-0000-0000-0000-000000000035", title: "External Sector & Economic Reforms", description: "FDI, FPI, forex reserves, balance of payments, WTO and 1991 LPG reforms", estimated_minutes: 50, official_syllabus_ref: "ECON-04", textbook_ref: "Indian Economy", textbook_page_start: 111, textbook_page_end: 145, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+  ],
+  "GK-SCITECH": [
+    {
+      id: "c1000000-0000-0000-0000-000000000036",
+      subject_id: "s1000000-0000-0000-0000-000000000008",
+      title: "Space & Nuclear Technology",
+      description: "ISRO space exploration, satellite orbits, launch vehicles and India's nuclear program",
+      order_index: 1,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000098", chapter_id: "c1000000-0000-0000-0000-000000000036", title: "Indian Space Programme & Satellite Missions", description: "PSLV, GSLV, LVM3, Chandrayaan, Aditya-L1, Gaganyaan and NavIC navigation", estimated_minutes: 60, official_syllabus_ref: "ST-01", textbook_ref: "Science & Technology", textbook_page_start: 1, textbook_page_end: 35, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000099", chapter_id: "c1000000-0000-0000-0000-000000000036", title: "Defence Systems & Nuclear Reactors", description: "Integrated Guided Missile Programme (Agni, Prithvi), BARC, NPCIL, fast breeder reactors", estimated_minutes: 55, official_syllabus_ref: "ST-02", textbook_ref: "Science & Technology", textbook_page_start: 36, textbook_page_end: 70, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+    {
+      id: "c1000000-0000-0000-0000-000000000037",
+      subject_id: "s1000000-0000-0000-0000-000000000008",
+      title: "Biotechnology, AI & Emerging Technologies",
+      description: "Recombinant DNA, vaccines, artificial intelligence, quantum computing and nanotechnology",
+      order_index: 2,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000100", chapter_id: "c1000000-0000-0000-0000-000000000037", title: "Biotechnology & Gene Editing", description: "CRISPR-Cas9, stem cell therapy, genetically modified crops, biosafety guidelines", estimated_minutes: 50, official_syllabus_ref: "ST-03", textbook_ref: "Science & Technology", textbook_page_start: 71, textbook_page_end: 105, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000101", chapter_id: "c1000000-0000-0000-0000-000000000037", title: "Artificial Intelligence, Quantum & Semiconductors", description: "Generative AI, India Semiconductor Mission, 5G/6G communication and cybersecurity", estimated_minutes: 55, official_syllabus_ref: "ST-04", textbook_ref: "Science & Technology", textbook_page_start: 106, textbook_page_end: 140, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+  ],
+  "GK-STATIC": [
+    {
+      id: "c1000000-0000-0000-0000-000000000038",
+      subject_id: "s1000000-0000-0000-0000-000000000010",
+      title: "Organizations, Honours & Records",
+      description: "International bodies, national awards, books & authors, sports trophies and venues",
+      order_index: 1,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000102", chapter_id: "c1000000-0000-0000-0000-000000000038", title: "International Bodies & Summits", description: "UN, WHO, IMF, World Bank, WTO, INTERPOL headquarters, mandates and memberships", estimated_minutes: 45, official_syllabus_ref: "STAT-01", textbook_ref: "Static GK", textbook_page_start: 1, textbook_page_end: 35, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000103", chapter_id: "c1000000-0000-0000-0000-000000000038", title: "National Honours, Sports & World Records", description: "Bharat Ratna, Padma awards, Nobel laureates, Olympics, Asian Games and national symbols", estimated_minutes: 45, official_syllabus_ref: "STAT-02", textbook_ref: "Static GK", textbook_page_start: 36, textbook_page_end: 70, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+  ],
+  "GK-CA": [
+    {
+      id: "c1000000-0000-0000-0000-000000000039",
+      subject_id: "s1000000-0000-0000-0000-000000000001",
+      title: "National & Global Affairs",
+      description: "Government schemes, summits, bilateral agreements, rankings and indices",
+      order_index: 1,
+      is_published: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      topics: [
+        { id: "t1000000-0000-0000-0000-000000000104", chapter_id: "c1000000-0000-0000-0000-000000000039", title: "National Policies, Schemes & Portals", description: "PM Gati Shakti, Ayushman Bharat, Digital India, infrastructure projects and indices", estimated_minutes: 50, official_syllabus_ref: "CA-01", textbook_ref: "Current Affairs", textbook_page_start: 1, textbook_page_end: 40, order_index: 1, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+        { id: "t1000000-0000-0000-0000-000000000105", chapter_id: "c1000000-0000-0000-0000-000000000039", title: "Bilateral Summits & Global Indices", description: "G20, BRICS, SCO meetings, Global Innovation Index, HDI and defense exercises", estimated_minutes: 50, official_syllabus_ref: "CA-02", textbook_ref: "Current Affairs", textbook_page_start: 41, textbook_page_end: 80, order_index: 2, is_published: true, is_personal: false, created_by: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+      ],
+    },
+  ],
 };
 
 export async function getExamSyllabus(
@@ -639,22 +908,35 @@ export async function getExamSyllabus(
         }))
         .filter(Boolean);
     } else {
-      // Fallback: If no explicit mapping found yet, match relevant subjects by category
-      if (exam?.category === "KAS" || exam?.code === "KAS-GS") {
-        subjects = FALLBACK_SUBJECTS.filter((s) =>
-          ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-APT"].includes(s.code)
-        );
-      } else if (exam?.category === "GATE" || exam?.code === "GATE-CE") {
-        subjects = FALLBACK_SUBJECTS.filter((s) =>
-          ["GATE-EM", "CE-STRUCT", "CE-GEO"].includes(s.code)
-        );
-      } else if (exam?.category === "AE Civil Engineering" || exam?.code === "AE-CIVIL") {
-        subjects = FALLBACK_SUBJECTS.filter((s) =>
-          ["CE-STRUCT", "CE-GEO", "GK-POLITY"].includes(s.code)
-        );
+      // Fallback: If no explicit mapping found in DB, accurately map subjects by exam code
+      const examCode = exam?.code || "";
+      let targetCodes: string[] = [];
+
+      if (examCode === "GATE-CS") {
+        targetCodes = ["GATE-EM", "GK-COMP", "GK-APT", "GK-SCITECH"];
+      } else if (examCode === "GATE-CE") {
+        targetCodes = ["GATE-EM", "CE-STRUCT", "CE-GEO", "GK-APT"];
+      } else if (examCode === "KAS-GS" || exam?.category === "KAS") {
+        targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-APT"];
+      } else if (examCode === "UPSC-CSE" || exam?.category === "UPSC") {
+        targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-SCITECH", "GK-CA", "GK-APT"];
+      } else if (examCode === "RRB-NTPC" || exam?.category === "Railway") {
+        targetCodes = ["GK-STATIC", "GK-SCI", "GK-APT", "GK-CA"];
+      } else if (examCode === "KEA-LS") {
+        targetCodes = ["CE-GEO", "GATE-EM", "GK-POLITY", "GK-APT"];
+      } else if (examCode === "KEA-VAO" || examCode === "KEA-SDA") {
+        targetCodes = ["GK-POLITY", "GK-HIST", "GK-COMP", "GK-APT"];
+      } else if (examCode === "KEA-FDA") {
+        targetCodes = ["GK-POLITY", "GK-ECON", "GK-GEOG", "GK-APT"];
+      } else if (examCode === "AE-CIVIL" || exam?.category === "AE Civil Engineering") {
+        targetCodes = ["CE-STRUCT", "CE-GEO", "GATE-EM", "GK-POLITY"];
+      } else if (examCode === "GK-CORE" || exam?.category === "General Knowledge") {
+        targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-SCI", "GK-SCITECH", "GK-COMP", "GK-STATIC", "GK-CA", "GK-APT"];
       } else {
-        subjects = FALLBACK_SUBJECTS.slice(0, 6);
+        targetCodes = ["GK-HIST", "GK-POLITY", "GK-GEOG", "GK-APT", "GK-COMP"];
       }
+
+      subjects = FALLBACK_SUBJECTS.filter((s) => targetCodes.includes(s.code));
     }
 
     // 3. For each subject, fetch Chapters and Topics
@@ -666,34 +948,54 @@ export async function getExamSyllabus(
         .eq("is_published", true)
         .order("order_index", { ascending: true });
 
-      const chapters: Chapter[] = (chaptersData as Chapter[]) || [];
+      let chapters: Chapter[] = (chaptersData as Chapter[]) || [];
 
-      for (const chapter of chapters) {
-        const { data: topicsData } = await supabase
-          .from("topics")
-          .select("*")
-          .eq("chapter_id", chapter.id)
-          .eq("is_published", true)
-          .order("order_index", { ascending: true });
-
-        const topics: Topic[] = (topicsData as Topic[]) || [];
-
-        // If studentId provided, fetch progress
-        if (studentId && topics.length > 0) {
-          const topicIds = topics.map((t) => t.id);
-          const { data: progressData } = await supabase
-            .from("topic_progress")
+      // If remote chapters table is empty for this subject, load structured fallback chapters & topics
+      if (!chapters || chapters.length === 0) {
+        const fallbackList = BOOK_CHAPTERS_FALLBACK[subject.code] || BOOK_CHAPTERS_FALLBACK[subject.id] || [];
+        chapters = JSON.parse(JSON.stringify(fallbackList));
+      } else {
+        for (const chapter of chapters) {
+          const { data: topicsData } = await supabase
+            .from("topics")
             .select("*")
-            .eq("student_id", studentId)
-            .in("topic_id", topicIds);
+            .eq("chapter_id", chapter.id)
+            .eq("is_published", true)
+            .order("order_index", { ascending: true });
 
-          const progressMap = new Map((progressData || []).map((p: any) => [p.topic_id, p]));
-          topics.forEach((t) => {
-            t.progress = progressMap.get(t.id) as TopicProgress | undefined;
-          });
+          chapter.topics = (topicsData as Topic[]) || [];
         }
+      }
 
-        chapter.topics = topics;
+      // If studentId provided, fetch and attach topic progress
+      if (studentId) {
+        const allTopicIds: string[] = [];
+        chapters.forEach((chap) => {
+          (chap.topics || []).forEach((top) => {
+            if (top.id) allTopicIds.push(top.id);
+          });
+        });
+
+        if (allTopicIds.length > 0) {
+          try {
+            const { data: progressData } = await supabase
+              .from("topic_progress")
+              .select("*")
+              .eq("student_id", studentId)
+              .in("topic_id", allTopicIds);
+
+            if (progressData && progressData.length > 0) {
+              const progressMap = new Map(progressData.map((p: any) => [p.topic_id, p]));
+              chapters.forEach((chap) => {
+                (chap.topics || []).forEach((top) => {
+                  top.progress = progressMap.get(top.id) as TopicProgress | undefined;
+                });
+              });
+            }
+          } catch {
+            // Silently allow default uncompleted status
+          }
+        }
       }
 
       subject.chapters = chapters;
@@ -702,7 +1004,31 @@ export async function getExamSyllabus(
     return { exam, subjects };
   } catch {
     const exam = FALLBACK_EXAMS.find((e) => e.id === examId) || FALLBACK_EXAMS[0];
-    return { exam, subjects: FALLBACK_SUBJECTS.slice(0, 5) };
+    const examCode = exam?.code || "";
+    let targetCodes = ["GK-HIST", "GK-POLITY", "GK-GEOG", "GK-APT", "GK-COMP"];
+
+    if (examCode === "GATE-CS") {
+      targetCodes = ["GATE-EM", "GK-COMP", "GK-APT", "GK-SCITECH"];
+    } else if (examCode === "GATE-CE") {
+      targetCodes = ["GATE-EM", "CE-STRUCT", "CE-GEO", "GK-APT"];
+    } else if (examCode === "KAS-GS") {
+      targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-APT"];
+    } else if (examCode === "UPSC-CSE") {
+      targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-SCITECH", "GK-CA", "GK-APT"];
+    } else if (examCode === "RRB-NTPC") {
+      targetCodes = ["GK-STATIC", "GK-SCI", "GK-APT", "GK-CA"];
+    } else if (examCode === "AE-CIVIL") {
+      targetCodes = ["CE-STRUCT", "CE-GEO", "GATE-EM", "GK-POLITY"];
+    }
+
+    const subjects = FALLBACK_SUBJECTS
+      .filter((s) => targetCodes.includes(s.code))
+      .map((s) => ({
+        ...s,
+        chapters: JSON.parse(JSON.stringify(BOOK_CHAPTERS_FALLBACK[s.code] || [])),
+      }));
+
+    return { exam, subjects };
   }
 }
 

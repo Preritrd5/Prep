@@ -19,8 +19,8 @@ export default async function StudentBulkImportPage() {
         title="Bulk Question Import Wizard"
         description="Upload question papers in PDF, Word, Excel, CSV, TXT, or Image format. Extract questions, verify answer keys, convert non-MCQs with Gemini AI, and author custom mock tests."
         breadcrumbs={[
-          { label: "Dashboard", href: "/student/dashboard" },
-          { label: "Question Bank", href: "/student/questions" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Question Bank", href: "/question-bank" },
           { label: "Bulk Import" },
         ]}
       />

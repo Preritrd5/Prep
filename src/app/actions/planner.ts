@@ -46,7 +46,7 @@ export async function generateStudyPlanAction(formData: FormData): Promise<PlanG
     return { success: false, error: "Exam details not found." };
   }
 
-  // 2. Identify Pending Topics (status != 'Completed')
+  // 2. Identify Pending Topics (status != 'COMPLETED')
   const pendingTopics: Array<{
     topicId: string;
     topicTitle: string;
@@ -55,10 +55,13 @@ export async function generateStudyPlanAction(formData: FormData): Promise<PlanG
     estimatedMinutes: number;
   }> = [];
 
+  let totalTopics = 0;
   subjects.forEach((subj) => {
     (subj.chapters || []).forEach((chap) => {
       (chap.topics || []).forEach((top) => {
-        if (!top.progress || top.progress.status !== "Completed") {
+        totalTopics++;
+        const status = (top.progress?.status || "").toUpperCase();
+        if (status !== "COMPLETED") {
           pendingTopics.push({
             topicId: top.id,
             topicTitle: top.title,
@@ -71,10 +74,17 @@ export async function generateStudyPlanAction(formData: FormData): Promise<PlanG
     });
   });
 
+  if (totalTopics === 0) {
+    return {
+      success: false,
+      error: `No syllabus topics found for ${exam.name}. Please ensure curriculum topics are loaded.`,
+    };
+  }
+
   if (pendingTopics.length === 0) {
     return {
       success: false,
-      error: "All topics for this examination are already marked as completed! No pending topics.",
+      error: `All ${totalTopics} topics for ${exam.name} are marked as completed! You can reset topic progress in the Syllabus Tracker to generate a revision plan.`,
     };
   }
 
