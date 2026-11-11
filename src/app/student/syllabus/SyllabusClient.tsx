@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
@@ -11,11 +11,7 @@ import {
   ChevronRight,
   Plus,
   FileText,
-  Bookmark,
-  Sparkles,
-  BarChart3,
   Search,
-  ExternalLink,
 } from "lucide-react";
 import {
   updateTopicProgressAction,
@@ -23,6 +19,14 @@ import {
   savePersonalNoteAction,
 } from "@/app/actions/syllabus";
 import type { Exam, Subject, Chapter, Topic, TopicProgressStatus } from "@/lib/types";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 
 interface SyllabusClientProps {
   currentExam: Exam | null;
@@ -84,36 +88,36 @@ export default function SyllabusClient({
     });
   });
 
-  const overallPercent = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+  const overallPercent =
+    totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
 
-  const activeSubject = subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
+  const activeSubject =
+    subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
 
-  const handleStatusChange = async (topicId: string, currentStatus?: TopicProgressStatus) => {
-    let nextStatus: TopicProgressStatus = "In Progress";
-    if (!currentStatus || currentStatus === "Not Started") {
-      nextStatus = "In Progress";
-    } else if (currentStatus === "In Progress") {
-      nextStatus = "Completed";
-    } else {
-      nextStatus = "Not Started";
-    }
-
+  const handleStatusChange = async (
+    topicId: string,
+    currentStatus: TopicProgressStatus
+  ) => {
+    const cycle: Record<TopicProgressStatus, TopicProgressStatus> = {
+      "Not Started": "In Progress",
+      "In Progress": "Completed",
+      Completed: "Not Started",
+    };
+    const nextStatus = cycle[currentStatus] || "In Progress";
     const formData = new FormData();
     formData.append("topicId", topicId);
-    if (currentExam) formData.append("examId", currentExam.id);
+    if (currentExam?.id) formData.append("examId", currentExam.id);
     formData.append("status", nextStatus);
-
     await updateTopicProgressAction(formData);
   };
 
   const handleSaveNote = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTopicForNote || !noteTitle || !noteContent) return;
+    if (!selectedTopicForNote || !noteTitle) return;
 
     setIsNotePending(true);
     const formData = new FormData();
     formData.append("topicId", selectedTopicForNote.id);
-    if (currentExam) formData.append("examId", currentExam.id);
     formData.append("title", noteTitle);
     formData.append("content", noteContent);
 
@@ -145,52 +149,58 @@ export default function SyllabusClient({
   return (
     <div className="space-y-6">
       {/* Exam Selector and Overall Progress Header */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex-1">
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-              Select Examination Syllabus
-            </label>
-            <select
-              value={currentExam?.id || ""}
-              onChange={(e) => router.push(`/student/syllabus?examId=${e.target.value}`)}
-              className="w-full md:w-auto min-w-[320px] rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-sm font-bold text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-            >
-              {allExams.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name} ({e.category})
-                </option>
-              ))}
-            </select>
-          </div>
+      <Card>
+        <CardContent className="p-5 sm:p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 space-y-1.5">
+              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                Target Examination Syllabus
+              </label>
+              <select
+                value={currentExam?.id || ""}
+                onChange={(e) =>
+                  router.push(`/student/syllabus?examId=${e.target.value}`)
+                }
+                className="w-full md:w-auto min-w-[320px] rounded-xl border border-input-border bg-card px-3.5 py-2 text-sm font-bold text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                {allExams.map((e) => (
+                  <option key={e.id} value={e.id} className="bg-card text-text-primary">
+                    {e.name} ({e.category})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Overall Progress Widget */}
-          <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <div className="text-right">
-              <span className="text-xs font-semibold text-slate-500">Overall Syllabus Progress</span>
-              <p className="text-xl font-extrabold text-slate-900">
-                {overallPercent}%{" "}
-                <span className="text-xs font-medium text-slate-500">
-                  ({completedTopics}/{totalTopics} topics)
+            {/* Overall Progress Widget */}
+            <div className="flex items-center gap-4 bg-background-secondary/80 p-4 rounded-xl border border-border">
+              <div className="text-right">
+                <span className="text-xs font-semibold text-text-secondary">
+                  Overall Syllabus Progress
                 </span>
-              </p>
-            </div>
-            <div className="h-12 w-12 rounded-full border-4 border-indigo-600 border-t-indigo-200 flex items-center justify-center font-bold text-xs text-indigo-700 bg-white">
-              {overallPercent}%
+                <p className="text-xl font-extrabold text-text-primary">
+                  {overallPercent}%{" "}
+                  <span className="text-xs font-medium text-text-muted">
+                    ({completedTopics}/{totalTopics} topics)
+                  </span>
+                </p>
+              </div>
+              <div className="h-12 w-12 rounded-full border-4 border-primary border-t-primary-soft flex items-center justify-center font-bold text-xs text-primary bg-card shrink-0">
+                {overallPercent}%
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Main Syllabus Workspace: Subject Tabs on Left, Chapters/Topics on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Subjects List */}
         <div className="lg:col-span-1 space-y-2">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1 mb-2">
+          <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider px-1 mb-2">
             Curriculum Subjects ({subjects.length})
           </h2>
 
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {subjects.map((subj) => {
               let sTotal = 0;
               let sCompleted = 0;
@@ -200,28 +210,36 @@ export default function SyllabusClient({
                   if (t.progress?.status === "Completed") sCompleted++;
                 });
               });
-              const sPercent = sTotal > 0 ? Math.round((sCompleted / sTotal) * 100) : 0;
+              const sPercent =
+                sTotal > 0 ? Math.round((sCompleted / sTotal) * 100) : 0;
               const isSelected = subj.id === activeSubject?.id;
 
               return (
                 <button
                   key={subj.id}
+                  type="button"
                   onClick={() => {
                     setSelectedSubjectId(subj.id);
-                    setOpenChapterIds(new Set(subj.chapters?.map((c) => c.id) || []));
+                    setOpenChapterIds(
+                      new Set(subj.chapters?.map((c) => c.id) || [])
+                    );
                   }}
-                  className={`w-full text-left rounded-xl p-3 transition flex flex-col gap-1.5 ${
+                  className={cn(
+                    "w-full text-left rounded-xl p-3.5 transition flex flex-col gap-1.5 border",
                     isSelected
-                      ? "bg-indigo-600 text-white shadow-sm"
-                      : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
+                      ? "bg-primary text-white border-primary shadow-sm shadow-primary/20"
+                      : "bg-card border-border text-text-primary hover:bg-background-secondary"
+                  )}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm truncate">{subj.name}</span>
                     <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-                      }`}
+                      className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                        isSelected
+                          ? "bg-white/20 text-white"
+                          : "bg-background-secondary text-text-secondary border border-border"
+                      )}
                     >
                       {sPercent}%
                     </span>
@@ -229,9 +247,10 @@ export default function SyllabusClient({
 
                   {subj.weightage_percent && (
                     <span
-                      className={`text-[11px] ${
-                        isSelected ? "text-indigo-200" : "text-slate-500"
-                      }`}
+                      className={cn(
+                        "text-[11px]",
+                        isSelected ? "text-white/80" : "text-text-muted"
+                      )}
                     >
                       Weightage: ~{subj.weightage_percent}%
                     </span>
@@ -245,27 +264,35 @@ export default function SyllabusClient({
         {/* Chapters & Topics Hierarchy View */}
         <div className="lg:col-span-3 space-y-4">
           {activeSubject ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="border-b border-slate-100 pb-4 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">{activeSubject.name}</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{activeSubject.description}</p>
-                </div>
+            <Card>
+              <CardHeader className="border-b border-border/70 pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-xl font-bold">
+                      {activeSubject.name}
+                    </CardTitle>
+                    {activeSubject.description && (
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        {activeSubject.description}
+                      </p>
+                    )}
+                  </div>
 
-                <div className="relative">
-                  <Search className="h-4 w-4 absolute left-3 top-2.5 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search topics..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="rounded-lg border border-slate-300 py-1.5 pl-9 pr-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                  />
+                  <div className="relative">
+                    <Search className="h-4 w-4 absolute left-3 top-2.5 text-text-muted" />
+                    <input
+                      type="text"
+                      placeholder="Search topics..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="rounded-lg border border-input-border bg-card py-1.5 pl-9 pr-3 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
                 </div>
-              </div>
+              </CardHeader>
 
-              {/* Chapters List */}
-              <div className="space-y-4">
+              <CardContent className="pt-5 space-y-4">
+                {/* Chapters List */}
                 {(activeSubject.chapters || []).map((chapter) => {
                   const isOpen = openChapterIds.has(chapter.id);
                   const topics = (chapter.topics || []).filter((t) =>
@@ -276,34 +303,38 @@ export default function SyllabusClient({
 
                   let cTotal = chapter.topics?.length || 0;
                   let cCompleted =
-                    chapter.topics?.filter((t) => t.progress?.status === "Completed")
-                      .length || 0;
-                  let cPercent = cTotal > 0 ? Math.round((cCompleted / cTotal) * 100) : 0;
+                    chapter.topics?.filter(
+                      (t) => t.progress?.status === "Completed"
+                    ).length || 0;
+                  let cPercent =
+                    cTotal > 0 ? Math.round((cCompleted / cTotal) * 100) : 0;
 
                   return (
                     <div
                       key={chapter.id}
-                      className="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden"
+                      className="rounded-xl border border-border bg-background-secondary/30 overflow-hidden"
                     >
                       {/* Chapter Accordion Header */}
                       <div
                         onClick={() => toggleChapter(chapter.id)}
-                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-100/60 transition bg-slate-50 border-b border-slate-100"
+                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-background-secondary/70 transition bg-background-secondary/50 border-b border-border/70 select-none"
                       >
                         <div className="flex items-center gap-2.5">
                           {isOpen ? (
-                            <ChevronDown className="h-4 w-4 text-slate-500" />
+                            <ChevronDown className="h-4 w-4 text-text-muted" />
                           ) : (
-                            <ChevronRight className="h-4 w-4 text-slate-500" />
+                            <ChevronRight className="h-4 w-4 text-text-muted" />
                           )}
-                          <h4 className="font-bold text-sm text-slate-900">{chapter.title}</h4>
-                          <span className="text-xs text-slate-400 font-medium">
+                          <h4 className="font-bold text-sm text-text-primary">
+                            {chapter.title}
+                          </h4>
+                          <span className="text-xs text-text-muted font-medium">
                             ({topics.length} topics)
                           </span>
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <span className="text-xs font-semibold text-slate-600">
+                          <span className="text-xs font-semibold text-text-secondary">
                             {cPercent}% done
                           </span>
                           <button
@@ -312,7 +343,7 @@ export default function SyllabusClient({
                               e.stopPropagation();
                               setSelectedChapterForPersonal(chapter);
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded"
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline bg-primary-soft px-2.5 py-1 rounded-md border border-primary/20"
                             title="Add personal topic to chapter"
                           >
                             <Plus className="h-3 w-3" />
@@ -323,72 +354,76 @@ export default function SyllabusClient({
 
                       {/* Topics Table / Cards */}
                       {isOpen && (
-                        <div className="divide-y divide-slate-100 bg-white">
+                        <div className="divide-y divide-border/60 bg-card">
                           {topics.length > 0 ? (
                             topics.map((topic) => {
-                              const status = topic.progress?.status || "Not Started";
+                              const status =
+                                topic.progress?.status || "Not Started";
 
                               return (
                                 <div
                                   key={topic.id}
-                                  className="p-4 hover:bg-slate-50/60 transition flex flex-col md:flex-row md:items-center justify-between gap-3"
+                                  className="p-4 hover:bg-background-secondary/40 transition flex flex-col md:flex-row md:items-center justify-between gap-3"
                                 >
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
+                                  <div className="flex-1 space-y-1">
+                                    <div className="flex items-center gap-2.5">
                                       <button
                                         type="button"
-                                        onClick={() => handleStatusChange(topic.id, status)}
-                                        className="focus:outline-none"
-                                        title={`Status: ${status}. Click to change.`}
+                                        onClick={() =>
+                                          handleStatusChange(topic.id, status)
+                                        }
+                                        className="focus:outline-none shrink-0"
+                                        title={`Status: ${status}. Click to cycle.`}
                                       >
                                         {status === "Completed" ? (
-                                          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                                          <CheckCircle2 className="h-5 w-5 text-success" />
                                         ) : status === "In Progress" ? (
-                                          <Clock className="h-5 w-5 text-amber-500" />
+                                          <Clock className="h-5 w-5 text-warning" />
                                         ) : (
-                                          <Circle className="h-5 w-5 text-slate-300 hover:text-slate-400" />
+                                          <Circle className="h-5 w-5 text-text-muted hover:text-text-primary" />
                                         )}
                                       </button>
 
                                       <span
-                                        className={`font-semibold text-sm ${
+                                        className={cn(
+                                          "font-semibold text-sm",
                                           status === "Completed"
-                                            ? "text-slate-500 line-through"
-                                            : "text-slate-900"
-                                        }`}
+                                            ? "text-text-muted line-through"
+                                            : "text-text-primary"
+                                        )}
                                       >
                                         {topic.title}
                                       </span>
 
                                       {topic.is_personal && (
-                                        <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
+                                        <Badge variant="primary" size="sm">
                                           Personal
-                                        </span>
+                                        </Badge>
                                       )}
                                     </div>
 
                                     {topic.description && (
-                                      <p className="text-xs text-slate-500 mt-1 pl-7">
+                                      <p className="text-xs text-text-secondary pl-7">
                                         {topic.description}
                                       </p>
                                     )}
 
                                     {/* References: Separate Official Syllabus vs Textbook */}
-                                    <div className="mt-2 pl-7 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+                                    <div className="pl-7 flex flex-wrap items-center gap-2.5 text-[11px] text-text-muted pt-1">
                                       <span className="flex items-center gap-1">
-                                        <Clock className="h-3 w-3 text-slate-400" />
+                                        <Clock className="h-3 w-3" />
                                         {topic.estimated_minutes} mins
                                       </span>
 
                                       {topic.official_syllabus_ref && (
-                                        <span className="rounded bg-indigo-50/70 px-2 py-0.5 text-indigo-700 border border-indigo-100">
+                                        <span className="rounded bg-primary-soft px-2 py-0.5 text-primary border border-primary/20 font-medium">
                                           Official Ref: {topic.official_syllabus_ref}
                                         </span>
                                       )}
 
                                       {topic.textbook_ref && (
-                                        <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-700 border border-slate-200 flex items-center gap-1">
-                                          <BookOpen className="h-3 w-3 text-slate-500" />
+                                        <span className="rounded bg-background-secondary px-2 py-0.5 text-text-secondary border border-border flex items-center gap-1">
+                                          <BookOpen className="h-3 w-3 text-text-muted" />
                                           Textbook: {topic.textbook_ref}
                                           {topic.textbook_page_start && (
                                             <span>
@@ -405,187 +440,154 @@ export default function SyllabusClient({
                                   </div>
 
                                   {/* Right Controls: Status button & Add Note */}
-                                  <div className="flex items-center gap-2 pl-7 md:pl-0">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleStatusChange(topic.id, status)}
-                                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold border transition ${
+                                  <div className="flex items-center gap-2 pl-7 md:pl-0 shrink-0">
+                                    <Badge
+                                      variant={
                                         status === "Completed"
-                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                          ? "success"
                                           : status === "In Progress"
-                                          ? "bg-amber-50 text-amber-700 border-amber-200"
-                                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                                      }`}
+                                          ? "warning"
+                                          : "secondary"
+                                      }
+                                      size="sm"
+                                      className="cursor-pointer select-none"
+                                      onClick={() =>
+                                        handleStatusChange(topic.id, status)
+                                      }
                                     >
                                       {status}
-                                    </button>
+                                    </Badge>
 
-                                    <button
-                                      type="button"
-                                      onClick={() => setSelectedTopicForNote(topic)}
-                                      className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 hover:text-indigo-600 transition"
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        setSelectedTopicForNote(topic)
+                                      }
                                       title="Add personal study note"
                                     >
-                                      <FileText className="h-4 w-4" />
-                                    </button>
+                                      <FileText className="h-4 w-4 text-text-secondary" />
+                                    </Button>
                                   </div>
                                 </div>
                               );
                             })
                           ) : (
-                            <div className="p-4 text-center text-xs text-slate-400">
+                            <p className="p-4 text-center text-xs text-text-muted">
                               No matching topics found.
-                            </div>
+                            </p>
                           )}
                         </div>
                       )}
                     </div>
                   );
                 })}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ) : (
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">
-              No subjects available for this examination.
-            </div>
+            <EmptyState
+              icon={<BookOpen className="h-6 w-6" />}
+              title="No subjects available"
+              description="No subjects have been mapped to this examination yet."
+            />
           )}
         </div>
       </div>
 
       {/* Note Modal */}
-      {selectedTopicForNote && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">
-              Add Personal Note: {selectedTopicForNote.title}
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Save key formulas, revision points, and summaries directly to your topic record.
-            </p>
+      <Modal
+        isOpen={Boolean(selectedTopicForNote)}
+        onClose={() => setSelectedTopicForNote(null)}
+        title={
+          selectedTopicForNote
+            ? `Personal Note: ${selectedTopicForNote.title}`
+            : "Add Personal Note"
+        }
+        description="Save key formulas, revision points, and summaries directly to your topic record."
+      >
+        <form onSubmit={handleSaveNote} className="space-y-4">
+          <Input
+            label="Note Title"
+            required
+            placeholder="e.g. Critical Formulas & Exception Cases"
+            value={noteTitle}
+            onChange={(e) => setNoteTitle(e.target.value)}
+          />
 
-            <form onSubmit={handleSaveNote} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Note Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Critical Formulas & Exception Cases"
-                  value={noteTitle}
-                  onChange={(e) => setNoteTitle(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                />
-              </div>
+          <Textarea
+            label="Note Content"
+            required
+            rows={5}
+            placeholder="Type your study notes here..."
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+          />
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Note Content
-                </label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Type your study notes here..."
-                  value={noteContent}
-                  onChange={(e) => setNoteContent(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setSelectedTopicForNote(null)}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isNotePending}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
-                >
-                  {isNotePending ? "Saving..." : "Save Note"}
-                </button>
-              </div>
-            </form>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setSelectedTopicForNote(null)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isNotePending}>
+              Save Note
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* Personal Topic Modal */}
-      {selectedChapterForPersonal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">
-              Add Personal Topic to {selectedChapterForPersonal.title}
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Personal topics are private to your preparation and count toward your study schedule.
-            </p>
+      <Modal
+        isOpen={Boolean(selectedChapterForPersonal)}
+        onClose={() => setSelectedChapterForPersonal(null)}
+        title={
+          selectedChapterForPersonal
+            ? `Add Personal Topic to ${selectedChapterForPersonal.title}`
+            : "Add Personal Topic"
+        }
+        description="Personal topics are private to your preparation and count toward your study schedule."
+      >
+        <form onSubmit={handleCreatePersonalTopic} className="space-y-4">
+          <Input
+            label="Topic Title"
+            required
+            placeholder="e.g. Previous Year Numerical Questions"
+            value={personalTitle}
+            onChange={(e) => setPersonalTitle(e.target.value)}
+          />
 
-            <form onSubmit={handleCreatePersonalTopic} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Topic Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Previous Year Numerical Questions"
-                  value={personalTitle}
-                  onChange={(e) => setPersonalTitle(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                />
-              </div>
+          <Input
+            label="Description (Optional)"
+            placeholder="e.g. Solved 2018-2023 papers"
+            value={personalDesc}
+            onChange={(e) => setPersonalDesc(e.target.value)}
+          />
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Description (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Solved 2018-2023 papers"
-                  value={personalDesc}
-                  onChange={(e) => setPersonalDesc(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                />
-              </div>
+          <Input
+            label="Estimated Minutes"
+            type="number"
+            min={15}
+            step={15}
+            value={personalDuration}
+            onChange={(e) => setPersonalDuration(parseInt(e.target.value, 10))}
+          />
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Estimated Minutes
-                </label>
-                <input
-                  type="number"
-                  min={15}
-                  step={15}
-                  value={personalDuration}
-                  onChange={(e) => setPersonalDuration(parseInt(e.target.value, 10))}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setSelectedChapterForPersonal(null)}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPersonalPending}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
-                >
-                  {isPersonalPending ? "Creating..." : "Create Topic"}
-                </button>
-              </div>
-            </form>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setSelectedChapterForPersonal(null)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isPersonalPending}>
+              Create Topic
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 }

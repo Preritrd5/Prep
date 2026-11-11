@@ -1,7 +1,7 @@
 "use client";
 
+import { Card, Badge } from "@/components/ui";
 import { useState } from "react";
-import { Layers, BookOpen, Sparkles, Filter } from "lucide-react";
 import type { Subject, Question } from "@/lib/types";
 import PracticeRunner from "@/components/practice/PracticeRunner";
 
@@ -33,16 +33,16 @@ export default function SubjectPracticeClient({
   return (
     <div className="space-y-6">
       {/* Subject Selector Bar */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+            <label className="block text-[10px] font-bold uppercase text-text-muted mb-1">
               Subject
             </label>
             <select
               value={selectedSubjectId}
               onChange={(e) => setSelectedSubjectId(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Subjects (Comprehensive Mock)</option>
               {subjects.map((s) => (
@@ -54,13 +54,13 @@ export default function SubjectPracticeClient({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+            <label className="block text-[10px] font-bold uppercase text-text-muted mb-1">
               Difficulty
             </label>
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">Mixed Difficulty</option>
               <option value="Easy">Easy</option>
@@ -70,13 +70,13 @@ export default function SubjectPracticeClient({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+            <label className="block text-[10px] font-bold uppercase text-text-muted mb-1">
               Length
             </label>
             <select
               value={questionCount}
               onChange={(e) => setQuestionCount(Number(e.target.value))}
-              className="border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value={5}>5 Questions</option>
               <option value={10}>10 Questions</option>
@@ -87,20 +87,22 @@ export default function SubjectPracticeClient({
           </div>
         </div>
 
-        <div className="text-right">
-          <span className="text-xs text-slate-500 block">Questions Selected</span>
-          <span className="text-base font-bold text-indigo-600">{filtered.length} Items</span>
+        <div className="text-left md:text-right">
+          <span className="text-xs text-text-muted block">Questions Selected</span>
+          <Badge variant="primary" className="text-xs font-bold mt-0.5">
+            {filtered.length} Items
+          </Badge>
         </div>
-      </div>
+      </Card>
 
       <PracticeRunner
         questions={filtered}
         title={
           selectedSubjectId === "All"
             ? "Comprehensive Subject Practice"
-            : `${activeSubject?.name} Practice Test`
+            : `${activeSubject?.name || "Subject"} Practice Session`
         }
-        subtitle="Complete subject-level mock questions covering foundational and advanced concepts."
+        subtitle="Drill conceptual topics with instant evaluation or timed assessment."
         subjectId={selectedSubjectId !== "All" ? selectedSubjectId : undefined}
         bookmarkedQuestionIds={bookmarkedIds}
       />

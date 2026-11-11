@@ -1,24 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import React, { useState } from "react";
 import {
   RotateCcw,
   CheckCircle2,
   Calendar,
-  AlertCircle,
   Clock,
-  Sparkles,
-  HelpCircle,
   Plus,
   BookOpen,
-  Filter,
 } from "lucide-react";
 import type { RevisionScheduleItem, RevisionConfidenceRating } from "@/lib/types";
 import {
   studentUpdateRevisionAction,
   studentScheduleRevisionAction,
 } from "@/app/actions/analytics";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 
 interface RevisionsClientProps {
   revisions: RevisionScheduleItem[];
@@ -98,408 +103,259 @@ export default function RevisionsClient({
 
     if (res.success) {
       setShowManualModal(false);
-      window.location.reload();
+      setManualNotes("");
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <RotateCcw className="h-7 w-7 text-indigo-600" />
-            Spaced Repetition & Revision Manager
-          </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            Adaptive memory consolidation using spaced intervals (1d, 3d, 7d, 14d, 30d) based on self-reported retention.
-          </p>
+      {/* Metrics Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard
+          title="Pending Revisions"
+          value={pendingRevs.length}
+          icon={<RotateCcw className="h-5 w-5 text-primary" />}
+          description="Due for repetition review"
+        />
+        <StatCard
+          title="Overdue Items"
+          value={overdueRevs.length}
+          icon={<Clock className="h-5 w-5 text-error" />}
+          iconBgColor="bg-error-soft"
+          description="Lapsed beyond target repetition window"
+        />
+        <StatCard
+          title="Completed Revisions"
+          value={completedRevs.length}
+          icon={<CheckCircle2 className="h-5 w-5 text-success" />}
+          iconBgColor="bg-success-soft"
+          description="Reinforced in memory"
+        />
+      </div>
+
+      {/* Filter and Action Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {[
+            { id: "pending", label: "Pending", count: pendingRevs.length },
+            { id: "overdue", label: "Overdue", count: overdueRevs.length },
+            { id: "completed", label: "Completed", count: completedRevs.length },
+            { id: "all", label: "All Items", count: revisions.length },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setFilter(item.id as any)}
+              className={cn(
+                "rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 border",
+                filter === item.id
+                  ? "bg-primary text-white border-primary shadow-sm shadow-primary/25"
+                  : "bg-card border-border text-text-secondary hover:bg-background-secondary"
+              )}
+            >
+              <span>{item.label}</span>
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0.2 text-[10px]",
+                  filter === item.id
+                    ? "bg-white/20 text-white"
+                    : "bg-background-secondary text-text-primary border border-border"
+                )}
+              >
+                {item.count}
+              </span>
+            </button>
+          ))}
         </div>
 
-        <button
+        <Button
+          size="sm"
           onClick={() => setShowManualModal(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+          leftIcon={<Plus className="h-4 w-4" />}
         >
-          <Plus className="h-4 w-4" />
           Schedule Revision
-        </button>
+        </Button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <span className="text-xs font-bold uppercase text-slate-500">Upcoming Due</span>
-          <p className="text-2xl font-black text-slate-900 mt-1">{pendingRevs.length}</p>
-          <span className="text-[10px] text-slate-400">Scheduled spaced reviews</span>
-        </div>
+      {/* Revision Items Feed */}
+      <Card>
+        <CardContent className="p-0">
+          {displayedRevisions.length > 0 ? (
+            <div className="divide-y divide-border/60">
+              {displayedRevisions.map((rev) => {
+                const isOverdue = !rev.is_completed && rev.scheduled_date < todayStr;
 
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4 shadow-sm">
-          <span className="text-xs font-bold uppercase text-rose-700">Overdue</span>
-          <p className="text-2xl font-black text-rose-900 mt-1">{overdueRevs.length}</p>
-          <span className="text-[10px] text-rose-600">Missed scheduled review date</span>
-        </div>
-
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
-          <span className="text-xs font-bold uppercase text-emerald-700">Completed Cycles</span>
-          <p className="text-2xl font-black text-emerald-900 mt-1">{completedRevs.length}</p>
-          <span className="text-[10px] text-emerald-600">Reviewed & retained</span>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <span className="text-xs font-bold uppercase text-slate-500">Active Intervals</span>
-          <p className="text-sm font-bold text-slate-900 mt-1">1d &rarr; 3d &rarr; 7d &rarr; 14d &rarr; 30d</p>
-          <span className="text-[10px] text-slate-400">Adaptive spaced curve</span>
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-        <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-semibold">
-          <button
-            onClick={() => setFilter("pending")}
-            className={`rounded-lg px-3 py-1.5 transition ${
-              filter === "pending"
-                ? "bg-white text-indigo-700 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Due & Pending ({pendingRevs.length})
-          </button>
-          <button
-            onClick={() => setFilter("overdue")}
-            className={`rounded-lg px-3 py-1.5 transition ${
-              filter === "overdue"
-                ? "bg-rose-600 text-white shadow-sm"
-                : "text-rose-700 hover:text-rose-900"
-            }`}
-          >
-            Overdue ({overdueRevs.length})
-          </button>
-          <button
-            onClick={() => setFilter("completed")}
-            className={`rounded-lg px-3 py-1.5 transition ${
-              filter === "completed"
-                ? "bg-white text-emerald-700 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Completed ({completedRevs.length})
-          </button>
-          <button
-            onClick={() => setFilter("all")}
-            className={`rounded-lg px-3 py-1.5 transition ${
-              filter === "all"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            All Revisions ({revisions.length})
-          </button>
-        </div>
-
-        <span className="text-xs text-slate-500 hidden sm:inline-block">
-          Showing {displayedRevisions.length} records
-        </span>
-      </div>
-
-      {/* Revision Items Table / List */}
-      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-        {displayedRevisions.length > 0 ? (
-          <div className="divide-y divide-slate-100">
-            {displayedRevisions.map((rev) => {
-              const isOverdue = !rev.is_completed && rev.scheduled_date < todayStr;
-              return (
-                <div
-                  key={rev.id}
-                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-indigo-50 border border-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
-                        Cycle #{rev.revision_number}
-                      </span>
-                      <h4 className="text-sm font-bold text-slate-900">
-                        {rev.topic?.title || "Topic Revision"}
-                      </h4>
-                      {isOverdue && (
-                        <span className="rounded-full bg-rose-50 border border-rose-200 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                          Overdue
+                return (
+                  <div
+                    key={rev.id}
+                    className="p-4 hover:bg-background-secondary/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-text-primary">
+                          {rev.topic?.title || "Curriculum Topic"}
                         </span>
+                        <Badge variant="primary" size="sm">
+                          Cycle #{rev.revision_number}
+                        </Badge>
+                        {isOverdue && (
+                          <Badge variant="error" size="sm">
+                            Overdue
+                          </Badge>
+                        )}
+                        {rev.is_completed && (
+                          <Badge variant="success" size="sm">
+                            Completed
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          Target: {rev.scheduled_date}
+                        </span>
+                        {rev.completed_date && (
+                          <span className="flex items-center gap-1 text-success">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Reviewed: {rev.completed_date}
+                          </span>
+                        )}
+                        {rev.confidence_rating && (
+                          <span className="font-semibold text-text-primary">
+                            Confidence: {rev.confidence_rating}
+                          </span>
+                        )}
+                      </div>
+
+                      {rev.notes && (
+                        <p className="text-xs text-text-secondary mt-1 italic">
+                          &ldquo;{rev.notes}&rdquo;
+                        </p>
                       )}
                     </div>
 
-                    <p className="text-xs text-slate-500">
-                      {rev.topic?.chapter?.subject?.name || "Subject"} &rarr;{" "}
-                      {rev.topic?.chapter?.title || "Chapter"}
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 pt-1">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        Due: <strong className="text-slate-700">{rev.scheduled_date}</strong>
-                      </span>
-                      {rev.completed_date && (
-                        <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Done: {rev.completed_date}
-                        </span>
-                      )}
-                      {rev.confidence_rating && (
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-700">
-                          Rating: {rev.confidence_rating}
-                        </span>
-                      )}
-                    </div>
-
-                    {rev.notes && (
-                      <p className="text-xs italic text-slate-600 bg-slate-50 p-2 rounded-lg mt-1 border border-slate-100">
-                        &ldquo;{rev.notes}&rdquo;
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                    <Link
-                      href={`/student/practice/topic?topicId=${rev.topic_id}`}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
-                    >
-                      Practice MCQs
-                    </Link>
-
-                    {!rev.is_completed ? (
-                      <button
+                    {!rev.is_completed && (
+                      <Button
+                        size="sm"
+                        variant="primary"
                         onClick={() => setSelectedRevForReview(rev)}
-                        className="rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
                       >
-                        Record Review
-                      </button>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        Reviewed
-                      </span>
+                        Complete Review
+                      </Button>
                     )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="p-12 text-center text-slate-400">
-            <RotateCcw className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-slate-700">No revisions found in this view.</p>
-            <p className="text-xs text-slate-500 mt-1">
-              Click &quot;Schedule Revision&quot; to queue a topic for spaced consolidation.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* RECORD REVIEW MODAL (MODULE 5) */}
-      {selectedRevForReview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
-                Record Revision Feedback
-              </h3>
-              <button
-                onClick={() => setSelectedRevForReview(null)}
-                className="text-slate-400 hover:text-slate-600 text-sm"
-              >
-                &times;
-              </button>
+                );
+              })}
             </div>
-
-            <div>
-              <p className="text-xs text-slate-500">Topic:</p>
-              <h4 className="text-sm font-bold text-slate-900">
-                {selectedRevForReview.topic?.title || "Topic"}
-              </h4>
+          ) : (
+            <div className="p-8">
+              <EmptyState
+                icon={<RotateCcw className="h-6 w-6" />}
+                title="No revisions in this view"
+                description="Topics marked as completed will automatically generate spaced repetition milestones."
+              />
             </div>
+          )}
+        </CardContent>
+      </Card>
 
-            <form onSubmit={handleCompleteRevision} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-2">
-                  How well do you remember the key concepts?
-                </label>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setConfidence("Understood")}
-                    className={`p-3 rounded-xl border text-left transition ${
-                      confidence === "Understood"
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-bold"
-                        : "border-slate-200 hover:bg-slate-50 text-slate-700"
-                    }`}
-                  >
-                    <span className="block font-bold">Understood</span>
-                    <span className="text-[10px] text-slate-500 block mt-0.5">
-                      Increase interval (+7d / +14d)
-                    </span>
-                  </button>
+      {/* Complete Review Modal */}
+      <Modal
+        isOpen={Boolean(selectedRevForReview)}
+        onClose={() => setSelectedRevForReview(null)}
+        title="Record Revision Outcome"
+        description={
+          selectedRevForReview
+            ? `Reviewing: ${selectedRevForReview.topic?.title}`
+            : "Reviewing Topic"
+        }
+      >
+        <form onSubmit={handleCompleteRevision} className="space-y-4">
+          <Select
+            label="Confidence Level"
+            value={confidence}
+            onChange={(e) => setConfidence(e.target.value as RevisionConfidenceRating)}
+            options={[
+              { label: "Mastered (Seamless Recall)", value: "Mastered" },
+              { label: "Understood (Clear with minor pause)", value: "Understood" },
+              { label: "Needs Practice (Formulas hazy)", value: "Needs Practice" },
+              { label: "Difficult (Requires restudy)", value: "Difficult" },
+            ]}
+          />
 
-                  <button
-                    type="button"
-                    onClick={() => setConfidence("Needs more practice")}
-                    className={`p-3 rounded-xl border text-left transition ${
-                      confidence === "Needs more practice"
-                        ? "border-amber-500 bg-amber-50 text-amber-900 font-bold"
-                        : "border-slate-200 hover:bg-slate-50 text-slate-700"
-                    }`}
-                  >
-                    <span className="block font-bold">Needs Practice</span>
-                    <span className="text-[10px] text-slate-500 block mt-0.5">
-                      Review again in 2 days
-                    </span>
-                  </button>
+          <Textarea
+            label="Revision Reflections / Notes"
+            rows={3}
+            placeholder="Formulas recalled, tricky exception cases..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
 
-                  <button
-                    type="button"
-                    onClick={() => setConfidence("Not understood")}
-                    className={`p-3 rounded-xl border text-left transition ${
-                      confidence === "Not understood"
-                        ? "border-rose-500 bg-rose-50 text-rose-900 font-bold"
-                        : "border-slate-200 hover:bg-slate-50 text-slate-700"
-                    }`}
-                  >
-                    <span className="block font-bold">Not Understood</span>
-                    <span className="text-[10px] text-slate-500 block mt-0.5">
-                      Immediate review tomorrow (1d)
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setConfidence("Completed")}
-                    className={`p-3 rounded-xl border text-left transition ${
-                      confidence === "Completed"
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-900 font-bold"
-                        : "border-slate-200 hover:bg-slate-50 text-slate-700"
-                    }`}
-                  >
-                    <span className="block font-bold">Completed</span>
-                    <span className="text-[10px] text-slate-500 block mt-0.5">
-                      Standard review finished
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Revision Notes (Formulas, tricky exceptions, mistakes):
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. Remember to double-check shear force sign convention..."
-                  rows={3}
-                  className="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setSelectedRevForReview(null)}
-                  className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
-                >
-                  {isSubmitting ? "Saving..." : "Save & Update Schedule"}
-                </button>
-              </div>
-            </form>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setSelectedRevForReview(null)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isSubmitting}>
+              Save Revision
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
-      {/* MANUAL SCHEDULE MODAL */}
-      {showManualModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
-                Schedule Topic Revision
-              </h3>
-              <button
-                onClick={() => setShowManualModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm"
-              >
-                &times;
-              </button>
-            </div>
+      {/* Manual Schedule Modal */}
+      <Modal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        title="Schedule Manual Revision"
+        description="Select a syllabus topic to set an explicit recall milestone."
+      >
+        <form onSubmit={handleManualSchedule} className="space-y-4">
+          <Select
+            label="Select Topic"
+            value={manualTopicId}
+            onChange={(e) => setManualTopicId(e.target.value)}
+            options={availableTopics.map((t) => ({
+              label: `${t.title} (${t.subjectName})`,
+              value: t.id,
+            }))}
+          />
 
-            <form onSubmit={handleManualSchedule} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Select Syllabus Topic:
-                </label>
-                <select
-                  value={manualTopicId}
-                  onChange={(e) => setManualTopicId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  {availableTopics.map((top) => (
-                    <option key={top.id} value={top.id}>
-                      {top.subjectName} &rarr; {top.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <Input
+            label="Scheduled Date"
+            type="date"
+            required
+            value={manualDate}
+            onChange={(e) => setManualDate(e.target.value)}
+          />
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Target Revision Date:
-                </label>
-                <input
-                  type="date"
-                  value={manualDate}
-                  onChange={(e) => setManualDate(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
+          <Textarea
+            label="Study Notes / Goals (Optional)"
+            rows={2}
+            placeholder="Specific problem sets or diagrams to reproduce..."
+            value={manualNotes}
+            onChange={(e) => setManualNotes(e.target.value)}
+          />
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Preparation Goal or Note:
-                </label>
-                <input
-                  type="text"
-                  value={manualNotes}
-                  onChange={(e) => setManualNotes(e.target.value)}
-                  placeholder="e.g. First spaced review after finishing chapter"
-                  className="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowManualModal(false)}
-                  className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
-                >
-                  {isSubmitting ? "Scheduling..." : "Confirm Schedule"}
-                </button>
-              </div>
-            </form>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setShowManualModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isSubmitting}>
+              Schedule Milestone
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 }

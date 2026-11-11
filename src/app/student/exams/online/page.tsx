@@ -1,7 +1,7 @@
+import { PageHeader } from "@/components/ui";
 import { requireRole } from "@/lib/auth";
 import { getStudentAvailableExams } from "@/lib/data/exams-online";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+import AppLayout from "@/components/layout/AppLayout";
 import StudentExamsClient from "./StudentExamsClient";
 
 export default async function StudentOnlineExamsPage() {
@@ -9,19 +9,20 @@ export default async function StudentOnlineExamsPage() {
   const { availableExams, studentAttempts } = await getStudentAvailableExams(user.id);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar profile={profile} />
+    <AppLayout profile={profile}>
+      <PageHeader
+        title="Online Examination & Mock Test Portal"
+        description="Simulate real computer-based competitive examinations under timed, server-enforced conditions."
+        breadcrumbs={[
+          { label: "Dashboard", href: "/student/dashboard" },
+          { label: "Online Exams" },
+        ]}
+      />
 
-      <div className="flex-1 flex">
-        <Sidebar role="student" />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-          <StudentExamsClient
-            availableExams={availableExams}
-            studentAttempts={studentAttempts}
-          />
-        </main>
-      </div>
-    </div>
+      <StudentExamsClient
+        availableExams={availableExams}
+        studentAttempts={studentAttempts}
+      />
+    </AppLayout>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
+import { Card, Badge } from "@/components/ui";
 import { useState } from "react";
-import { BookOpen, Award, CheckCircle, ShieldCheck } from "lucide-react";
 import type { Exam, Question } from "@/lib/types";
 import PracticeRunner from "@/components/practice/PracticeRunner";
 
@@ -26,7 +26,7 @@ export default function ExamPracticeClient({
     if (q.status !== "Published") return false;
     if (selectedDifficulty !== "All" && q.difficulty !== selectedDifficulty) return false;
 
-    if (chosenExam) {
+    if (selectedExamId !== "All" && chosenExam) {
       if (
         chosenExam.category === "UPSC" &&
         (q.pyq_exam_name?.includes("UPSC") || q.subject_id?.includes("s1000000-0000-0000-0000-000000000002") || q.subject_id?.includes("s1000000-0000-0000-0000-000000000005"))
@@ -53,7 +53,7 @@ export default function ExamPracticeClient({
       }
       if (
         chosenExam.category === "KEA Examinations" &&
-        (q.pyq_exam_name?.includes("KEA") || q.pyq_exam_name?.includes("Surveyor") || q.pyq_exam_name?.includes("VAO"))
+        (q.pyq_exam_name?.includes("KEA") || q.pyq_exam_name?.includes("Surveyor") || q.pyq_exam_name?.includes("VAO") || q.pyq_exam_name?.includes("SDA") || q.pyq_exam_name?.includes("FDA"))
       ) {
         return true;
       }
@@ -63,6 +63,7 @@ export default function ExamPracticeClient({
       ) {
         return true;
       }
+      return false;
     }
     return true;
   });
@@ -70,17 +71,18 @@ export default function ExamPracticeClient({
   return (
     <div className="space-y-6">
       {/* Exam Categories Selector */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+            <label className="block text-[10px] font-bold uppercase text-text-muted mb-1">
               Select Competitive Examination
             </label>
             <select
               value={selectedExamId}
               onChange={(e) => setSelectedExamId(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
+              <option value="All">All Competitive Examinations</option>
               {exams.map((exam) => (
                 <option key={exam.id} value={exam.id}>
                   {exam.name} ({exam.category})
@@ -90,13 +92,13 @@ export default function ExamPracticeClient({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+            <label className="block text-[10px] font-bold uppercase text-text-muted mb-1">
               Difficulty
             </label>
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Levels</option>
               <option value="Easy">Easy</option>
@@ -106,11 +108,13 @@ export default function ExamPracticeClient({
           </div>
         </div>
 
-        <div className="text-right">
-          <span className="text-xs text-slate-500 block">Exam Mapped Questions</span>
-          <span className="text-base font-bold text-indigo-600">{filtered.length} Questions</span>
+        <div className="text-left md:text-right">
+          <span className="text-xs text-text-muted block">Exam Mapped Questions</span>
+          <Badge variant="primary" className="text-xs font-bold mt-0.5">
+            {filtered.length} Questions
+          </Badge>
         </div>
-      </div>
+      </Card>
 
       <PracticeRunner
         questions={filtered}

@@ -1,16 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-  Layers,
   Plus,
   BookOpen,
   Clock,
-  ChevronDown,
-  ChevronRight,
-  AlertCircle,
-  FileText,
   Link as LinkIcon,
+  Layers,
 } from "lucide-react";
 import {
   adminCreateChapterAction,
@@ -18,14 +14,28 @@ import {
   adminMapSubjectToExamAction,
 } from "@/app/actions/syllabus";
 import type { Subject, Exam, Chapter } from "@/lib/types";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface AdminSyllabusClientProps {
   subjects: Subject[];
   exams: Exam[];
 }
 
-export default function AdminSyllabusClient({ subjects, exams }: AdminSyllabusClientProps) {
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(subjects[0]?.id || "");
+export default function AdminSyllabusClient({
+  subjects,
+  exams,
+}: AdminSyllabusClientProps) {
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(
+    subjects[0]?.id || ""
+  );
   const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
@@ -50,7 +60,8 @@ export default function AdminSyllabusClient({ subjects, exams }: AdminSyllabusCl
   const [targetExamId, setTargetExamId] = useState(exams[0]?.id || "");
   const [weightage, setWeightage] = useState("15");
 
-  const activeSubject = subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
+  const activeSubject =
+    subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
 
   const handleCreateChapter = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,339 +145,337 @@ export default function AdminSyllabusClient({ subjects, exams }: AdminSyllabusCl
   return (
     <div className="space-y-6">
       {/* Top Selector & Action Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <label className="text-xs font-bold text-slate-500 uppercase">Active Subject:</label>
-          <select
-            value={selectedSubjectId}
-            onChange={(e) => setSelectedSubjectId(e.target.value)}
-            className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-1.5 text-sm font-bold text-slate-800"
-          >
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} ({s.code})
-              </option>
-            ))}
-          </select>
-        </div>
+      <Card>
+        <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-bold text-text-secondary uppercase">
+              Active Subject:
+            </label>
+            <select
+              value={selectedSubjectId}
+              onChange={(e) => setSelectedSubjectId(e.target.value)}
+              className="rounded-xl border border-input-border bg-card px-3.5 py-2 text-sm font-bold text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              {subjects.map((s) => (
+                <option key={s.id} value={s.id} className="bg-card text-text-primary">
+                  {s.name} ({s.code})
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsMapModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm"
-          >
-            <LinkIcon className="h-3.5 w-3.5 text-purple-600" />
-            Map to Examination
-          </button>
-          <button
-            onClick={() => setIsChapterModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-purple-700"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add Chapter
-          </button>
-        </div>
-      </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsMapModalOpen(true)}
+              leftIcon={<LinkIcon className="h-4 w-4 text-primary" />}
+            >
+              Map to Examination
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setIsChapterModalOpen(true)}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              Add Chapter
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Chapters & Topics List */}
       {activeSubject ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-          <div className="border-b border-slate-100 pb-3">
-            <h3 className="text-lg font-bold text-slate-900">{activeSubject.name}</h3>
-            <p className="text-xs text-slate-500">{activeSubject.description}</p>
-          </div>
+        <Card>
+          <CardHeader className="border-b border-border/70 pb-4">
+            <CardTitle className="text-xl font-bold">
+              {activeSubject.name}
+            </CardTitle>
+            {activeSubject.description && (
+              <p className="text-xs text-text-secondary mt-0.5">
+                {activeSubject.description}
+              </p>
+            )}
+          </CardHeader>
 
-          <div className="space-y-4">
-            {(activeSubject.chapters || []).map((chap) => (
-              <div key={chap.id} className="rounded-xl border border-slate-200 overflow-hidden">
-                <div className="flex items-center justify-between p-3.5 bg-slate-50 border-b border-slate-100">
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-900">{chap.title}</h4>
-                    {chap.description && (
-                      <p className="text-xs text-slate-500 mt-0.5">{chap.description}</p>
-                    )}
+          <CardContent className="pt-6 space-y-4">
+            {(activeSubject.chapters || []).length > 0 ? (
+              (activeSubject.chapters || []).map((chap) => (
+                <div
+                  key={chap.id}
+                  className="rounded-xl border border-border bg-background-secondary/40 overflow-hidden"
+                >
+                  <div className="flex items-center justify-between p-4 bg-background-secondary/70 border-b border-border/70">
+                    <div>
+                      <h4 className="font-bold text-sm text-text-primary">
+                        {chap.title}
+                      </h4>
+                      {chap.description && (
+                        <p className="text-xs text-text-secondary mt-0.5">
+                          {chap.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setTargetChapter(chap);
+                        setIsTopicModalOpen(true);
+                      }}
+                      leftIcon={<Plus className="h-3.5 w-3.5" />}
+                    >
+                      Add Topic
+                    </Button>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setTargetChapter(chap);
-                      setIsTopicModalOpen(true);
-                    }}
-                    className="inline-flex items-center gap-1 rounded bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700 hover:bg-purple-100"
-                  >
-                    <Plus className="h-3 w-3" />
-                    Add Topic
-                  </button>
-                </div>
-
-                <div className="divide-y divide-slate-100 p-2">
-                  {(chap.topics || []).map((top) => (
-                    <div key={top.id} className="p-3 text-xs flex items-center justify-between">
-                      <div>
-                        <span className="font-bold text-slate-800">{top.title}</span>
-                        {top.description && (
-                          <p className="text-slate-500 text-[11px] mt-0.5">{top.description}</p>
-                        )}
-                        <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
-                          <span>Est: {top.estimated_minutes}m</span>
-                          {top.official_syllabus_ref && (
-                            <span className="text-indigo-600">
-                              Ref: {top.official_syllabus_ref}
-                            </span>
-                          )}
-                          {top.textbook_ref && (
-                            <span className="text-slate-600">Book: {top.textbook_ref}</span>
-                          )}
-                        </div>
+                  <div className="p-4 bg-card">
+                    {(chap.topics || []).length > 0 ? (
+                      <div className="divide-y divide-border/60">
+                        {(chap.topics || []).map((t) => (
+                          <div
+                            key={t.id}
+                            className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                          >
+                            <div className="space-y-1">
+                              <h5 className="font-bold text-xs text-text-primary">
+                                {t.title}
+                              </h5>
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {t.estimated_minutes}m
+                                </span>
+                                {t.official_syllabus_ref && (
+                                  <Badge variant="secondary" size="sm">
+                                    Official: {t.official_syllabus_ref}
+                                  </Badge>
+                                )}
+                                {t.textbook_ref && (
+                                  <span className="flex items-center gap-1 text-text-secondary">
+                                    <BookOpen className="h-3 w-3 text-text-muted" />
+                                    {t.textbook_ref}{" "}
+                                    {t.textbook_page_start
+                                      ? `(p. ${t.textbook_page_start})`
+                                      : ""}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  ))}
-                  {(!chap.topics || chap.topics.length === 0) && (
-                    <div className="p-3 text-center text-xs text-slate-400">
-                      No topics added yet. Click &quot;Add Topic&quot; to author topics with references.
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-xs text-text-muted py-2">
+                        No topics authored for this chapter yet.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-
-            {(!activeSubject.chapters || activeSubject.chapters.length === 0) && (
-              <div className="p-8 text-center text-slate-400 text-xs">
-                No chapters added to this subject. Click &quot;Add Chapter&quot; above to begin hierarchy setup.
-              </div>
+              ))
+            ) : (
+              <EmptyState
+                icon={<Layers className="h-6 w-6" />}
+                title="No chapters created yet"
+                description="Start authoring the curriculum structure for this subject."
+                action={
+                  <Button
+                    size="sm"
+                    onClick={() => setIsChapterModalOpen(true)}
+                    leftIcon={<Plus className="h-4 w-4" />}
+                  >
+                    Add Chapter
+                  </Button>
+                }
+              />
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       ) : null}
 
-      {/* Add Chapter Modal */}
-      {isChapterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">Add Chapter to {activeSubject?.name}</h3>
-            <form onSubmit={handleCreateChapter} className="mt-4 space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Chapter Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Modern Indian History"
-                  value={chapterTitle}
-                  onChange={(e) => setChapterTitle(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
+      {/* Chapter Creation Modal */}
+      <Modal
+        isOpen={isChapterModalOpen}
+        onClose={() => setIsChapterModalOpen(false)}
+        title={`Add Chapter to ${activeSubject?.name || "Subject"}`}
+        description="Chapters organize individual topics into thematic curriculum modules."
+      >
+        {errorMsg && (
+          <Alert variant="error" className="mb-4">
+            {errorMsg}
+          </Alert>
+        )}
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
-                <textarea
-                  rows={2}
-                  placeholder="Chapter focus area..."
-                  value={chapterDesc}
-                  onChange={(e) => setChapterDesc(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
+        <form onSubmit={handleCreateChapter} className="space-y-4">
+          <Input
+            label="Chapter Title"
+            required
+            placeholder="e.g. Water Demand & Population Forecasting"
+            value={chapterTitle}
+            onChange={(e) => setChapterTitle(e.target.value)}
+          />
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsChapterModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-purple-700 disabled:opacity-60"
-                >
-                  {isPending ? "Saving..." : "Add Chapter"}
-                </button>
-              </div>
-            </form>
+          <Textarea
+            label="Description (Optional)"
+            rows={3}
+            placeholder="Brief scope of topics in this chapter..."
+            value={chapterDesc}
+            onChange={(e) => setChapterDesc(e.target.value)}
+          />
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsChapterModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isPending}>
+              Create Chapter
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
-      {/* Add Topic Modal */}
-      {isTopicModalOpen && targetChapter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">
-              Add Topic to {targetChapter.title}
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Maintain separate official syllabus codes and verified textbook page references.
-            </p>
+      {/* Topic Creation Modal */}
+      <Modal
+        isOpen={isTopicModalOpen}
+        onClose={() => setIsTopicModalOpen(false)}
+        title={`Add Topic to ${targetChapter?.title || "Chapter"}`}
+        description="Define fine-grained topics with verifiable syllabus and textbook references."
+      >
+        {errorMsg && (
+          <Alert variant="error" className="mb-4">
+            {errorMsg}
+          </Alert>
+        )}
 
-            <form onSubmit={handleCreateTopic} className="mt-4 space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Topic Title</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. 1857 Revolt & British Administrative Changes"
-                  value={topicTitle}
-                  onChange={(e) => setTopicTitle(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
+        <form onSubmit={handleCreateTopic} className="space-y-4">
+          <Input
+            label="Topic Title"
+            required
+            placeholder="e.g. Design of Rapid Sand Gravity Filters"
+            value={topicTitle}
+            onChange={(e) => setTopicTitle(e.target.value)}
+          />
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Est. Study Minutes
-                  </label>
-                  <input
-                    type="number"
-                    min={15}
-                    step={15}
-                    value={estimatedMinutes}
-                    onChange={(e) => setEstimatedMinutes(parseInt(e.target.value, 10))}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                  />
-                </div>
+          <Textarea
+            label="Description"
+            rows={2}
+            placeholder="Key concepts, equations, and problem archetypes..."
+            value={topicDesc}
+            onChange={(e) => setTopicDesc(e.target.value)}
+          />
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Official Syllabus Code
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. UPSC-GS1-HIST-04"
-                    value={officialRef}
-                    onChange={(e) => setOfficialRef(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                  />
-                </div>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Estimated Study Minutes"
+              type="number"
+              min={15}
+              step={15}
+              value={estimatedMinutes}
+              onChange={(e) => setEstimatedMinutes(parseInt(e.target.value, 10))}
+            />
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Textbook Title / Author
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Spectrum Modern India by Rajiv Ahir"
-                  value={textbookRef}
-                  onChange={(e) => setTextbookRef(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Textbook Start Page
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="120"
-                    value={pageStart}
-                    onChange={(e) => setPageStart(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Textbook End Page
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="145"
-                    value={pageEnd}
-                    onChange={(e) => setPageEnd(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsTopicModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-purple-700 disabled:opacity-60"
-                >
-                  {isPending ? "Saving..." : "Save Topic"}
-                </button>
-              </div>
-            </form>
+            <Input
+              label="Official Syllabus Code/Ref"
+              placeholder="e.g. GATE-CE-Sec4.2"
+              value={officialRef}
+              onChange={(e) => setOfficialRef(e.target.value)}
+            />
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-1">
+              <Input
+                label="Textbook Ref"
+                placeholder="Garg / Peavy"
+                value={textbookRef}
+                onChange={(e) => setTextbookRef(e.target.value)}
+              />
+            </div>
+            <div>
+              <Input
+                label="Page Start"
+                placeholder="112"
+                value={pageStart}
+                onChange={(e) => setPageStart(e.target.value)}
+              />
+            </div>
+            <div>
+              <Input
+                label="Page End"
+                placeholder="145"
+                value={pageEnd}
+                onChange={(e) => setPageEnd(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsTopicModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isPending}>
+              Create Topic
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Map Subject to Exam Modal */}
-      {isMapModalOpen && activeSubject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">
-              Map {activeSubject.name} to Examination
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Reuses this subject in multiple examinations with a custom weightage.
-            </p>
+      <Modal
+        isOpen={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        title={`Map ${activeSubject?.name || "Subject"} to Examination`}
+        description="Associate this curriculum subject with an examination catalog entry and assign weightage."
+      >
+        {errorMsg && (
+          <Alert variant="error" className="mb-4">
+            {errorMsg}
+          </Alert>
+        )}
 
-            <form onSubmit={handleMapSubject} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Target Exam</label>
-                <select
-                  value={targetExamId}
-                  onChange={(e) => setTargetExamId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                >
-                  {exams.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <form onSubmit={handleMapSubject} className="space-y-4">
+          <Select
+            label="Target Examination"
+            value={targetExamId}
+            onChange={(e) => setTargetExamId(e.target.value)}
+            options={exams.map((ex) => ({
+              label: `${ex.name} (${ex.category})`,
+              value: ex.id,
+            }))}
+          />
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Weightage Percentage (%)
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={weightage}
-                  onChange={(e) => setWeightage(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
+          <Input
+            label="Estimated Exam Weightage (%)"
+            type="number"
+            min={1}
+            max={100}
+            value={weightage}
+            onChange={(e) => setWeightage(e.target.value)}
+          />
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsMapModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-purple-700 disabled:opacity-60"
-                >
-                  {isPending ? "Mapping..." : "Save Mapping"}
-                </button>
-              </div>
-            </form>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsMapModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isPending}>
+              Map to Exam
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -1,15 +1,10 @@
 "use client";
 
+import { PageHeader, Card, Badge, Button } from "@/components/ui";
 import Link from "next/link";
 import {
-  Award,
-  CheckCircle,
-  XCircle,
   Clock,
   ArrowLeft,
-  RotateCcw,
-  BookOpen,
-  AlertCircle,
   BarChart2,
   FileText,
   Lock,
@@ -60,45 +55,45 @@ export default function ExamResultClient({
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Top Navigation */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/student/exams/online"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Examination Portal
-        </Link>
-        <Link
-          href="/student/exams/online/history"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-        >
-          <Clock className="w-3.5 h-3.5 text-slate-500" /> View All Attempts
-        </Link>
-      </div>
+      <PageHeader
+        title={template.title}
+        description={`Submitted on ${new Date(attempt.submitted_at || attempt.updated_at).toLocaleString()}`}
+        breadcrumbs={[
+          { label: "Dashboard", href: "/student/dashboard" },
+          { label: "Online Exams", href: "/student/exams/online" },
+          { label: "Attempt Result" },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/student/exams/online">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-text-muted hover:text-text-primary">
+                <ArrowLeft className="w-4 h-4" /> Portal
+              </Button>
+            </Link>
+            <Link href="/student/exams/online/history">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Clock className="w-3.5 h-3.5" /> All Attempts
+              </Button>
+            </Link>
+          </div>
+        }
+      />
 
       {/* Main Scorecard Banner */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+      <Card className="p-6 sm:p-8 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
           <div>
-            <span className="px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700">
+            <Badge variant="primary">
               {template.exam_category} • Attempt #{attempt.attempt_number}
-            </span>
-            <h1 className="text-2xl font-bold text-slate-900 mt-2">{template.title}</h1>
-            <p className="text-xs text-slate-500 mt-1">
-              Submitted on {new Date(attempt.submitted_at || attempt.updated_at).toLocaleString()}
-            </p>
+            </Badge>
+            <h2 className="text-xl font-bold text-text-primary mt-2">Evaluation Scorecard</h2>
           </div>
 
-          <div className="text-right">
-            <span
-              className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide inline-block ${
-                isPassed
-                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                  : "bg-rose-100 text-rose-800 border border-rose-200"
-              }`}
-            >
+          <div className="text-left sm:text-right">
+            <Badge variant={isPassed ? "success" : "error"} className="text-xs py-1 px-3">
               {isPassed ? "Qualified / Passed" : "Needs Improvement"}
-            </span>
-            <p className="text-xs text-slate-500 mt-1">
+            </Badge>
+            <p className="text-xs text-text-muted mt-1">
               Passing Mark: {template.passing_marks ?? "40%"}
             </p>
           </div>
@@ -106,58 +101,58 @@ export default function ExamResultClient({
 
         {/* Vital Score Metrics Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
-            <span className="text-[10px] font-bold uppercase text-slate-500 block">Total Score</span>
-            <p className="text-3xl font-extrabold text-slate-900 mt-1">
-              {totalScore} <span className="text-sm font-semibold text-slate-400">/ {maxMarks}</span>
+          <div className="p-4 rounded-xl bg-secondary-bg border border-border text-center">
+            <span className="text-[10px] font-bold uppercase text-text-muted block">Total Score</span>
+            <p className="text-3xl font-extrabold text-text-primary mt-1">
+              {totalScore} <span className="text-sm font-semibold text-text-muted">/ {maxMarks}</span>
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100 text-center">
-            <span className="text-[10px] font-bold uppercase text-indigo-700 block">Percentage</span>
-            <p className="text-3xl font-extrabold text-indigo-700 mt-1">{percentage}%</p>
+          <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-center">
+            <span className="text-[10px] font-bold uppercase text-primary block">Percentage</span>
+            <p className="text-3xl font-extrabold text-primary mt-1">{percentage}%</p>
           </div>
 
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-center">
-            <span className="text-[10px] font-bold uppercase text-emerald-700 block">Accuracy</span>
-            <p className="text-3xl font-extrabold text-emerald-700 mt-1">{accuracy}%</p>
+          <div className="p-4 rounded-xl bg-success-light border border-success/30 text-center">
+            <span className="text-[10px] font-bold uppercase text-success block">Accuracy</span>
+            <p className="text-3xl font-extrabold text-success mt-1">{accuracy}%</p>
           </div>
 
-          <div className="p-4 rounded-xl bg-purple-50 border border-purple-100 text-center">
-            <span className="text-[10px] font-bold uppercase text-purple-700 block">Correct Answers</span>
-            <p className="text-3xl font-extrabold text-purple-700 mt-1">
-              {correctCount} <span className="text-sm font-semibold text-purple-400">/ {totalQuestions}</span>
+          <div className="p-4 rounded-xl bg-secondary-bg border border-border text-center">
+            <span className="text-[10px] font-bold uppercase text-text-muted block">Correct Answers</span>
+            <p className="text-3xl font-extrabold text-text-primary mt-1">
+              {correctCount} <span className="text-sm font-semibold text-text-muted">/ {totalQuestions}</span>
             </p>
           </div>
         </div>
 
         {/* Detailed Count Strips */}
         <div className="grid grid-cols-3 gap-3 text-center text-xs pt-2">
-          <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-100 font-semibold">
+          <div className="p-2.5 rounded-xl bg-success-light text-success border border-success/30 font-semibold">
             {correctCount} Correct (+{result?.positive_marks || 0}m)
           </div>
-          <div className="p-2.5 rounded-lg bg-rose-50 text-rose-800 border border-rose-100 font-semibold">
+          <div className="p-2.5 rounded-xl bg-error-light text-error border border-error/30 font-semibold">
             {incorrectCount} Incorrect (-{result?.negative_marks || 0}m)
           </div>
-          <div className="p-2.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
+          <div className="p-2.5 rounded-xl bg-secondary-bg text-text-secondary border border-border font-semibold">
             {unansweredCount} Unattempted
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Section-wise Performance Breakdown */}
       {result?.section_scores_json && result.section_scores_json.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-5 border-b border-slate-100">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-indigo-600" /> Section-wise Performance Breakdown
+        <Card className="overflow-hidden p-0">
+          <div className="p-5 border-b border-border bg-secondary-bg/50">
+            <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-primary" /> Section-wise Performance Breakdown
             </h2>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase font-semibold">
+                <tr className="bg-secondary-bg/50 border-b border-border text-text-secondary uppercase font-semibold">
                   <th className="p-3">Section</th>
                   <th className="p-3">Questions</th>
                   <th className="p-3">Attempted</th>
@@ -166,14 +161,14 @@ export default function ExamResultClient({
                   <th className="p-3 font-bold">Marks Scored</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-800">
+              <tbody className="divide-y divide-border text-text-primary">
                 {result.section_scores_json.map((sec, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50 transition">
+                  <tr key={idx} className="hover:bg-secondary-bg/30 transition-colors">
                     <td className="p-3 font-semibold">{sec.section_name}</td>
-                    <td className="p-3">{sec.total_questions}</td>
-                    <td className="p-3">{sec.attempted}</td>
-                    <td className="p-3 text-emerald-600 font-bold">{sec.correct}</td>
-                    <td className="p-3 text-rose-600 font-bold">{sec.incorrect}</td>
+                    <td className="p-3 text-text-secondary">{sec.total_questions}</td>
+                    <td className="p-3 text-text-secondary">{sec.attempted}</td>
+                    <td className="p-3 text-success font-bold">{sec.correct}</td>
+                    <td className="p-3 text-error font-bold">{sec.incorrect}</td>
                     <td className="p-3 font-bold">
                       {sec.score} / {sec.max_marks}
                     </td>
@@ -182,69 +177,67 @@ export default function ExamResultClient({
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* Detailed Question-by-Question Review (MODULE 13) */}
+      {/* Detailed Question-by-Question Review */}
       {!isReleased ? (
-        <div className="p-6 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-2 text-center">
-          <Lock className="w-8 h-8 mx-auto text-amber-600 mb-1" />
+        <Card className="p-6 bg-warning-light/40 border-warning/30 text-text-primary space-y-2 text-center">
+          <Lock className="w-8 h-8 mx-auto text-warning mb-1" />
           <h3 className="text-base font-bold">Question Review Pending Release</h3>
-          <p className="text-xs text-amber-800 max-w-lg mx-auto">
+          <p className="text-xs text-text-secondary max-w-lg mx-auto">
             Your examination has been safely evaluated and scored. Individual answer keys and explanations will be unlocked once official results are declared by the administrator.
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-slate-600" /> Complete Question & Answer Review ({questionsReview.length})
+            <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+              <FileText className="w-4 h-4 text-text-muted" /> Complete Question & Answer Review ({questionsReview.length})
             </h2>
           </div>
 
           <div className="space-y-4">
             {questionsReview.map((rev, idx) => (
-              <div
+              <Card
                 key={idx}
-                className={`bg-white rounded-xl shadow-sm border p-6 space-y-4 ${
+                className={`p-6 space-y-4 ${
                   rev.isCorrect
-                    ? "border-emerald-300 bg-emerald-50/10"
+                    ? "border-success/40 bg-success-light/20"
                     : rev.studentOption === null
-                    ? "border-slate-200"
-                    : "border-rose-300 bg-rose-50/10"
+                    ? "border-border"
+                    : "border-error/40 bg-error-light/20"
                 }`}
               >
-                <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-100">
+                <div className="flex items-center justify-between text-xs pb-3 border-b border-border">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-500 uppercase">
+                    <span className="font-bold text-text-muted uppercase">
                       Question {idx + 1} of {questionsReview.length}
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-700 font-medium">
+                    <Badge variant="secondary">
                       {rev.sectionName}
-                    </span>
+                    </Badge>
                   </div>
 
-                  <div className="flex items-center gap-2 font-semibold">
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs ${
-                        rev.isCorrect
-                          ? "bg-emerald-100 text-emerald-800"
-                          : rev.studentOption === null
-                          ? "bg-slate-100 text-slate-600"
-                          : "bg-rose-100 text-rose-800"
-                      }`}
-                    >
-                      {rev.isCorrect
-                        ? `Correct (+${rev.marksEarned}m)`
+                  <Badge
+                    variant={
+                      rev.isCorrect
+                        ? "success"
                         : rev.studentOption === null
-                        ? "Unattempted (0m)"
-                        : `Incorrect (${rev.marksEarned}m)`}
-                    </span>
-                  </div>
+                        ? "secondary"
+                        : "error"
+                    }
+                  >
+                    {rev.isCorrect
+                      ? `Correct (+${rev.marksEarned}m)`
+                      : rev.studentOption === null
+                      ? "Unattempted (0m)"
+                      : `Incorrect (${rev.marksEarned}m)`}
+                  </Badge>
                 </div>
 
                 {/* Question Statement */}
-                <p className="text-sm font-semibold text-slate-900 leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm font-semibold text-text-primary leading-relaxed whitespace-pre-wrap">
                   {rev.questionText}
                 </p>
 
@@ -257,21 +250,21 @@ export default function ExamResultClient({
                     return (
                       <div
                         key={opt.label}
-                        className={`p-3 rounded-lg border text-xs flex items-center gap-2.5 ${
+                        className={`p-3 rounded-xl border text-xs flex items-center gap-2.5 transition-all ${
                           isKey
-                            ? "bg-emerald-50 border-emerald-400 text-emerald-950 font-medium"
+                            ? "bg-success-light border-success text-success font-medium"
                             : isStudentPick && !rev.isCorrect
-                            ? "bg-rose-50 border-rose-400 text-rose-950"
-                            : "bg-slate-50 border-slate-200 text-slate-700"
+                            ? "bg-error-light border-error text-error"
+                            : "bg-secondary-bg border-border text-text-primary"
                         }`}
                       >
                         <span
-                          className={`w-6 h-6 rounded flex items-center justify-center font-bold text-xs ${
+                          className={`w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs ${
                             isKey
-                              ? "bg-emerald-600 text-white"
+                              ? "bg-success text-white"
                               : isStudentPick && !rev.isCorrect
-                              ? "bg-rose-600 text-white"
-                              : "bg-white border text-slate-700"
+                              ? "bg-error text-white"
+                              : "bg-card border border-border text-text-primary"
                           }`}
                         >
                           {opt.label}
@@ -280,14 +273,14 @@ export default function ExamResultClient({
                         <span className="flex-1 leading-snug">{opt.text}</span>
 
                         {isKey && (
-                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-600 text-white">
+                          <Badge variant="success" className="text-[10px]">
                             Key
-                          </span>
+                          </Badge>
                         )}
                         {isStudentPick && !rev.isCorrect && (
-                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-rose-600 text-white">
+                          <Badge variant="error" className="text-[10px]">
                             Your Pick
-                          </span>
+                          </Badge>
                         )}
                       </div>
                     );
@@ -296,14 +289,14 @@ export default function ExamResultClient({
 
                 {/* Pedagogical Explanation */}
                 {rev.explanation && (
-                  <div className="p-3.5 rounded-lg bg-indigo-50/80 border border-indigo-200 text-xs text-indigo-950 space-y-1">
-                    <span className="font-bold uppercase tracking-wider text-[10px] text-indigo-700 block">
+                  <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-xs text-text-primary space-y-1">
+                    <span className="font-bold uppercase tracking-wider text-[10px] text-primary block">
                       Pedagogical Rationale:
                     </span>
                     <p className="leading-relaxed">{rev.explanation}</p>
                   </div>
                 )}
-              </div>
+              </Card>
             ))}
           </div>
         </div>

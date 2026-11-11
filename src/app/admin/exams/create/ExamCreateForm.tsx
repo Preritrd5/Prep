@@ -1,5 +1,6 @@
 "use client";
 
+import { Card, Button, Alert, Input, Textarea, Select } from "@/components/ui";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,12 +10,6 @@ import {
   BookOpen,
   Layers,
   Clock,
-  Award,
-  AlertCircle,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  HelpCircle,
 } from "lucide-react";
 import type {
   Exam,
@@ -35,8 +30,6 @@ interface ExamCreateFormProps {
 
 export default function ExamCreateForm({
   exams,
-  subjects,
-  availableQuestions,
 }: ExamCreateFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -63,20 +56,6 @@ export default function ExamCreateForm({
   const [negativeMarks, setNegativeMarks] = useState(0.66);
   const [resultReleasePolicy, setResultReleasePolicy] = useState<ResultReleasePolicy>("Immediate");
   const [status, setStatus] = useState<ExamTemplateStatus>("Published");
-
-  // Sections State
-  const [sections, setSections] = useState<{ name: string; questionCount: number; marks: number }[]>([
-    { name: "General Section", questionCount: 10, marks: 20 },
-  ]);
-
-  const addSection = () => {
-    setSections([...sections, { name: `Section ${sections.length + 1}`, questionCount: 5, marks: 10 }]);
-  };
-
-  const removeSection = (index: number) => {
-    if (sections.length <= 1) return;
-    setSections(sections.filter((_, idx) => idx !== index));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,287 +94,215 @@ export default function ExamCreateForm({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Link
-          href="/admin/exams/manage"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Examinations List
+        <Link href="/admin/exams/manage">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-text-muted hover:text-text-primary">
+            <ArrowLeft className="w-4 h-4" /> Back to Examinations List
+          </Button>
         </Link>
       </div>
 
       {errorMsg && (
-        <div className="p-4 rounded-lg bg-rose-50 border border-rose-200 text-sm text-rose-800 flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
+        <Alert variant="error" title={errorMsg} onClose={() => setErrorMsg(null)} />
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Card 1: Core Details */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-indigo-600" /> Basic Information
+        <Card className="p-6 space-y-4">
+          <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-primary" /> Basic Information
           </h2>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Examination Title *
-            </label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. UPSC CSE Prelims 2026 — All India Mock Test #1"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+          <Input
+            label="Examination Title *"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. UPSC CSE Prelims 2026 — All India Mock Test #1"
+          />
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Description / Examination Scope
-            </label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detailed description of coverage, syllabus topics, and target aspirants..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+          <Textarea
+            label="Description / Examination Scope"
+            rows={2}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Detailed description of coverage, syllabus topics, and target aspirants..."
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Examination Category
-              </label>
-              <select
-                value={examCategory}
-                onChange={(e) => setExamCategory(e.target.value as ExamCategory)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none"
-              >
-                <option value="UPSC">UPSC</option>
-                <option value="KAS">KAS</option>
-                <option value="GATE">GATE</option>
-                <option value="Railway Examinations">Railway Examinations</option>
-                <option value="KEA Examinations">KEA Examinations</option>
-                <option value="AE Civil Engineering">AE Civil Engineering</option>
-                <option value="General Knowledge">General Knowledge</option>
-                <option value="Custom">Custom</option>
-              </select>
-            </div>
+            <Select
+              label="Examination Category"
+              value={examCategory}
+              onChange={(e) => setExamCategory(e.target.value as ExamCategory)}
+              options={[
+                { value: "UPSC", label: "UPSC" },
+                { value: "KAS", label: "KAS" },
+                { value: "GATE", label: "GATE" },
+                { value: "Railway Examinations", label: "Railway Examinations" },
+                { value: "KEA Examinations", label: "KEA Examinations" },
+                { value: "AE Civil Engineering", label: "AE Civil Engineering" },
+                { value: "General Knowledge", label: "General Knowledge" },
+                { value: "Custom", label: "Custom" },
+              ]}
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Examination Type
-              </label>
-              <select
-                value={examType}
-                onChange={(e) => setExamType(e.target.value as OnlineExamType)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none"
-              >
-                <option value="Full-Length Mock Test">Full-Length Mock Test</option>
-                <option value="Sectional Test">Sectional Test</option>
-                <option value="Subject Test">Subject Test</option>
-                <option value="Chapter Test">Chapter Test</option>
-                <option value="Previous Year Question Test">Previous Year Question Test</option>
-                <option value="Custom Test">Custom Test</option>
-              </select>
-            </div>
+            <Select
+              label="Examination Type"
+              value={examType}
+              onChange={(e) => setExamType(e.target.value as OnlineExamType)}
+              options={[
+                { value: "Full-Length Mock Test", label: "Full-Length Mock Test" },
+                { value: "Sectional Test", label: "Sectional Test" },
+                { value: "Subject Test", label: "Subject Test" },
+                { value: "Chapter Test", label: "Chapter Test" },
+                { value: "Previous Year Question Test", label: "Previous Year Question Test" },
+                { value: "Custom Test", label: "Custom Test" },
+              ]}
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Linked Syllabus Exam
-              </label>
-              <select
-                value={examId}
-                onChange={(e) => setExamId(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none"
-              >
-                <option value="">Select official exam</option>
-                {exams.map((ex) => (
-                  <option key={ex.id} value={ex.id}>
-                    {ex.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Linked Syllabus Exam"
+              value={examId}
+              onChange={(e) => setExamId(e.target.value)}
+              options={[
+                { value: "", label: "Select official exam" },
+                ...exams.map((ex) => ({ value: ex.id, label: ex.name })),
+              ]}
+            />
           </div>
-        </div>
+        </Card>
 
-        {/* Card 2: Timing, Marks & Negative Rules (Module 2) */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-emerald-600" /> Timing, Marks & Evaluation Rules
+        {/* Card 2: Timing, Marks & Negative Rules */}
+        <Card className="p-6 space-y-4">
+          <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+            <Clock className="w-4 h-4 text-success" /> Timing, Marks & Evaluation Rules
           </h2>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Duration (Minutes)
-              </label>
-              <input
-                type="number"
-                required
-                min={5}
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-              />
-            </div>
+            <Input
+              label="Duration (Minutes)"
+              type="number"
+              required
+              min={5}
+              value={durationMinutes}
+              onChange={(e) => setDurationMinutes(Number(e.target.value))}
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Total Questions
-              </label>
-              <input
-                type="number"
-                required
-                min={1}
-                value={totalQuestions}
-                onChange={(e) => setTotalQuestions(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-              />
-            </div>
+            <Input
+              label="Total Questions"
+              type="number"
+              required
+              min={1}
+              value={totalQuestions}
+              onChange={(e) => setTotalQuestions(Number(e.target.value))}
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Total Marks
-              </label>
-              <input
-                type="number"
-                required
-                min={1}
-                value={totalMarks}
-                onChange={(e) => setTotalMarks(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-              />
-            </div>
+            <Input
+              label="Total Marks"
+              type="number"
+              required
+              min={1}
+              value={totalMarks}
+              onChange={(e) => setTotalMarks(Number(e.target.value))}
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Max Attempts Allowed
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={maxAttempts}
-                onChange={(e) => setMaxAttempts(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-              />
-            </div>
+            <Input
+              label="Max Attempts Allowed"
+              type="number"
+              min={1}
+              value={maxAttempts}
+              onChange={(e) => setMaxAttempts(Number(e.target.value))}
+            />
           </div>
 
-          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Marks per Correct Answer
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={correctMarks}
-                onChange={(e) => setCorrectMarks(Number(e.target.value))}
-                className="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
-              />
-            </div>
+          <div className="p-4 bg-secondary-bg/50 rounded-xl border border-border grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Input
+              label="Marks per Correct Answer"
+              type="number"
+              step="0.1"
+              value={correctMarks}
+              onChange={(e) => setCorrectMarks(Number(e.target.value))}
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Negative Marks per Incorrect
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={negativeMarks}
-                onChange={(e) => setNegativeMarks(Number(e.target.value))}
-                className="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
-              />
-            </div>
+            <Input
+              label="Negative Marks per Incorrect"
+              type="number"
+              step="0.01"
+              value={negativeMarks}
+              onChange={(e) => setNegativeMarks(Number(e.target.value))}
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Result Release Policy
-              </label>
-              <select
-                value={resultReleasePolicy}
-                onChange={(e) => setResultReleasePolicy(e.target.value as ResultReleasePolicy)}
-                className="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
-              >
-                <option value="Immediate">Immediate (On Submit)</option>
-                <option value="Delayed">Delayed Release</option>
-                <option value="Admin Controlled">Admin Controlled Review</option>
-              </select>
-            </div>
+            <Select
+              label="Result Release Policy"
+              value={resultReleasePolicy}
+              onChange={(e) => setResultReleasePolicy(e.target.value as ResultReleasePolicy)}
+              options={[
+                { value: "Immediate", label: "Immediate (On Submit)" },
+                { value: "Delayed", label: "Delayed Release" },
+                { value: "Admin Controlled", label: "Admin Controlled Review" },
+              ]}
+            />
           </div>
 
           <div className="flex flex-wrap items-center gap-6 pt-2">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-text-primary">
               <input
                 type="checkbox"
                 checked={randomizeQuestions}
                 onChange={(e) => setRandomizeQuestions(e.target.checked)}
-                className="w-4 h-4 text-indigo-600 rounded"
+                className="w-4 h-4 text-primary rounded border-border"
               />
               <span>Randomize Question Order per Student Attempt</span>
             </label>
 
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-text-primary">
               <input
                 type="checkbox"
                 checked={randomizeOptions}
                 onChange={(e) => setRandomizeOptions(e.target.checked)}
-                className="w-4 h-4 text-indigo-600 rounded"
+                className="w-4 h-4 text-primary rounded border-border"
               />
               <span>Randomize Answer Options (A/B/C/D) Order</span>
             </label>
           </div>
-        </div>
+        </Card>
 
         {/* Card 3: Instructions & Publication */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Layers className="w-4 h-4 text-purple-600" /> Instructions & Publication
+        <Card className="p-6 space-y-4">
+          <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+            <Layers className="w-4 h-4 text-primary" /> Instructions & Publication
           </h2>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Examination Instructions (Shown on pre-test screen)
-            </label>
-            <textarea
-              rows={3}
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+          <Textarea
+            label="Examination Instructions (Shown on pre-test screen)"
+            rows={3}
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+          />
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-border">
+            <Select
+              label="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as ExamTemplateStatus)}
+              options={[
+                { value: "Published", label: "Published (Active for Students)" },
+                { value: "Draft", label: "Draft" },
+                { value: "Archived", label: "Archived" },
+              ]}
             />
-          </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Status
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as ExamTemplateStatus)}
-                className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white text-slate-700"
-              >
-                <option value="Published">Published (Active for Students)</option>
-                <option value="Draft">Draft</option>
-                <option value="Archived">Archived</option>
-              </select>
-            </div>
-
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="md"
               disabled={isPending}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-600 text-white font-medium text-sm hover:bg-indigo-700 shadow-sm transition disabled:opacity-50"
+              className="gap-2"
             >
               <Save className="w-4 h-4" />
               {isPending ? "Creating Examination..." : "Save & Publish Examination"}
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </form>
     </div>
   );

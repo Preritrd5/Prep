@@ -83,6 +83,14 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(new URL(target, request.url));
     }
 
+    // Direct root access redirects
+    if (pathname === "/student" || pathname === "/student/") {
+      return NextResponse.redirect(new URL("/student/dashboard", request.url));
+    }
+    if (pathname === "/admin" || pathname === "/admin/") {
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+    }
+
     // Role-based protection: Student trying to access Admin routes
     if (isAdminRoute && role !== "admin") {
       return NextResponse.redirect(new URL("/student/dashboard", request.url));

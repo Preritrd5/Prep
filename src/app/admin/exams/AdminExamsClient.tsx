@@ -1,7 +1,8 @@
 "use client";
 
+import { Card, Badge, Button, Modal, Input, Select, Textarea, Alert } from "@/components/ui";
 import { useState } from "react";
-import { BookOpen, Plus, Tag, Check, X, AlertCircle } from "lucide-react";
+import { Plus } from "lucide-react";
 import { adminCreateExamAction, adminToggleExamStatusAction } from "@/app/actions/exams";
 import type { Exam } from "@/lib/types";
 
@@ -58,26 +59,28 @@ export default function AdminExamsClient({ exams }: AdminExamsClientProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-slate-900">
+          <h2 className="text-base font-bold text-text-primary">
             Registered Examinations ({exams.length})
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-text-muted">
             Configure examination categories, variants, and activation state.
           </p>
         </div>
 
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-purple-700"
+          className="gap-1.5 text-xs"
         >
           <Plus className="h-4 w-4" />
           Create Examination
-        </button>
+        </Button>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <Card className="overflow-hidden p-0">
         <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold">
+          <thead className="bg-secondary-bg/50 border-b border-border text-text-secondary uppercase font-bold">
             <tr>
               <th className="px-6 py-3.5">Exam Name & Code</th>
               <th className="px-6 py-3.5">Category</th>
@@ -86,147 +89,119 @@ export default function AdminExamsClient({ exams }: AdminExamsClientProps) {
               <th className="px-6 py-3.5 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+          <tbody className="divide-y divide-border text-text-primary font-medium">
             {exams.map((exam) => (
-              <tr key={exam.id} className="hover:bg-slate-50/70">
+              <tr key={exam.id} className="hover:bg-secondary-bg/30 transition-colors">
                 <td className="px-6 py-3.5">
-                  <div className="font-bold text-slate-900">{exam.name}</div>
-                  <div className="font-mono text-[10px] text-slate-400">{exam.code}</div>
+                  <div className="font-bold text-text-primary">{exam.name}</div>
+                  <div className="font-mono text-[10px] text-text-muted">{exam.code}</div>
                 </td>
-                <td className="px-6 py-3.5">{exam.category}</td>
-                <td className="px-6 py-3.5 text-slate-500">{exam.sub_category || "—"}</td>
+                <td className="px-6 py-3.5 text-text-secondary">{exam.category}</td>
+                <td className="px-6 py-3.5 text-text-muted">{exam.sub_category || "—"}</td>
                 <td className="px-6 py-3.5">
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      exam.is_active
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
+                  <Badge variant={exam.is_active ? "success" : "secondary"}>
                     {exam.is_active ? "Active" : "Deactivated"}
-                  </span>
+                  </Badge>
                 </td>
                 <td className="px-6 py-3.5 text-right">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleToggle(exam)}
-                    className="text-xs font-semibold text-purple-600 hover:text-purple-800"
+                    className="text-xs text-primary hover:text-primary-hover"
                   >
                     {exam.is_active ? "Deactivate" : "Activate"}
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       {/* Create Exam Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">Create New Examination</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Add a competitive examination to the public catalog.
-            </p>
-
-            {errorMsg && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 p-2.5 text-xs text-red-700 border border-red-200">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleCreate} className="mt-4 space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Exam Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. GATE — Electrical Engineering"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Unique Code
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="GATE-EE"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono text-slate-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                  >
-                    <option value="GATE">GATE</option>
-                    <option value="KAS">KAS</option>
-                    <option value="UPSC">UPSC</option>
-                    <option value="Railway Examinations">Railway Examinations</option>
-                    <option value="KEA Examinations">KEA Examinations</option>
-                    <option value="AE Civil Engineering">AE Civil Engineering</option>
-                    <option value="General Knowledge">General Knowledge</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Sub-Category / Branch (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Electrical Engineering"
-                  value={subCategory}
-                  onChange={(e) => setSubCategory(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
-                <textarea
-                  rows={2}
-                  placeholder="Short description of the examination..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-purple-700 disabled:opacity-60"
-                >
-                  {isPending ? "Creating..." : "Save Examination"}
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Create New Examination"
+        description="Add a competitive examination to the public catalog."
+      >
+        {errorMsg && (
+          <div className="mb-4">
+            <Alert variant="error" title={errorMsg} onClose={() => setErrorMsg(null)} />
           </div>
-        </div>
-      )}
+        )}
+
+        <form onSubmit={handleCreate} className="space-y-4">
+          <Input
+            label="Exam Name *"
+            required
+            placeholder="e.g. GATE — Electrical Engineering"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Unique Code *"
+              required
+              placeholder="GATE-EE"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+            />
+
+            <Select
+              label="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              options={[
+                { value: "GATE", label: "GATE" },
+                { value: "KAS", label: "KAS" },
+                { value: "UPSC", label: "UPSC" },
+                { value: "Railway Examinations", label: "Railway Examinations" },
+                { value: "KEA Examinations", label: "KEA Examinations" },
+                { value: "AE Civil Engineering", label: "AE Civil Engineering" },
+                { value: "General Knowledge", label: "General Knowledge" },
+                { value: "Other", label: "Other" },
+              ]}
+            />
+          </div>
+
+          <Input
+            label="Sub-Category / Branch (Optional)"
+            placeholder="e.g. Electrical Engineering"
+            value={subCategory}
+            onChange={(e) => setSubCategory(e.target.value)}
+          />
+
+          <Textarea
+            label="Description"
+            rows={2}
+            placeholder="Short description of the examination..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isPending}
+            >
+              {isPending ? "Creating..." : "Save Examination"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -20,13 +20,13 @@ export default async function StudentAnalyticsPage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-background text-text-primary flex flex-col">
       <Navbar profile={profile} />
 
       <div className="flex-1 flex">
         <Sidebar role="student" />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main id="main-content" className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
           <StudentAnalyticsClient
             initialAnalytics={analytics}
             subjects={subjects}

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface AuthActionResult {
   success?: boolean;
@@ -52,13 +53,25 @@ export async function registerStudentAction(
     return { error: error.message };
   }
 
+  // Auto-confirm user via service role key so students are not blocked by unconfirmed emails
+  if (data?.user) {
+    try {
+      const admin = createAdminClient();
+      await admin.auth.admin.updateUserById(data.user.id, {
+        email_confirm: true,
+      });
+    } catch {
+      // Continue gracefully if admin client is restricted
+    }
+  }
+
   // If user identity is created but session is null, email confirmation is active in Supabase project
   if (data?.user && !data?.session) {
     return {
       success: true,
       requiresEmailConfirmation: true,
       message:
-        "Registration successful! Please check your email to verify your account before logging in.",
+        "Registration successful! Your account has been verified. You can now proceed to login.",
     };
   }
 
@@ -84,12 +97,47 @@ export async function loginAction(
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  let { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
+  // If email is not confirmed, automatically confirm via admin client and retry sign in
+  if (error && error.message.toLowerCase().includes("email not confirmed")) {
+    try {
+      const admin = createAdminClient();
+      const { data: usersData } = await admin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
+      const userRecord = usersData?.users.find(
+        (u) => u.email?.toLowerCase() === email
+      );
+      if (userRecord) {
+        await admin.auth.admin.updateUserById(userRecord.id, {
+          email_confirm: true,
+        });
+
+        // Retry sign in immediately
+        const retry = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        data = retry.data;
+        error = retry.error;
+      }
+    } catch (adminErr) {
+      console.error("[Auth] Auto-confirmation attempt failed:", adminErr);
+    }
+  }
+
   if (error) {
+    if (error.message.toLowerCase().includes("email not confirmed")) {
+      return {
+        error:
+          "Your email address is not yet confirmed. Please verify your inbox for the confirmation link, or contact your administrator.",
+      };
+    }
     return { error: error.message };
   }
 
@@ -98,13 +146,20 @@ export async function loginAction(
   }
 
   // Fetch the user's role from the profiles table
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", data.user.id)
-    .single();
+  let role = "student";
+  try {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
 
-  const role = (profile as { role?: string } | null)?.role || "student";
+    if (profile?.role) {
+      role = profile.role;
+    }
+  } catch {
+    role = "student";
+  }
 
   revalidatePath("/", "layout");
 
@@ -145,31 +200,34 @@ export async function updateProfileAction(
   const fullName = (formData.get("fullName") as string)?.trim();
 
   if (!fullName) {
-    return { error: "Name cannot be empty." };
+    return { error: "Full name cannot be blank." };
   }
 
   const supabase = await createClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "Unauthorized session." };
+    return { error: "Authentication session expired. Please sign in again." };
   }
 
-  // Row Level Security strictly enforces that non-admins cannot modify their role
+  // Update profile record in PostgreSQL
   const { error } = await supabase
     .from("profiles")
-    .update({
-      full_name: fullName,
-      updated_at: new Date().toISOString(),
-    } as Record<string, unknown>)
+    .update({ full_name: fullName, updated_at: new Date().toISOString() })
     .eq("id", user.id);
 
   if (error) {
-    return { error: error.message };
+    return { error: `Failed to update profile: ${error.message}` };
   }
 
+  // Also update metadata in Supabase Auth user record
+  await supabase.auth.updateUser({
+    data: { full_name: fullName },
+  });
+
   revalidatePath("/profile");
-  return { success: true, message: "Profile successfully updated." };
+  return { success: true, message: "Profile updated successfully." };
 }

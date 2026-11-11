@@ -1,20 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Sparkles,
   Send,
   Bot,
   User,
   ShieldCheck,
-  AlertCircle,
-  BookOpen,
-  RotateCcw,
   TrendingUp,
-  HelpCircle,
 } from "lucide-react";
 import { studentGeminiAssistantAction } from "@/app/actions/analytics";
 import type { StudentPerformanceAnalytics, WeakAreaTopic } from "@/lib/types";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface Message {
   role: "assistant" | "user";
@@ -36,15 +36,22 @@ export default function StudyAssistantClient({
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      text: `Hello ${studentName}! I am your **PrepTrack AI Study Assistant**.
+      text: `Hello ${studentName}! I am your PrepTrack AI Study Assistant.
 
-I have reviewed your current preparation status:
-- **Syllabus Progress:** ${analytics.syllabusCompletionPercentage}% (${analytics.completedTopics} of ${analytics.totalSyllabusTopics} topics completed)
-- **MCQ Practice Accuracy:** ${analytics.overallAccuracy}% across ${analytics.mcqsAttempted} attempts
-- **Weak Areas Flagged:** ${weakTopics.length > 0 ? weakTopics.map((w) => w.topicTitle).join(", ") : "None currently flagged"}
+I have analyzed your current preparation metrics:
+- Syllabus Progress: ${analytics.syllabusCompletionPercentage}% (${analytics.completedTopics} of ${analytics.totalSyllabusTopics} topics completed)
+- MCQ Practice Accuracy: ${analytics.overallAccuracy}% across ${analytics.mcqsAttempted} attempts
+- Weak Areas Flagged: ${
+        weakTopics.length > 0
+          ? weakTopics.map((w) => w.topicTitle).join(", ")
+          : "None currently flagged"
+      }
 
 How can I help optimize your preparation today? You can ask me to draft a weekly revision schedule, explain weak conceptual areas, or recommend high-yield practice priorities.`,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     },
   ]);
 
@@ -58,7 +65,10 @@ How can I help optimize your preparation today? You can ask me to draft a weekly
     const userMsg: Message = {
       role: "user",
       text: q,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -69,17 +79,25 @@ How can I help optimize your preparation today? You can ask me to draft a weekly
       const res = await studentGeminiAssistantAction(q);
       const aiReply: Message = {
         role: "assistant",
-        text: res.response || "I was unable to analyze your preparation query at this moment.",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        text:
+          res.response ||
+          "I was unable to analyze your preparation query at this moment.",
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
       setMessages((prev) => [...prev, aiReply]);
-    } catch (err: any) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
           text: "An error occurred while communicating with the Study Assistant. Please try again shortly.",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
         },
       ]);
     } finally {
@@ -88,102 +106,131 @@ How can I help optimize your preparation today? You can ask me to draft a weekly
   };
 
   const quickPrompts = [
-    { label: "Create a 7-day revision plan", query: "Can you create a structured 7-day revision plan prioritizing my weak areas?" },
-    { label: "Analyze my weak areas", query: "Explain why my identified weak topics need attention and what action steps I should take." },
-    { label: "What should I study next?", query: "Based on my pending syllabus and target exams, what topic should I focus on next?" },
-    { label: "Tips to improve MCQ accuracy", query: "My MCQ accuracy is currently at " + analytics.overallAccuracy + "%. How can I reach 75%+?" },
+    {
+      label: "Create a 7-day revision plan",
+      query:
+        "Can you create a structured 7-day revision plan prioritizing my weak areas?",
+    },
+    {
+      label: "Analyze my weak areas",
+      query:
+        "Explain why my identified weak topics need attention and what action steps I should take.",
+    },
+    {
+      label: "What should I study next?",
+      query:
+        "Based on my pending syllabus and target exams, what topic should I focus on next?",
+    },
+    {
+      label: "Tips to improve MCQ accuracy",
+      query: `My MCQ accuracy is currently at ${analytics.overallAccuracy}%. How can I reach 75%+?`,
+    },
   ];
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-indigo-600" />
-            AI Study Assistant
-          </h1>
-          <p className="text-xs text-slate-600 mt-0.5">
-            Powered by Google Gemini 2.5 Flash with real-time context from your syllabus progress and test accuracy.
-          </p>
-        </div>
+      {/* Context Summary Banner */}
+      <Card>
+        <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <Badge variant="primary" size="md">
+              Grounded in Student Data
+            </Badge>
+            <span className="text-text-muted">
+              {analytics.syllabusCompletionPercentage}% syllabus completed
+            </span>
+          </div>
 
-        <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700">
-          <ShieldCheck className="h-3.5 w-3.5" />
-          <span>Server-Side & Data Isolated</span>
-        </div>
-      </div>
+          <div className="flex items-center gap-2 text-text-muted">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <span>Overall Accuracy: {analytics.overallAccuracy}%</span>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Chat Canvas */}
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm flex flex-col h-[650px] overflow-hidden">
-        {/* Messages Scroll Area */}
+      {/* Chat Conversation Card */}
+      <Card className="flex flex-col h-[580px] overflow-hidden">
+        {/* Messages Stream */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-          {messages.map((m, idx) => (
+          {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`flex items-start gap-3 ${
-                m.role === "user" ? "flex-row-reverse" : "flex-row"
-              }`}
+              className={cn(
+                "flex gap-3 max-w-[85%]",
+                msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
+              )}
             >
               <div
-                className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 text-white ${
-                  m.role === "user" ? "bg-slate-900" : "bg-indigo-600"
-                }`}
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-xl shrink-0 text-xs",
+                  msg.role === "assistant"
+                    ? "bg-primary text-white"
+                    : "bg-background-secondary text-text-primary border border-border"
+                )}
               >
-                {m.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                {msg.role === "assistant" ? (
+                  <Bot className="h-4 w-4" />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
               </div>
 
               <div
-                className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed space-y-2 ${
-                  m.role === "user"
-                    ? "bg-slate-900 text-white rounded-tr-none"
-                    : "bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-none"
-                }`}
+                className={cn(
+                  "rounded-2xl p-4 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap",
+                  msg.role === "assistant"
+                    ? "bg-card border border-border text-text-primary shadow-xs"
+                    : "bg-primary text-white"
+                )}
               >
-                <div className="whitespace-pre-wrap font-sans">{m.text}</div>
+                {msg.text}
                 <div
-                  className={`text-[10px] text-right ${
-                    m.role === "user" ? "text-slate-400" : "text-slate-400"
-                  }`}
+                  className={cn(
+                    "text-[10px] mt-2 text-right opacity-70",
+                    msg.role === "assistant"
+                      ? "text-text-muted"
+                      : "text-white/80"
+                  )}
                 >
-                  {m.timestamp}
+                  {msg.timestamp}
                 </div>
               </div>
             </div>
           ))}
 
           {isLoading && (
-            <div className="flex items-start gap-3">
-              <div className="h-8 w-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+            <div className="flex gap-3 mr-auto max-w-[85%]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white shrink-0">
                 <Bot className="h-4 w-4" />
               </div>
-              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 text-xs text-slate-500 rounded-tl-none flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-indigo-600 animate-spin" />
-                <span>Analyzing your syllabus data and formulating study recommendations...</span>
+              <div className="rounded-2xl bg-card border border-border p-4 text-xs text-text-muted shadow-xs flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                <span>Analyzing curriculum data & formulating study recommendations...</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Quick Suggestion Chips */}
-        <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2 overflow-x-auto">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
-            Quick Inquiries:
+        {/* Quick Prompts Bar */}
+        <div className="px-4 py-2 border-t border-border/70 bg-background-secondary/30 flex items-center gap-2 overflow-x-auto">
+          <span className="text-[10px] font-bold text-text-muted uppercase shrink-0">
+            Suggested:
           </span>
-          {quickPrompts.map((chip, idx) => (
+          {quickPrompts.map((qp, idx) => (
             <button
               key={idx}
-              onClick={() => handleSend(chip.query)}
+              type="button"
+              onClick={() => handleSend(qp.query)}
               disabled={isLoading}
-              className="rounded-full bg-white border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 transition shrink-0 shadow-xs"
+              className="text-[11px] font-medium whitespace-nowrap rounded-lg border border-border bg-card px-2.5 py-1 text-text-primary hover:border-primary/40 hover:bg-background-secondary transition shrink-0"
             >
-              {chip.label}
+              {qp.label}
             </button>
           ))}
         </div>
 
         {/* Input Bar */}
-        <div className="p-4 bg-white border-t border-slate-200">
+        <div className="p-3 border-t border-border/70 bg-card">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -193,26 +240,24 @@ How can I help optimize your preparation today? You can ask me to draft a weekly
           >
             <input
               type="text"
+              placeholder="Ask your study assistant a preparation question..."
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
-              placeholder="Ask anything about your syllabus, revision schedule, or test performance..."
               disabled={isLoading}
-              className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="flex-1 rounded-xl border border-input-border bg-card px-3.5 py-2 text-xs sm:text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
-            <button
+            <Button
               type="submit"
-              disabled={isLoading || !inputQuery.trim()}
-              className="rounded-xl bg-indigo-600 p-2.5 text-white hover:bg-indigo-700 transition disabled:opacity-50"
+              size="md"
+              isLoading={isLoading}
+              disabled={!inputQuery.trim()}
+              leftIcon={<Send className="h-4 w-4" />}
             >
-              <Send className="h-4 w-4" />
-            </button>
+              Send
+            </Button>
           </form>
-
-          <p className="text-[10px] text-slate-400 mt-2 text-center">
-            AI suggestions are recommendations based on your personal metrics. Official notifications and rules are issued exclusively by examination authorities.
-          </p>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

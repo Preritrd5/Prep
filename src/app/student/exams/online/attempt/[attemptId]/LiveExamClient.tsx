@@ -1,22 +1,17 @@
 "use client";
 
+import { Button, Badge, Modal } from "@/components/ui";
 import { useState, useEffect, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Send,
-  Bookmark,
-  ChevronLeft,
-  ChevronRight,
-  Shield,
   RotateCcw,
   Flag,
-  HelpCircle,
-  Save,
   Check,
+  ChevronLeft,
+  ChevronRight,
+  Send,
+  AlertCircle,
 } from "lucide-react";
 import type {
   ExamAttempt,
@@ -76,7 +71,7 @@ export default function LiveExamClient({
     return s;
   });
 
-  // Server-Authoritative Timer (MODULE 8)
+  // Server-Authoritative Timer
   const calculateRemainingSeconds = useCallback(() => {
     const expiresMs = new Date(attempt.expires_at).getTime();
     const nowMs = Date.now();
@@ -201,7 +196,6 @@ export default function LiveExamClient({
     triggerAutosave(currentQ.id, currentSelected, nextMarked);
   };
 
-
   // Format timer HH:MM:SS
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -242,18 +236,18 @@ export default function LiveExamClient({
   const totalAnswered = answeredCount + answeredAndMarkedCount;
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans select-none">
+    <div className="min-h-screen bg-background text-text-primary flex flex-col font-sans select-none">
       {/* Top Test Navigation Bar */}
-      <header className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shadow-md sticky top-0 z-40">
+      <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between shadow-sm sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <div className="p-1.5 rounded-lg bg-indigo-600 text-white font-bold text-xs uppercase tracking-wide">
+          <Badge variant="primary" className="font-bold uppercase tracking-wide">
             CBT Exam
-          </div>
+          </Badge>
           <div>
-            <h1 className="text-sm font-bold text-slate-100 truncate max-w-md">
+            <h1 className="text-sm font-bold text-text-primary truncate max-w-md">
               {attempt.template?.title || "Online Examination"}
             </h1>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-text-muted">
               Section: {currentQ?.section_name || "General Section"}
             </span>
           </div>
@@ -262,47 +256,49 @@ export default function LiveExamClient({
         {/* Server Countdown Timer */}
         <div className="flex items-center gap-3">
           <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-bold shadow-sm ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-xs font-bold shadow-sm transition-colors ${
               remainingSeconds < 300
-                ? "bg-rose-950/80 border-rose-500 text-rose-300 animate-pulse"
-                : "bg-slate-800 border-slate-700 text-emerald-300"
+                ? "bg-error-light border-error text-error animate-pulse"
+                : "bg-secondary-bg border-border text-primary"
             }`}
           >
             <Clock className="w-4 h-4" />
             <span>Time Left: {formatTime(remainingSeconds)}</span>
           </div>
 
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => setIsSubmitModalOpen(true)}
-            className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition"
+            className="text-xs bg-success hover:bg-success/90 font-bold"
           >
             Submit Exam
-          </button>
+          </Button>
         </div>
       </header>
 
       {/* Main Examination Workspace */}
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col lg:flex-row gap-4">
         {/* Left: Question Stem & Options */}
-        <main className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden">
+        <main className="flex-1 bg-card rounded-2xl shadow-sm border border-border flex flex-col justify-between overflow-hidden">
           {/* Question Subheader */}
-          <div className="px-6 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
+          <div className="px-6 py-3.5 bg-secondary-bg/50 border-b border-border flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-700 uppercase">
+              <span className="font-bold text-text-primary uppercase">
                 Question {currentIndex + 1} of {questions.length}
               </span>
-              <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-800 font-semibold">
+              <Badge variant="secondary">
                 +{currentQ?.marks || 1} / -{currentQ?.negative_marks || 0.25} Marks
-              </span>
+              </Badge>
             </div>
 
-            <div className="flex items-center gap-2 text-slate-500">
+            <div className="flex items-center gap-2 text-text-muted">
               {saveStatus === "Saving" ? (
-                <span className="text-[11px] text-amber-600 flex items-center gap-1">
+                <span className="text-[11px] text-warning flex items-center gap-1 font-medium">
                   <RotateCcw className="w-3 h-3 animate-spin" /> Saving...
                 </span>
               ) : (
-                <span className="text-[11px] text-emerald-600 flex items-center gap-1">
+                <span className="text-[11px] text-success flex items-center gap-1 font-medium">
                   <Check className="w-3 h-3" /> Saved to server
                 </span>
               )}
@@ -311,7 +307,7 @@ export default function LiveExamClient({
 
           {/* Question Text & Options */}
           <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-            <p className="text-base font-semibold text-slate-900 leading-relaxed whitespace-pre-wrap">
+            <p className="text-base font-semibold text-text-primary leading-relaxed whitespace-pre-wrap">
               {currentQ?.question_text}
             </p>
 
@@ -325,17 +321,17 @@ export default function LiveExamClient({
                     key={opt.option_label}
                     type="button"
                     onClick={() => handleSelectOption(opt.option_label)}
-                    className={`w-full p-4 rounded-xl border text-left text-sm flex items-center gap-3 transition ${
+                    className={`w-full p-4 rounded-xl border text-left text-sm flex items-center gap-3 transition-all ${
                       isSelected
-                        ? "bg-indigo-50 border-indigo-500 text-indigo-950 font-medium shadow-sm ring-1 ring-indigo-500"
-                        : "bg-white border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-slate-300"
+                        ? "bg-primary/10 border-primary text-text-primary font-medium shadow-sm ring-1 ring-primary"
+                        : "bg-card border-border text-text-primary hover:bg-secondary-bg hover:border-primary/40"
                     }`}
                   >
                     <span
                       className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
                         isSelected
-                          ? "bg-indigo-600 text-white"
-                          : "bg-slate-100 text-slate-700 border border-slate-200"
+                          ? "bg-primary text-white"
+                          : "bg-secondary-bg text-text-primary border border-border"
                       }`}
                     >
                       {opt.option_label}
@@ -348,93 +344,94 @@ export default function LiveExamClient({
           </div>
 
           {/* Bottom Action Bar */}
-          <footer className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          <footer className="px-6 py-4 bg-secondary-bg/50 border-t border-border flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <Button
+                variant={answersState[currentQ?.id]?.is_marked_for_review ? "primary" : "outline"}
+                size="sm"
                 onClick={handleToggleReview}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border text-xs font-semibold transition ${
-                  answersState[currentQ?.id]?.is_marked_for_review
-                    ? "bg-purple-100 border-purple-400 text-purple-900"
-                    : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
-                }`}
+                className="gap-1.5 text-xs"
               >
-                <Flag className="w-3.5 h-3.5 text-purple-600" />
+                <Flag className="w-3.5 h-3.5" />
                 {answersState[currentQ?.id]?.is_marked_for_review
                   ? "Marked for Review"
                   : "Mark for Review"}
-              </button>
+              </Button>
 
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleClearResponse}
                 disabled={!answersState[currentQ?.id]?.selected_option}
-                className="px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition disabled:opacity-40"
+                className="text-xs"
               >
                 Clear Response
-              </button>
+              </Button>
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
                 disabled={currentIndex === 0}
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition disabled:opacity-40"
+                className="gap-1 text-xs"
               >
                 <ChevronLeft className="w-4 h-4" /> Previous
-              </button>
+              </Button>
 
               {currentIndex < questions.length - 1 ? (
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={() => setCurrentIndex((prev) => prev + 1)}
-                  className="inline-flex items-center gap-1 px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition"
+                  className="gap-1 text-xs"
                 >
                   Save & Next <ChevronRight className="w-4 h-4" />
-                </button>
+                </Button>
               ) : (
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={() => setIsSubmitModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition"
+                  className="gap-1 text-xs bg-success hover:bg-success/90"
                 >
                   <Send className="w-3.5 h-3.5" /> Submit Examination
-                </button>
+                </Button>
               )}
             </div>
           </footer>
         </main>
 
         {/* Right: Question Navigation Palette */}
-        <aside className="w-full lg:w-80 bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-5 flex flex-col justify-between">
+        <aside className="w-full lg:w-80 bg-card rounded-2xl shadow-sm border border-border p-5 space-y-5 flex flex-col justify-between">
           <div className="space-y-4">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted border-b border-border pb-2">
               Question Palette ({questions.length})
             </h2>
 
             {/* Standard 5-State Legend */}
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-text-secondary">
               <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded bg-emerald-500 text-white font-bold text-[9px] flex items-center justify-center">
+                <span className="w-4 h-4 rounded bg-success text-white font-bold text-[9px] flex items-center justify-center">
                   ✓
                 </span>
                 <span>Answered ({totalAnswered})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded bg-rose-500 text-white font-bold text-[9px] flex items-center justify-center">
+                <span className="w-4 h-4 rounded bg-error text-white font-bold text-[9px] flex items-center justify-center">
                   ✕
                 </span>
                 <span>Not Answered ({notAnsweredCount})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded bg-purple-600 text-white font-bold text-[9px] flex items-center justify-center">
+                <span className="w-4 h-4 rounded bg-accent text-white font-bold text-[9px] flex items-center justify-center">
                   ●
                 </span>
                 <span>Marked Review ({markedCount})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded bg-slate-200 text-slate-600 font-bold text-[9px] flex items-center justify-center">
+                <span className="w-4 h-4 rounded bg-secondary-bg border border-border text-text-muted font-bold text-[9px] flex items-center justify-center">
                   -
                 </span>
                 <span>Not Visited ({notVisitedCount})</span>
@@ -450,31 +447,31 @@ export default function LiveExamClient({
                 const hasOption = ans && ans.selected_option !== null && ans.selected_option !== undefined;
                 const isMarked = ans && ans.is_marked_for_review;
 
-                let pillColor = "bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200";
+                let pillColor = "bg-secondary-bg text-text-muted border-border hover:bg-secondary-bg/80";
 
                 if (!isVisited) {
-                  pillColor = "bg-slate-100 text-slate-400 border-slate-200";
+                  pillColor = "bg-secondary-bg text-text-muted border-border";
                 } else if (hasOption && isMarked) {
-                  pillColor = "bg-purple-700 text-white font-bold border-purple-800 ring-2 ring-emerald-400";
+                  pillColor = "bg-accent text-white font-bold border-accent ring-2 ring-success";
                 } else if (hasOption) {
-                  pillColor = "bg-emerald-600 text-white font-bold border-emerald-700";
+                  pillColor = "bg-success text-white font-bold border-success";
                 } else if (isMarked) {
-                  pillColor = "bg-purple-600 text-white font-bold border-purple-700";
+                  pillColor = "bg-accent text-white font-bold border-accent";
                 } else {
-                  pillColor = "bg-rose-500 text-white font-bold border-rose-600";
+                  pillColor = "bg-error text-white font-bold border-error";
                 }
 
                 return (
                   <button
                     key={q.id}
                     onClick={() => setCurrentIndex(idx)}
-                    className={`h-10 rounded-lg text-xs font-semibold flex items-center justify-center transition border relative ${
-                      isCurrent ? "ring-2 ring-indigo-600 ring-offset-2" : ""
+                    className={`h-10 rounded-xl text-xs font-semibold flex items-center justify-center transition-all border relative ${
+                      isCurrent ? "ring-2 ring-primary ring-offset-2 ring-offset-card" : ""
                     } ${pillColor}`}
                   >
                     {idx + 1}
                     {hasOption && isMarked && (
-                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-300" />
+                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-success-light" />
                     )}
                   </button>
                 );
@@ -482,84 +479,79 @@ export default function LiveExamClient({
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-100">
-            <button
+          <div className="pt-4 border-t border-border">
+            <Button
+              variant="primary"
               onClick={() => setIsSubmitModalOpen(true)}
-              className="w-full py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-sm"
+              className="w-full text-xs font-bold"
             >
               Finish & Submit Test
-            </button>
+            </Button>
           </div>
         </aside>
       </div>
 
-      {/* Submission Confirmation Modal (MODULE 7) */}
-      {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-5 animate-scale-in">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-100 text-amber-700">
-                <AlertCircle className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Confirm Examination Submission</h3>
-                <p className="text-xs text-slate-500">
-                  Please review your question summary before submitting.
-                </p>
-              </div>
+      {/* Submission Confirmation Modal */}
+      <Modal
+        isOpen={isSubmitModalOpen}
+        onClose={() => setIsSubmitModalOpen(false)}
+        title="Confirm Examination Submission"
+        description="Please review your question summary before submitting."
+      >
+        <div className="space-y-4">
+          {/* Summary Statistics */}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="p-3 rounded-xl bg-secondary-bg border border-border">
+              <span className="text-text-muted block">Total Questions</span>
+              <span className="text-base font-bold text-text-primary">{questions.length}</span>
             </div>
 
-            {/* Summary Statistics */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-slate-500 block">Total Questions</span>
-                <span className="text-base font-bold text-slate-900">{questions.length}</span>
-              </div>
-
-              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-                <span className="text-emerald-700 block">Answered</span>
-                <span className="text-base font-bold text-emerald-800">{totalAnswered}</span>
-              </div>
-
-              <div className="p-3 rounded-lg bg-rose-50 border border-rose-200">
-                <span className="text-rose-700 block">Unanswered</span>
-                <span className="text-base font-bold text-rose-800">
-                  {questions.length - totalAnswered}
-                </span>
-              </div>
-
-              <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
-                <span className="text-purple-700 block">Marked for Review</span>
-                <span className="text-base font-bold text-purple-800">
-                  {markedCount + answeredAndMarkedCount}
-                </span>
-              </div>
+            <div className="p-3 rounded-xl bg-success-light border border-success/30">
+              <span className="text-success block">Answered</span>
+              <span className="text-base font-bold text-success">{totalAnswered}</span>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Once you click <strong>Confirm and Submit</strong>, your examination attempt will be closed and evaluated server-side. You will not be able to return or change any answers.
-            </p>
+            <div className="p-3 rounded-xl bg-error-light border border-error/30">
+              <span className="text-error block">Unanswered</span>
+              <span className="text-base font-bold text-error">
+                {questions.length - totalAnswered}
+              </span>
+            </div>
 
-            <div className="pt-2 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsSubmitModalOpen(false)}
-                className="px-4 py-2 rounded-lg border text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Back to Test
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFinalSubmit(false)}
-                disabled={isPending}
-                className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition disabled:opacity-50"
-              >
-                {isPending ? "Evaluating Responses..." : "Confirm & Submit"}
-              </button>
+            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+              <span className="text-primary block">Marked for Review</span>
+              <span className="text-base font-bold text-primary">
+                {markedCount + answeredAndMarkedCount}
+              </span>
             </div>
           </div>
+
+          <p className="text-xs text-text-secondary leading-relaxed">
+            Once you click <strong>Confirm and Submit</strong>, your examination attempt will be closed and evaluated server-side. You will not be able to return or change any answers.
+          </p>
+
+          <div className="pt-2 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSubmitModalOpen(false)}
+            >
+              Back to Test
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => handleFinalSubmit(false)}
+              disabled={isPending}
+              className="bg-success hover:bg-success/90 text-white font-bold"
+            >
+              {isPending ? "Evaluating Responses..." : "Confirm & Submit"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

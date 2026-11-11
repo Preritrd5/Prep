@@ -29,8 +29,8 @@ export const FALLBACK_QUESTIONS: Question[] = [
     question_text:
       "With reference to the Indian National Movement, consider the following events: 1. Champaran Satyagraha 2. Kheda Satyagraha 3. Ahmedabad Mill Strike. Which is the correct chronological sequence?",
     subject_id: "s1000000-0000-0000-0000-000000000002", // Indian History
-    chapter_id: null,
-    topic_id: null,
+    chapter_id: "c1000000-0000-0000-0000-000000000003", // Modern History
+    topic_id: "t1000000-0000-0000-0000-000000000011",   // Indian National Movement & Gandhian Era
     difficulty: "Medium",
     source_type: "Previous Year Question",
     pyq_exam_name: "UPSC Civil Services Prelims",
@@ -54,8 +54,8 @@ export const FALLBACK_QUESTIONS: Question[] = [
     question_text:
       "Which Article of the Constitution of India safeguards one’s right to marry the person of one’s choice?",
     subject_id: "s1000000-0000-0000-0000-000000000005", // Indian Polity
-    chapter_id: null,
-    topic_id: null,
+    chapter_id: "c1000000-0000-0000-0000-000000000009", // Constitutional Framework
+    topic_id: "t1000000-0000-0000-0000-000000000033",   // Fundamental Rights & Duties
     difficulty: "Easy",
     source_type: "Previous Year Question",
     pyq_exam_name: "UPSC Civil Services Prelims",
@@ -104,8 +104,8 @@ export const FALLBACK_QUESTIONS: Question[] = [
     question_text:
       "Under the Karnataka Land Revenue Act, 1964, who is designated as the chief revenue authority of a revenue sub-division?",
     subject_id: "s1000000-0000-0000-0000-000000000005", // Indian Polity / Admin
-    chapter_id: null,
-    topic_id: null,
+    chapter_id: "c1000000-0000-0000-0000-000000000010", // Union & State Governance
+    topic_id: "t1000000-0000-0000-0000-000000000038",   // Panchayati Raj & State Administration
     difficulty: "Medium",
     source_type: "Previous Year Question",
     pyq_exam_name: "KEA Land Surveyor / VAO",
@@ -129,8 +129,8 @@ export const FALLBACK_QUESTIONS: Question[] = [
     question_text:
       "A train moving at 72 km/h crosses a 200-meter-long platform in 22 seconds. What is the length of the train?",
     subject_id: "s1000000-0000-0000-0000-000000000011", // Mental Ability
-    chapter_id: null,
-    topic_id: null,
+    chapter_id: "c1000000-0000-0000-0000-000000000021", // Reasoning & Quantitative Aptitude
+    topic_id: "t1000000-0000-0000-0000-000000000070",   // Time, Distance, Speed & Relations
     difficulty: "Medium",
     source_type: "Previous Year Question",
     pyq_exam_name: "Railway RRB NTPC",
@@ -153,9 +153,9 @@ export const FALLBACK_QUESTIONS: Question[] = [
     bank_id: "qb100000-0000-0000-0000-000000000001",
     question_text:
       "Which of the following soil types possesses high liquid limit and plasticity index, exhibiting high swelling and shrinkage characteristics?",
-    subject_id: "s1000000-0000-0000-0000-000000000013", // Geotechnical Engineering
-    chapter_id: null,
-    topic_id: null,
+    subject_id: "s1000000-0000-0000-0000-000000000003", // Geography
+    chapter_id: "c1000000-0000-0000-0000-000000000006", // Indian Geography
+    topic_id: "t1000000-0000-0000-0000-000000000022",   // Climate, Monsoons & Agriculture
     difficulty: "Medium",
     source_type: "Previous Year Question",
     pyq_exam_name: "Assistant Engineer (AE) Civil",
@@ -179,8 +179,8 @@ export const FALLBACK_QUESTIONS: Question[] = [
     question_text:
       "In Karnataka Administrative history, the historical treaty of Seringapatam (1792) was signed after which Anglo-Mysore War?",
     subject_id: "s1000000-0000-0000-0000-000000000002", // Indian History
-    chapter_id: null,
-    topic_id: null,
+    chapter_id: "c1000000-0000-0000-0000-000000000003", // Modern History
+    topic_id: "t1000000-0000-0000-0000-000000000009",   // European Advent & British Expansion
     difficulty: "Easy",
     source_type: "Previous Year Question",
     pyq_exam_name: "KAS Gazetted Probationers",
@@ -196,6 +196,81 @@ export const FALLBACK_QUESTIONS: Question[] = [
       { id: "o26", question_id: "q1000000-0000-0000-0000-000000000007", option_label: "B", option_text: "Second Anglo-Mysore War", order_index: 2, created_at: "2026-01-01T00:00:00Z" },
       { id: "o27", question_id: "q1000000-0000-0000-0000-000000000007", option_label: "C", option_text: "Third Anglo-Mysore War", order_index: 3, created_at: "2026-01-01T00:00:00Z" },
       { id: "o28", question_id: "q1000000-0000-0000-0000-000000000007", option_label: "D", option_text: "Fourth Anglo-Mysore War", order_index: 4, created_at: "2026-01-01T00:00:00Z" },
+    ],
+  },
+  {
+    id: "q1000000-0000-0000-0000-000000000008",
+    bank_id: "qb100000-0000-0000-0000-000000000001",
+    question_text:
+      "The dockyard at Lothal is one of the most prominent features of the Indus Valley Civilization. In which modern Indian state is Lothal situated?",
+    subject_id: "s1000000-0000-0000-0000-000000000002", // Indian History
+    chapter_id: "c1000000-0000-0000-0000-000000000001", // Ancient History
+    topic_id: "t1000000-0000-0000-0000-000000000001",   // Indus Valley Civilization & Prehistory
+    difficulty: "Easy",
+    source_type: "Previous Year Question",
+    pyq_exam_name: "UPSC Civil Services Prelims",
+    pyq_year: 2017,
+    source_reference: "UPSC CSE 2017 / NCERT Ancient India",
+    status: "Published",
+    is_personal: false,
+    created_by: null,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    options: [
+      { id: "o29", question_id: "q1000000-0000-0000-0000-000000000008", option_label: "A", option_text: "Gujarat", order_index: 1, created_at: "2026-01-01T00:00:00Z" },
+      { id: "o30", question_id: "q1000000-0000-0000-0000-000000000008", option_label: "B", option_text: "Rajasthan", order_index: 2, created_at: "2026-01-01T00:00:00Z" },
+      { id: "o31", question_id: "q1000000-0000-0000-0000-000000000008", option_label: "C", option_text: "Haryana", order_index: 3, created_at: "2026-01-01T00:00:00Z" },
+      { id: "o32", question_id: "q1000000-0000-0000-0000-000000000008", option_label: "D", option_text: "Punjab", order_index: 4, created_at: "2026-01-01T00:00:00Z" },
+    ],
+  },
+  {
+    id: "q1000000-0000-0000-0000-000000000009",
+    bank_id: "qb100000-0000-0000-0000-000000000001",
+    question_text:
+      "Which of the following peninsular rivers flows westwards into the Arabian Sea through a structural rift valley?",
+    subject_id: "s1000000-0000-0000-0000-000000000003", // Geography
+    chapter_id: "c1000000-0000-0000-0000-000000000006", // Indian Geography
+    topic_id: "t1000000-0000-0000-0000-000000000020",   // Physiography & River Systems of India
+    difficulty: "Easy",
+    source_type: "Previous Year Question",
+    pyq_exam_name: "KAS Gazetted Probationers",
+    pyq_year: 2017,
+    source_reference: "KPSC KAS Prelims 2017",
+    status: "Published",
+    is_personal: false,
+    created_by: null,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    options: [
+      { id: "o33", question_id: "q1000000-0000-0000-0000-000000000009", option_label: "A", option_text: "Godavari", order_index: 1, created_at: "2026-01-01T00:00:00Z" },
+      { id: "o34", question_id: "q1000000-0000-0000-0000-000000000009", option_label: "B", option_text: "Narmada", order_index: 2, created_at: "2026-01-01T00:00:00Z" },
+      { id: "o35", question_id: "q1000000-0000-0000-0000-000000000009", option_label: "C", option_text: "Krishna", order_index: 3, created_at: "2026-01-01T00:00:00Z" },
+      { id: "o36", question_id: "q1000000-0000-0000-0000-000000000009", option_label: "D", option_text: "Mahanadi", order_index: 4, created_at: "2026-01-01T00:00:00Z" },
+    ],
+  },
+  {
+    id: "q1000000-0000-0000-0000-000000000010",
+    bank_id: "qb100000-0000-0000-0000-000000000001",
+    question_text:
+      "If an object is placed at the center of curvature (C) of a concave spherical mirror, where is the image formed?",
+    subject_id: "s1000000-0000-0000-0000-000000000007", // General Science
+    chapter_id: "c1000000-0000-0000-0000-000000000013", // Physics
+    topic_id: "t1000000-0000-0000-0000-000000000047",   // Optics, Sound & Waves
+    difficulty: "Easy",
+    source_type: "Previous Year Question",
+    pyq_exam_name: "Railway RRB NTPC",
+    pyq_year: 2019,
+    source_reference: "RRB General Science 2019",
+    status: "Published",
+    is_personal: false,
+    created_by: null,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    options: [
+      { id: "o37", question_id: "q1000000-0000-0000-0000-000000000010", option_label: "A", option_text: "At infinity", order_index: 1, created_at: "2026-01-01T00:00:00Z" },
+      { id: "o38", question_id: "q1000000-0000-0000-0000-000000000010", option_label: "B", option_text: "At the principal focus (F)", order_index: 2, created_at: "2026-01-01T00:00:00Z" },
+      { id: "o39", question_id: "q1000000-0000-0000-0000-000000000010", option_label: "C", option_text: "At the center of curvature (C)", order_index: 3, created_at: "2026-01-01T00:00:00Z" },
+      { id: "o40", question_id: "q1000000-0000-0000-0000-000000000010", option_label: "D", option_text: "Behind the mirror", order_index: 4, created_at: "2026-01-01T00:00:00Z" },
     ],
   },
 ];
@@ -235,6 +310,21 @@ export const FALLBACK_ANSWER_KEYS: Record<string, { correct: OptionLabel; explan
     correct: "C",
     explanation:
       "The Treaty of Seringapatam was signed on 18 March 1792 at the end of the Third Anglo-Mysore War between Tipu Sultan and Lord Cornwallis.",
+  },
+  "q1000000-0000-0000-0000-000000000008": {
+    correct: "A",
+    explanation:
+      "Lothal is situated near the Gulf of Khambhat in the Bhal region of modern Gujarat. It possessed the world's earliest known tidal dockyard connecting to the Sabarmati river.",
+  },
+  "q1000000-0000-0000-0000-000000000009": {
+    correct: "B",
+    explanation:
+      "The Narmada river originates at Amarkantak and flows westwards between the Vindhyan and Satpura ranges through a tectonic rift valley into the Gulf of Khambhat.",
+  },
+  "q1000000-0000-0000-0000-000000000010": {
+    correct: "C",
+    explanation:
+      "For a concave spherical mirror, when an object is placed at the center of curvature (C), the reflected rays converge at C, producing a real, inverted image of the same size.",
   },
 };
 
@@ -295,6 +385,12 @@ export async function getQuestions(filters?: {
       let res = FALLBACK_QUESTIONS;
       if (filters?.subjectId && filters.subjectId !== "All") {
         res = res.filter((q) => q.subject_id === filters.subjectId);
+      }
+      if (filters?.chapterId && filters.chapterId !== "All") {
+        res = res.filter((q) => q.chapter_id === filters.chapterId);
+      }
+      if (filters?.topicId && filters.topicId !== "All") {
+        res = res.filter((q) => q.topic_id === filters.topicId);
       }
       if (filters?.difficulty && filters.difficulty !== "All") {
         res = res.filter((q) => q.difficulty === filters.difficulty);

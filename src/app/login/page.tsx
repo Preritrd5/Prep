@@ -1,5 +1,6 @@
 "use client";
 
+import { Card, CardContent, Button, Badge, Alert } from "@/components/ui";
 import { useActionState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -17,152 +18,155 @@ function LoginForm() {
   );
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        {/* Header */}
-        <div className="text-center">
-          <Link
-            href="/"
-            className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-200 mb-4"
-          >
-            <GraduationCap className="h-7 w-7" />
-          </Link>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Sign in to PrepTrack
-          </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Access your student preparation workspace or admin governance portal.
-          </p>
-        </div>
-
-        {/* Global Error Banner */}
-        {errorParam === "auth_callback_failed" && (
-          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>Authentication session verification failed. Please try signing in again.</span>
-          </div>
-        )}
-
-        {state?.error && (
-          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{state.error}</span>
-          </div>
-        )}
-
-        {/* Form */}
-        <form action={formAction} className="mt-8 space-y-5">
-          <input type="hidden" name="redirectTo" value={redirectTo} />
-
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-slate-700"
-            >
-              Email Address
-            </label>
-            <div className="relative mt-1">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                <Mail className="h-5 w-5" />
-              </div>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                placeholder="name@example.com"
-                className="block w-full rounded-lg border border-slate-300 py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-slate-700"
-              >
-                Password
-              </label>
-            </div>
-            <div className="relative mt-1">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                <Lock className="h-5 w-5" />
-              </div>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                placeholder="••••••••"
-                className="block w-full rounded-lg border border-slate-300 py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isPending ? (
-              <span className="flex items-center gap-2">
-                <svg
-                  className="h-4 w-4 animate-spin text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Authenticating...
-              </span>
-            ) : (
-              <>
-                Sign In
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Informational notice about Admin & Registration */}
-        <div className="space-y-4 pt-4 border-t border-slate-100">
-          <p className="text-center text-sm text-slate-600">
-            Don&apos;t have a student account?{" "}
+    <div className="min-h-screen w-full bg-background text-text-primary flex flex-col items-center justify-start py-8 sm:py-12 px-4 sm:px-6 lg:px-8 selection:bg-primary selection:text-white overflow-y-auto">
+      <div className="w-full max-w-md my-auto space-y-6">
+        {/* Platform Branding Header (UrPlaced Standard) */}
+        <div className="text-center space-y-2">
+          <div className="flex justify-center mb-2">
             <Link
-              href="/register"
-              className="font-semibold text-indigo-600 hover:text-indigo-500 hover:underline"
+              href="/"
+              className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-gradient text-white shadow-md transition-transform hover:scale-105 active:scale-95"
+              aria-label="PrepTrack Home"
             >
-              Register here
+              <GraduationCap className="h-6 w-6" />
             </Link>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold font-mono tracking-wider uppercase">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>Preparation &amp; Exam Portal</span>
+          </div>
+          <h1 className="text-3xl font-extrabold font-heading text-text-primary tracking-tight">
+            PrepTrack
+          </h1>
+          <p className="text-xs text-text-secondary">
+            Competitive Examination Preparation &amp; Academic Governance
           </p>
+        </div>
 
-          <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500 border border-slate-200">
-            <div className="flex items-start gap-2">
-              <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-semibold text-slate-700">Administrator Access:</span>{" "}
-                Admin accounts sign in using their provisioned administrative credentials above.
-                Admin accounts are not created publicly.
+        {/* Main Login Card with Top Accent Strip */}
+        <Card className="w-full bg-card border-border shadow-md rounded-2xl overflow-hidden">
+          <div className="h-1.5 bg-primary-gradient" />
+
+          <CardContent className="p-6 sm:p-8 space-y-5">
+            {/* Header Title */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold font-heading text-text-primary">
+                  Sign In
+                </h2>
+                <Badge variant="outline" className="text-[10px] border-primary/40 text-primary bg-primary/5 font-mono">
+                  Student &amp; Admin
+                </Badge>
+              </div>
+              <p className="text-xs text-text-secondary">
+                Enter your credentials to access your dashboard.
+              </p>
+            </div>
+
+            {/* Error Banners */}
+            {errorParam === "auth_callback_failed" && (
+              <Alert variant="error" className="py-2.5 rounded-xl text-xs">
+                Authentication session verification failed. Please try signing in again.
+              </Alert>
+            )}
+
+            {state?.error && (
+              <Alert variant="error" className="py-2.5 rounded-xl text-xs">
+                {state.error}
+              </Alert>
+            )}
+
+            {/* Form */}
+            <form action={formAction} className="space-y-4">
+              <input type="hidden" name="redirectTo" value={redirectTo} />
+
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="email"
+                  className="block text-xs font-semibold text-text-primary"
+                >
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-text-muted">
+                    <Mail className="h-4 w-4" />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    placeholder="name@example.com"
+                    className="block w-full h-10 rounded-xl border border-border bg-input py-2 pl-10 pr-3.5 text-xs text-text-primary placeholder:text-text-muted shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="password"
+                    className="block text-xs font-semibold text-text-primary"
+                  >
+                    Password
+                  </label>
+                </div>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-text-muted">
+                    <Lock className="h-4 w-4" />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    placeholder="••••••••"
+                    className="block w-full h-10 rounded-xl border border-border bg-input py-2 pl-10 pr-3.5 text-xs text-text-primary placeholder:text-text-muted shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  className="w-full h-10 rounded-xl font-semibold text-xs shadow-xs"
+                  isLoading={isPending}
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
+                  Sign In
+                </Button>
+              </div>
+            </form>
+
+            {/* Informational notice & Navigation */}
+            <div className="space-y-3 pt-3 border-t border-border/70">
+              <p className="text-center text-xs text-text-secondary">
+                Don&apos;t have a student account?{" "}
+                <Link
+                  href="/register"
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Register here
+                </Link>
+              </p>
+
+              <div className="rounded-xl bg-surface-secondary/70 p-3 text-xs text-text-muted border border-border/80">
+                <div className="flex items-start gap-2.5">
+                  <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <div className="text-[11px] leading-relaxed">
+                    <span className="font-semibold text-text-primary">Admin Access:</span>{" "}
+                    Administrative accounts sign in using provisioned credentials above.
+                    Admin registration is restricted by platform governance.
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -172,8 +176,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
       }
     >

@@ -1,9 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { Layers, Plus, AlertCircle, Tag } from "lucide-react";
+import React, { useState } from "react";
+import { Plus, BookOpen } from "lucide-react";
 import { adminCreateSubjectAction } from "@/app/actions/syllabus";
 import type { Subject } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface AdminSubjectsClientProps {
   subjects: Subject[];
@@ -45,140 +54,137 @@ export default function AdminSubjectsClient({ subjects }: AdminSubjectsClientPro
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-slate-900">
-            Subject Repository ({subjects.length})
+          <h2 className="text-base font-bold text-text-primary">
+            Subjects Library ({subjects.length})
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-text-secondary">
             Modular subjects shared and mapped across competitive examinations.
           </p>
         </div>
 
-        <button
+        <Button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-purple-700"
+          leftIcon={<Plus className="h-4 w-4" />}
+          size="md"
         >
-          <Plus className="h-4 w-4" />
           Create Subject
-        </button>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {subjects.map((s) => (
-          <div
-            key={s.id}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 transition"
-          >
-            <div className="flex items-center justify-between">
-              <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-bold text-purple-700">
-                {s.category || "General"}
-              </span>
-              <span className="font-mono text-[10px] text-slate-400 font-bold">{s.code}</span>
-            </div>
+      {subjects.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {subjects.map((s) => (
+            <Card
+              key={s.id}
+              className="p-5 hover:border-primary/40 transition flex flex-col justify-between space-y-3"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Badge variant="primary" size="sm">
+                    {s.category || "General"}
+                  </Badge>
+                  <span className="font-mono text-[11px] font-bold text-text-muted bg-background-secondary px-2 py-0.5 rounded border border-border/80">
+                    {s.code}
+                  </span>
+                </div>
 
-            <h3 className="mt-3 text-base font-bold text-slate-900">{s.name}</h3>
-            {s.description && (
-              <p className="text-xs text-slate-500 mt-1 line-clamp-2">{s.description}</p>
-            )}
-          </div>
-        ))}
-      </div>
+                <h3 className="text-base font-bold text-text-primary">
+                  {s.name}
+                </h3>
+                {s.description && (
+                  <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed">
+                    {s.description}
+                  </p>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon={<BookOpen className="h-6 w-6" />}
+          title="No subjects registered"
+          description="Create common curriculum subjects to begin building exam syllabuses."
+          action={
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              leftIcon={<Plus className="h-4 w-4" />}
+              size="sm"
+            >
+              Create Subject
+            </Button>
+          }
+        />
+      )}
 
       {/* Create Subject Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">Create Subject</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Add a reusable subject to the central curriculum library.
-            </p>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Create Curriculum Subject"
+        description="Add a reusable subject to the central curriculum library."
+      >
+        {errorMsg && (
+          <Alert variant="error" className="mb-4">
+            {errorMsg}
+          </Alert>
+        )}
 
-            {errorMsg && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 p-2.5 text-xs text-red-700 border border-red-200">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
+        <form onSubmit={handleCreate} className="space-y-4">
+          <Input
+            label="Subject Name"
+            required
+            placeholder="e.g. Environmental Engineering"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
 
-            <form onSubmit={handleCreate} className="mt-4 space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Subject Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Environmental Engineering"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Subject Code"
+              required
+              placeholder="CE-ENV"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+            />
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Subject Code
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="CE-ENV"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono text-slate-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                  >
-                    <option value="General Studies">General Studies</option>
-                    <option value="Technical">Technical</option>
-                    <option value="Aptitude">Aptitude</option>
-                    <option value="Static GK">Static GK</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Coverage summary..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-purple-700 disabled:opacity-60"
-                >
-                  {isPending ? "Creating..." : "Save Subject"}
-                </button>
-              </div>
-            </form>
+            <Select
+              label="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              options={[
+                { label: "General Studies", value: "General Studies" },
+                { label: "Technical", value: "Technical" },
+                { label: "Aptitude", value: "Aptitude" },
+                { label: "Static GK", value: "Static GK" },
+              ]}
+            />
           </div>
-        </div>
-      )}
+
+          <Textarea
+            label="Description"
+            rows={3}
+            placeholder="Curriculum coverage summary..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isPending}>
+              Save Subject
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

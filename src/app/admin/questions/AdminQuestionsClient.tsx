@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader, Card, Badge, Button, Alert, StatCard, EmptyState } from "@/components/ui";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
@@ -7,18 +8,13 @@ import {
   Plus,
   Upload,
   Sparkles,
-  CheckCircle,
   Clock,
-  Filter,
   Search,
   ChevronDown,
   ChevronUp,
-  Eye,
-  EyeOff,
   Trash2,
   CheckSquare,
   Square,
-  AlertCircle,
 } from "lucide-react";
 import type { Question, Subject, DifficultyLevel, QuestionStatus, QuestionSource } from "@/lib/types";
 import {
@@ -44,7 +40,6 @@ export default function AdminQuestionsClient({
   const [selectedStatus, setSelectedStatus] = useState<QuestionStatus | "All">("All");
 
   const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(null);
-  const [revealedKeyId, setRevealedKeyId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -140,94 +135,67 @@ export default function AdminQuestionsClient({
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & Quick Navigation */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">MCQ Question Bank Repository</h1>
-            <p className="text-sm text-slate-600 mt-1">
-              Centralized repository for common competitive examination questions, PYQs, and AI-generated items.
-            </p>
-          </div>
+      <PageHeader
+        title="MCQ Question Bank Repository"
+        description="Centralized repository for common competitive examination questions, PYQs, and AI-generated items."
+        breadcrumbs={[
+          { label: "Admin Console", href: "/admin/dashboard" },
+          { label: "Questions" },
+        ]}
+        actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/admin/questions/create"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 text-white font-medium text-sm hover:bg-indigo-700 shadow-sm transition"
-            >
-              <Plus className="w-4 h-4" /> Create Question
+            <Link href="/admin/questions/create">
+              <Button variant="primary" size="sm" className="gap-1.5 text-xs">
+                <Plus className="w-4 h-4" /> Create Question
+              </Button>
             </Link>
-            <Link
-              href="/admin/questions/import"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 shadow-sm transition"
-            >
-              <Upload className="w-4 h-4" /> Bulk Import
+            <Link href="/admin/questions/import">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs text-success border-success/30 hover:bg-success-light">
+                <Upload className="w-4 h-4" /> Bulk Import
+              </Button>
             </Link>
-            <Link
-              href="/admin/questions/ai"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-violet-600 text-white font-medium text-sm hover:bg-violet-700 shadow-sm transition"
-            >
-              <Sparkles className="w-4 h-4" /> AI Generator
+            <Link href="/admin/questions/ai">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs text-accent border-accent/30 hover:bg-accent/10">
+                <Sparkles className="w-4 h-4" /> AI Generator
+              </Button>
             </Link>
-            <Link
-              href="/admin/questions/review"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-600 text-white font-medium text-sm hover:bg-amber-700 shadow-sm transition"
-            >
-              <Clock className="w-4 h-4" /> Review Queue ({pendingCount})
+            <Link href="/admin/questions/review">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs text-warning border-warning/30 hover:bg-warning-light">
+                <Clock className="w-4 h-4" /> Review Queue ({pendingCount})
+              </Button>
             </Link>
           </div>
-        </div>
+        }
+      />
 
-        {/* Metrics Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6 pt-6 border-t border-slate-100">
-          <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-            <p className="text-xs font-semibold text-slate-500 uppercase">Total Questions</p>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{totalCount}</p>
-          </div>
-          <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
-            <p className="text-xs font-semibold text-emerald-700 uppercase">Published</p>
-            <p className="text-2xl font-bold text-emerald-800 mt-1">{publishedCount}</p>
-          </div>
-          <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-            <p className="text-xs font-semibold text-amber-700 uppercase">Needs Review</p>
-            <p className="text-2xl font-bold text-amber-800 mt-1">{pendingCount}</p>
-          </div>
-          <div className="bg-violet-50 rounded-lg p-3 border border-violet-100">
-            <p className="text-xs font-semibold text-violet-700 uppercase">AI Generated</p>
-            <p className="text-2xl font-bold text-violet-800 mt-1">{aiCount}</p>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-            <p className="text-xs font-semibold text-blue-700 uppercase">Verified PYQs</p>
-            <p className="text-2xl font-bold text-blue-800 mt-1">{pyqCount}</p>
-          </div>
-        </div>
+      {/* Metrics Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <StatCard title="Total Questions" value={totalCount} icon={FileQuestion} />
+        <StatCard title="Published" value={publishedCount} icon={FileQuestion} />
+        <StatCard title="Needs Review" value={pendingCount} icon={Clock} />
+        <StatCard title="AI Generated" value={aiCount} icon={Sparkles} />
+        <StatCard title="Verified PYQs" value={pyqCount} icon={FileQuestion} />
       </div>
 
       {msg && (
-        <div
-          className={`p-4 rounded-lg flex items-center justify-between text-sm ${
-            msg.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-red-50 text-red-800 border border-red-200"
-          }`}
-        >
-          <span>{msg.text}</span>
-          <button onClick={() => setMsg(null)} className="text-xs font-bold underline">
-            Dismiss
-          </button>
-        </div>
+        <Alert
+          variant={msg.type === "success" ? "success" : "error"}
+          title={msg.text}
+          onClose={() => setMsg(null)}
+        />
       )}
 
       {/* Filter & Search Bar */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3">
+      <Card className="p-4 space-y-3">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <Search className="w-4 h-4 text-text-muted absolute left-3 top-3" />
             <input
               type="text"
               placeholder="Search question text or keywords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-9 pr-4 py-2 border border-border rounded-xl text-xs bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -235,7 +203,7 @@ export default function AdminQuestionsClient({
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-border rounded-xl px-3 py-2 text-xs bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Subjects</option>
               {subjects.map((s) => (
@@ -248,7 +216,7 @@ export default function AdminQuestionsClient({
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value as any)}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-border rounded-xl px-3 py-2 text-xs bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Difficulties</option>
               <option value="Easy">Easy</option>
@@ -259,7 +227,7 @@ export default function AdminQuestionsClient({
             <select
               value={selectedSource}
               onChange={(e) => setSelectedSource(e.target.value as any)}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-border rounded-xl px-3 py-2 text-xs bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Sources</option>
               <option value="Manual">Manual</option>
@@ -273,7 +241,7 @@ export default function AdminQuestionsClient({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value as any)}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-border rounded-xl px-3 py-2 text-xs bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Statuses</option>
               <option value="Published">Published</option>
@@ -288,47 +256,52 @@ export default function AdminQuestionsClient({
 
         {/* Bulk Action Strip */}
         {selectedIds.length > 0 && (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 animate-fade-in">
-            <span className="text-sm font-semibold text-indigo-900">
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-xs font-semibold text-text-primary">
               {selectedIds.length} question(s) selected
             </span>
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() => handleBulkStatus("Published")}
                 disabled={isPending}
-                className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition"
+                className="text-xs bg-success hover:bg-success/90"
               >
                 Publish Selected
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => handleBulkStatus("Archived")}
                 disabled={isPending}
-                className="px-3 py-1.5 rounded-md bg-slate-600 text-white text-xs font-semibold hover:bg-slate-700 transition"
+                className="text-xs"
               >
                 Archive Selected
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setSelectedIds([])}
-                className="px-2 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900"
+                className="text-xs text-text-muted hover:text-text-primary"
               >
                 Clear
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Questions List */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        {/* Table Header */}
-        <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex items-center justify-between text-xs font-semibold text-slate-600 uppercase">
+      <Card className="overflow-hidden p-0">
+        <div className="bg-secondary-bg/50 border-b border-border px-4 py-3 flex items-center justify-between text-xs font-semibold text-text-secondary uppercase">
           <div className="flex items-center gap-3">
             <button
               onClick={toggleSelectAll}
-              className="text-slate-500 hover:text-slate-800"
+              className="text-text-muted hover:text-text-primary"
               title="Select all"
             >
-              {allSelected ? <CheckSquare className="w-4 h-4 text-indigo-600" /> : <Square className="w-4 h-4" />}
+              {allSelected ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
             </button>
             <span>Question Details ({filtered.length})</span>
           </div>
@@ -336,15 +309,13 @@ export default function AdminQuestionsClient({
         </div>
 
         {filtered.length === 0 ? (
-          <div className="p-12 text-center text-slate-500">
-            <FileQuestion className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-            <p className="font-medium text-base">No questions found</p>
-            <p className="text-sm text-slate-400 mt-1">
-              Try adjusting your search criteria or add new questions using the buttons above.
-            </p>
-          </div>
+          <EmptyState
+            icon={FileQuestion}
+            title="No questions found"
+            description="Try adjusting your search criteria or add new questions using the buttons above."
+          />
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {filtered.map((q) => {
               const isExpanded = expandedQuestionId === q.id;
               const isSelected = selectedIds.includes(q.id);
@@ -353,8 +324,8 @@ export default function AdminQuestionsClient({
               return (
                 <div
                   key={q.id}
-                  className={`p-4 transition hover:bg-slate-50/70 ${
-                    isSelected ? "bg-indigo-50/40" : ""
+                  className={`p-4 transition-colors hover:bg-secondary-bg/30 ${
+                    isSelected ? "bg-primary/5" : ""
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -362,10 +333,10 @@ export default function AdminQuestionsClient({
                     <div className="flex items-start gap-3 flex-1">
                       <button
                         onClick={() => toggleSelectOne(q.id)}
-                        className="mt-1 text-slate-400 hover:text-slate-700"
+                        className="mt-1 text-text-muted hover:text-text-primary"
                       >
                         {isSelected ? (
-                          <CheckSquare className="w-4 h-4 text-indigo-600" />
+                          <CheckSquare className="w-4 h-4 text-primary" />
                         ) : (
                           <Square className="w-4 h-4" />
                         )}
@@ -373,39 +344,39 @@ export default function AdminQuestionsClient({
 
                       <div className="space-y-1.5 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700">
+                          <Badge variant="secondary">
                             {subjectName}
-                          </span>
+                          </Badge>
 
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                          <Badge
+                            variant={
                               q.difficulty === "Easy"
-                                ? "bg-emerald-100 text-emerald-800"
+                                ? "success"
                                 : q.difficulty === "Medium"
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-rose-100 text-rose-800"
-                            }`}
+                                ? "warning"
+                                : "error"
+                            }
                           >
                             {q.difficulty}
-                          </span>
+                          </Badge>
 
-                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                          <Badge variant="info">
                             {q.source_type}
-                          </span>
+                          </Badge>
 
                           {q.pyq_exam_name && (
-                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                            <Badge variant="primary">
                               {q.pyq_exam_name} {q.pyq_year ? `(${q.pyq_year})` : ""}
-                            </span>
+                            </Badge>
                           )}
                         </div>
 
-                        <p className="text-sm font-medium text-slate-900 leading-snug">
+                        <p className="text-sm font-medium text-text-primary leading-snug">
                           {q.question_text}
                         </p>
 
                         {q.source_reference && (
-                          <p className="text-xs text-slate-500 italic">Ref: {q.source_reference}</p>
+                          <p className="text-xs text-text-muted italic">Ref: {q.source_reference}</p>
                         )}
                       </div>
                     </div>
@@ -416,15 +387,7 @@ export default function AdminQuestionsClient({
                         value={q.status}
                         onChange={(e) => handleStatusChange(q.id, e.target.value as QuestionStatus)}
                         disabled={isPending}
-                        className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none ${
-                          q.status === "Published"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : q.status === "Pending Review"
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : q.status === "Draft"
-                            ? "bg-slate-50 text-slate-700 border-slate-200"
-                            : "bg-rose-50 text-rose-700 border-rose-200"
-                        }`}
+                        className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-border bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="Published">Published</option>
                         <option value="Draft">Draft</option>
@@ -436,7 +399,7 @@ export default function AdminQuestionsClient({
 
                       <button
                         onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                        className="p-1.5 rounded-xl text-text-muted hover:text-text-primary hover:bg-secondary-bg transition-colors"
                         title={isExpanded ? "Collapse preview" : "Expand options"}
                       >
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -445,7 +408,7 @@ export default function AdminQuestionsClient({
                       <button
                         onClick={() => handleDelete(q.id)}
                         disabled={isPending}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                        className="p-1.5 rounded-xl text-text-muted hover:text-error hover:bg-error-light transition-colors"
                         title="Delete question"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -455,15 +418,15 @@ export default function AdminQuestionsClient({
 
                   {/* Expanded Options Preview */}
                   {isExpanded && (
-                    <div className="mt-3 ml-7 pt-3 border-t border-slate-100 space-y-2">
-                      <p className="text-xs font-semibold text-slate-500 uppercase">Answer Options:</p>
+                    <div className="mt-3 ml-7 pt-3 border-t border-border space-y-2">
+                      <p className="text-xs font-semibold text-text-muted uppercase">Answer Options:</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {(q.options || []).map((opt) => (
                           <div
                             key={opt.id}
-                            className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 flex items-center gap-2"
+                            className="p-2 rounded-xl bg-secondary-bg border border-border text-xs text-text-primary flex items-center gap-2"
                           >
-                            <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-300">
+                            <span className="font-bold text-text-primary bg-card px-2 py-0.5 rounded-lg border border-border text-[11px]">
                               {opt.option_label}
                             </span>
                             <span>{opt.option_text}</span>
@@ -472,12 +435,12 @@ export default function AdminQuestionsClient({
                       </div>
 
                       <div className="pt-2 flex items-center justify-between text-xs">
-                        <span className="text-slate-500">
-                          Answer key stored in protected <code className="text-indigo-600 font-mono">question_answer_keys</code> table.
+                        <span className="text-text-muted">
+                          Answer key stored in protected <code className="text-primary font-mono">question_answer_keys</code> table.
                         </span>
                         <Link
                           href={`/admin/questions/create?edit=${q.id}`}
-                          className="text-indigo-600 hover:underline font-medium"
+                          className="text-primary hover:underline font-medium"
                         >
                           Edit Question Details →
                         </Link>
@@ -489,7 +452,7 @@ export default function AdminQuestionsClient({
             })}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

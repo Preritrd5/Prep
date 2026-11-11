@@ -1,8 +1,8 @@
+import { PageHeader } from "@/components/ui";
 import { requireRole } from "@/lib/auth";
 import { getAllExams, getAllSubjects } from "@/lib/data/syllabus";
 import { getImportBatches } from "@/lib/data/questions";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+import AppLayout from "@/components/layout/AppLayout";
 import ImportWizard from "./ImportWizard";
 
 export default async function AdminImportQuestionsPage() {
@@ -15,23 +15,18 @@ export default async function AdminImportQuestionsPage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar profile={profile} />
+    <AppLayout profile={profile}>
+      <PageHeader
+        title="Bulk Import Questions"
+        description="Upload spreadsheets (.xlsx / .csv) to batch import multiple-choice questions into the repository."
+        breadcrumbs={[
+          { label: "Admin Console", href: "/admin/dashboard" },
+          { label: "Questions", href: "/admin/questions" },
+          { label: "Bulk Import" },
+        ]}
+      />
 
-      <div className="flex-1 flex">
-        <Sidebar role="admin" />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-slate-900">Bulk Import Questions</h1>
-            <p className="text-sm text-slate-600 mt-1">
-              Upload spreadsheets (.xlsx / .csv) to batch import multiple-choice questions into the repository.
-            </p>
-          </div>
-
-          <ImportWizard exams={exams} subjects={subjects} recentBatches={recentBatches} />
-        </main>
-      </div>
-    </div>
+      <ImportWizard exams={exams} subjects={subjects} recentBatches={recentBatches} />
+    </AppLayout>
   );
 }

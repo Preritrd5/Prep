@@ -1,15 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Clock,
   Plus,
   Trash2,
-  Calendar,
   Settings,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
 } from "lucide-react";
 import {
   createDailyRoutineAction,
@@ -23,6 +19,15 @@ import type {
   Subject,
   DayOfWeek,
 } from "@/lib/types";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Alert } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 
 interface RoutineClientProps {
   routines: RoutineTemplate[];
@@ -64,10 +69,14 @@ export default function RoutineClient({
 
   // Preference Form State
   const [dailyHours, setDailyHours] = useState(preferences.daily_study_hours);
-  const [slotDuration, setSlotDuration] = useState(preferences.preferred_slot_duration_minutes);
+  const [slotDuration, setSlotDuration] = useState(
+    preferences.preferred_slot_duration_minutes
+  );
   const [timezone, setTimezone] = useState(preferences.timezone);
   const [autoCarry, setAutoCarry] = useState(preferences.auto_carry_forward);
-  const [availableDays, setAvailableDays] = useState<string[]>(preferences.available_days || []);
+  const [availableDays, setAvailableDays] = useState<string[]>(
+    preferences.available_days || []
+  );
 
   const dayRoutines = routines.filter((r) => r.day_of_week === selectedDay);
 
@@ -118,6 +127,12 @@ export default function RoutineClient({
     setIsPrefModalOpen(false);
   };
 
+  const toggleAvailableDay = (day: string) => {
+    setAvailableDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Controls: Day Tabs & Action Buttons */}
@@ -131,19 +146,24 @@ export default function RoutineClient({
             return (
               <button
                 key={day}
+                type="button"
                 onClick={() => setSelectedDay(day)}
-                className={`rounded-xl px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+                className={cn(
+                  "rounded-xl px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 border",
                   isSelected
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-                }`}
+                    ? "bg-primary text-white border-primary shadow-sm shadow-primary/25"
+                    : "bg-card border-border text-text-secondary hover:bg-background-secondary"
+                )}
               >
                 <span>{day}</span>
                 {count > 0 && (
                   <span
-                    className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                      isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
-                    }`}
+                    className={cn(
+                      "rounded-full px-1.5 py-0.2 text-[10px]",
+                      isSelected
+                        ? "bg-white/20 text-white"
+                        : "bg-background-secondary text-text-primary border border-border"
+                    )}
                   >
                     {count}
                   </span>
@@ -153,360 +173,325 @@ export default function RoutineClient({
           })}
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsPrefModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm"
+            leftIcon={<Settings className="h-4 w-4" />}
           >
-            <Settings className="h-4 w-4" />
             Preferences
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
             onClick={() => {
               setDayOfWeek(selectedDay);
               setIsAddModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
+            leftIcon={<Plus className="h-4 w-4" />}
           >
-            <Plus className="h-4 w-4" />
             Add Routine Slot
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Routine Slots List for Selected Day */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+      <Card>
+        <CardHeader className="border-b border-border/70 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-bold text-slate-900">
+            <CardTitle className="text-base font-bold">
               {selectedDay} Schedule ({dayRoutines.length} slots)
-            </h2>
-            <p className="text-xs text-slate-500">
+            </CardTitle>
+            <p className="text-xs text-text-secondary mt-0.5">
               Recurring study blocks for this day. Synchronized with your weekly calendar.
             </p>
           </div>
-          <span className="text-xs text-slate-500">Timezone: {preferences.timezone}</span>
-        </div>
+          <span className="text-xs text-text-muted">
+            Timezone: {preferences.timezone}
+          </span>
+        </CardHeader>
 
-        {dayRoutines.length > 0 ? (
-          <div className="space-y-3">
-            {dayRoutines.map((routine) => {
-              const exam = routine.exam || allExams.find((e) => e.id === routine.exam_id);
-              const subject =
-                routine.subject || allSubjects.find((s) => s.id === routine.subject_id);
+        <CardContent className="pt-4 p-0">
+          {dayRoutines.length > 0 ? (
+            <div className="divide-y divide-border/60">
+              {dayRoutines.map((routine) => {
+                const exam =
+                  routine.exam || allExams.find((e) => e.id === routine.exam_id);
+                const subject =
+                  routine.subject ||
+                  allSubjects.find((s) => s.id === routine.subject_id);
 
-              return (
-                <div
-                  key={routine.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 hover:border-slate-300 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div className="flex items-start sm:items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 font-mono text-xs font-bold">
-                      {routine.start_time.slice(0, 5)}
-                    </div>
+                return (
+                  <div
+                    key={routine.id}
+                    className="p-4 hover:bg-background-secondary/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="flex items-start sm:items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary font-mono text-xs font-bold border border-primary/20">
+                        {routine.start_time.slice(0, 5)}
+                      </div>
 
-                    <div>
-                      <h4 className="font-bold text-sm text-slate-900">{routine.title}</h4>
-                      <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-slate-400" />
-                          {routine.start_time.slice(0, 5)} - {routine.end_time.slice(0, 5)}
-                        </span>
-                        {exam && (
-                          <span className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700 font-medium">
-                            {exam.name}
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-sm text-text-primary">
+                          {routine.title}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {routine.start_time.slice(0, 5)} -{" "}
+                            {routine.end_time.slice(0, 5)}
                           </span>
-                        )}
-                        {subject && (
-                          <span className="rounded bg-slate-200/80 px-2 py-0.5 text-slate-700">
-                            {subject.name}
-                          </span>
-                        )}
+                          {exam && (
+                            <Badge variant="primary" size="sm">
+                              {exam.name}
+                            </Badge>
+                          )}
+                          {subject && (
+                            <Badge variant="secondary" size="sm">
+                              {subject.name}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        routine.priority === 1
-                          ? "bg-red-50 text-red-700 border border-red-200"
-                          : routine.priority === 2
-                          ? "bg-amber-50 text-amber-700 border border-amber-200"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      Priority {routine.priority}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <Badge
+                        variant={
+                          routine.priority === 1
+                            ? "error"
+                            : routine.priority === 2
+                            ? "warning"
+                            : "secondary"
+                        }
+                        size="sm"
+                      >
+                        Priority {routine.priority}
+                      </Badge>
 
-                    <button
-                      onClick={() => handleDeleteRoutine(routine.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 transition"
-                      title="Delete routine"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteRoutine(routine.id)}
+                        title="Delete routine"
+                        className="text-text-muted hover:text-error"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-500">
-            <Clock className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-            <p className="text-sm font-semibold text-slate-700">
-              No routine slots scheduled for {selectedDay}
-            </p>
-            <p className="text-xs text-slate-400 mt-1">
-              Click &quot;Add Routine Slot&quot; above to create a recurring study session.
-            </p>
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-8">
+              <EmptyState
+                icon={<Clock className="h-6 w-6" />}
+                title={`No routine slots scheduled for ${selectedDay}`}
+                description="Click 'Add Routine Slot' above to create a recurring study session."
+                action={
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setDayOfWeek(selectedDay);
+                      setIsAddModalOpen(true);
+                    }}
+                    leftIcon={<Plus className="h-4 w-4" />}
+                  >
+                    Add Routine Slot
+                  </Button>
+                }
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Add Routine Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">Add Daily Routine Slot</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Set recurring study blocks for your weekly schedule.
-            </p>
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Add Daily Routine Slot"
+        description="Set recurring study blocks for your weekly schedule."
+      >
+        {errorMsg && (
+          <Alert variant="error" className="mb-4">
+            {errorMsg}
+          </Alert>
+        )}
 
-            {errorMsg && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 p-2.5 text-xs text-red-700 border border-red-200">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
+        <form onSubmit={handleCreateRoutine} className="space-y-4">
+          <Input
+            label="Routine Title"
+            required
+            placeholder="e.g. Morning General Studies Revision"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
 
-            <form onSubmit={handleCreateRoutine} className="mt-4 space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Routine Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Morning General Studies Revision"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Day of Week"
+              value={dayOfWeek}
+              onChange={(e) => setDayOfWeek(e.target.value as DayOfWeek)}
+              options={DAYS_OF_WEEK.map((d) => ({ label: d, value: d }))}
+            />
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Day of Week
-                  </label>
-                  <select
-                    value={dayOfWeek}
-                    onChange={(e) => setDayOfWeek(e.target.value as DayOfWeek)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                  >
-                    {DAYS_OF_WEEK.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Priority</label>
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(parseInt(e.target.value, 10))}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                  >
-                    <option value={1}>1 (High)</option>
-                    <option value={2}>2 (Medium)</option>
-                    <option value={3}>3 (Low)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Start Time
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">End Time</label>
-                  <input
-                    type="time"
-                    required
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Associated Exam (Optional)
-                </label>
-                <select
-                  value={examId}
-                  onChange={(e) => setExamId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                >
-                  <option value="">None / General Study</option>
-                  {allExams.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Subject (Optional)
-                </label>
-                <select
-                  value={subjectId}
-                  onChange={(e) => setSubjectId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                >
-                  <option value="">None / Open Topic</option>
-                  {allSubjects.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
-                >
-                  {isPending ? "Saving..." : "Add to Routine"}
-                </button>
-              </div>
-            </form>
+            <Select
+              label="Priority"
+              value={priority}
+              onChange={(e) => setPriority(parseInt(e.target.value, 10))}
+              options={[
+                { label: "1 (High Priority)", value: 1 },
+                { label: "2 (Medium Priority)", value: 2 },
+                { label: "3 (Low Priority)", value: 3 },
+              ]}
+            />
           </div>
-        </div>
-      )}
 
-      {/* Study Preferences Modal */}
-      {isPrefModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">Study Preferences & Engine Rules</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Configures the Automatic Study Planner and Task Carry-Forward Engine.
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Start Time"
+              type="time"
+              required
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
 
-            <form onSubmit={handleUpdatePreferences} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Daily Available Study Hours: {dailyHours} hrs
-                </label>
-                <input
-                  type="range"
-                  min={1}
-                  max={12}
-                  step={0.5}
-                  value={dailyHours}
-                  onChange={(e) => setDailyHours(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Preferred Study Slot Duration
-                </label>
-                <select
-                  value={slotDuration}
-                  onChange={(e) => setSlotDuration(parseInt(e.target.value, 10))}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                >
-                  <option value={45}>45 minutes (Pomodoro focus)</option>
-                  <option value={60}>60 minutes (Standard block)</option>
-                  <option value={90}>90 minutes (Deep work)</option>
-                  <option value={120}>120 minutes (Mock / problem set)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Timezone Standard
-                </label>
-                <select
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                >
-                  <option value="Asia/Kolkata">Asia/Kolkata (IST - UTC+05:30)</option>
-                  <option value="UTC">UTC (Coordinated Universal Time)</option>
-                  <option value="Asia/Dubai">Asia/Dubai (GST - UTC+04:00)</option>
-                  <option value="America/New_York">America/New_York (EST/EDT)</option>
-                </select>
-              </div>
-
-              <div className="rounded-lg bg-slate-50 p-3 border border-slate-200">
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={autoCarry}
-                    onChange={(e) => setAutoCarry(e.target.checked)}
-                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-600"
-                  />
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 block">
-                      Enable Automatic Task Carry-Forward
-                    </span>
-                    <span className="text-[11px] text-slate-500 leading-snug block mt-0.5">
-                      Incomplete or missed tasks are carried forward to the next available study
-                      slot without duplicates or overwrites.
-                    </span>
-                  </div>
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsPrefModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
-                >
-                  {isPending ? "Saving..." : "Save Preferences"}
-                </button>
-              </div>
-            </form>
+            <Input
+              label="End Time"
+              type="time"
+              required
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Associated Examination (Optional)"
+              value={examId}
+              onChange={(e) => setExamId(e.target.value)}
+              options={[
+                { label: "None", value: "" },
+                ...allExams.map((e) => ({ label: e.name, value: e.id })),
+              ]}
+            />
+
+            <Select
+              label="Subject (Optional)"
+              value={subjectId}
+              onChange={(e) => setSubjectId(e.target.value)}
+              options={[
+                { label: "None", value: "" },
+                ...allSubjects.map((s) => ({ label: s.name, value: s.id })),
+              ]}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isPending}>
+              Create Routine Slot
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Preferences Modal */}
+      <Modal
+        isOpen={isPrefModalOpen}
+        onClose={() => setIsPrefModalOpen(false)}
+        title="Study Preference Rules"
+        description="Configure rules used by the deterministic study planning and auto carry-forward engines."
+      >
+        <form onSubmit={handleUpdatePreferences} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Target Daily Study Hours"
+              type="number"
+              min={1}
+              max={16}
+              value={dailyHours}
+              onChange={(e) => setDailyHours(parseFloat(e.target.value))}
+            />
+
+            <Input
+              label="Preferred Slot Duration (mins)"
+              type="number"
+              min={15}
+              step={15}
+              max={240}
+              value={slotDuration}
+              onChange={(e) => setSlotDuration(parseInt(e.target.value, 10))}
+            />
+          </div>
+
+          <Input
+            label="Timezone"
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+          />
+
+          <div>
+            <label className="block text-xs font-semibold text-text-primary mb-2">
+              Available Study Days
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {DAYS_OF_WEEK.map((d) => {
+                const isSelected = availableDays.includes(d);
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => toggleAvailableDay(d)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-semibold border transition",
+                      isSelected
+                        ? "bg-primary text-white border-primary"
+                        : "bg-card text-text-secondary border-border hover:bg-background-secondary"
+                    )}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="autoCarry"
+              checked={autoCarry}
+              onChange={(e) => setAutoCarry(e.target.checked)}
+              className="h-4 w-4 rounded border-input-border text-primary focus:ring-primary"
+            />
+            <label htmlFor="autoCarry" className="text-xs font-medium text-text-primary">
+              Auto carry-forward uncompleted tasks to the next available day
+            </label>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsPrefModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isPending}>
+              Save Preferences
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

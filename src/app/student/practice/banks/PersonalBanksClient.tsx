@@ -1,15 +1,13 @@
 "use client";
 
+import { Card, Badge, Button, Modal, Input, Textarea, Select, Alert, EmptyState } from "@/components/ui";
 import { useState, useTransition } from "react";
 import {
   FolderPlus,
   Plus,
   BookOpen,
   Lock,
-  Layers,
-  CheckCircle,
-  AlertCircle,
-  HelpCircle,
+  ChevronLeft,
 } from "lucide-react";
 import type { QuestionBank, Question, Subject, OptionLabel, DifficultyLevel } from "@/lib/types";
 import {
@@ -153,12 +151,14 @@ export default function PersonalBanksClient({
   if (isPracticing) {
     return (
       <div className="space-y-4">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setIsPracticing(false)}
-          className="text-xs font-semibold text-indigo-600 hover:underline"
+          className="text-xs text-primary hover:text-primary-hover gap-1"
         >
-          ← Exit Personal Bank Practice
-        </button>
+          <ChevronLeft className="h-4 w-4" /> Exit Personal Bank Practice
+        </Button>
         <PracticeRunner
           questions={activeQuestions}
           title="Private Question Bank Practice"
@@ -172,54 +172,51 @@ export default function PersonalBanksClient({
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Lock className="w-5 h-5 text-indigo-600" /> Private Student Question Banks
+          <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
+            <Lock className="w-5 h-5 text-primary" /> Private Student Question Banks
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-text-muted mt-1">
             Author and organize your own custom MCQ collections. Strictly private to your account via Supabase Row-Level Security.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowNewBankModal(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 font-medium text-xs hover:bg-indigo-100 transition"
+            className="gap-1.5 text-xs"
           >
             <FolderPlus className="w-4 h-4" /> New Bank
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => setShowNewQuestionModal(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 text-white font-medium text-xs hover:bg-indigo-700 shadow-sm transition"
+            className="gap-1.5 text-xs"
           >
             <Plus className="w-4 h-4" /> Add Private Question
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {msg && (
-        <div
-          className={`p-4 rounded-lg flex items-center justify-between text-sm ${
-            msg.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-red-50 text-red-800 border border-red-200"
-          }`}
-        >
-          <span>{msg.text}</span>
-          <button onClick={() => setMsg(null)} className="text-xs font-bold underline">
-            Dismiss
-          </button>
-        </div>
+        <Alert
+          variant={msg.type === "success" ? "success" : "error"}
+          title={msg.text}
+          onClose={() => setMsg(null)}
+        />
       )}
 
       {/* Banks Selection Bar */}
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => setSelectedBankId(null)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             selectedBankId === null
-              ? "bg-indigo-600 text-white shadow-sm"
-              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+              ? "bg-primary text-white shadow-sm"
+              : "bg-card border border-border text-text-secondary hover:bg-secondary-bg"
           }`}
         >
           All Personal Questions ({questions.length})
@@ -228,10 +225,10 @@ export default function PersonalBanksClient({
           <button
             key={b.id}
             onClick={() => setSelectedBankId(b.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
               selectedBankId === b.id
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                ? "bg-primary text-white shadow-sm"
+                : "bg-card border border-border text-text-secondary hover:bg-secondary-bg"
             }`}
           >
             {b.name}
@@ -241,231 +238,204 @@ export default function PersonalBanksClient({
 
       {/* Questions list or practice CTA */}
       {activeQuestions.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
-          <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="font-semibold text-lg text-slate-800">Bank is Empty</h3>
-          <p className="text-sm text-slate-400 mt-1">
-            Click &quot;Add Private Question&quot; to author your first customized question in this bank.
-          </p>
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title="Bank is Empty"
+          description="Click 'Add Private Question' to author your first customized question in this bank."
+          action={{
+            label: "Add Private Question",
+            onClick: () => setShowNewQuestionModal(true),
+          }}
+        />
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-text-muted">
               Showing {activeQuestions.length} private questions
             </span>
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={() => setIsPracticing(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white font-medium text-xs hover:bg-emerald-700 shadow-sm transition"
+              className="gap-1.5 text-xs bg-success hover:bg-success/90"
             >
               <BookOpen className="w-3.5 h-3.5" /> Practice This Bank ({activeQuestions.length})
-            </button>
+            </Button>
           </div>
 
           <div className="space-y-3">
             {activeQuestions.map((q, idx) => (
-              <div
-                key={q.id}
-                className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3"
-              >
+              <Card key={q.id} className="p-5 space-y-3">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-400">Personal #{idx + 1}</span>
-                  <span className="px-2 py-0.5 rounded font-semibold bg-indigo-50 text-indigo-700">
-                    {q.difficulty}
-                  </span>
+                  <span className="font-bold text-text-muted">Personal #{idx + 1}</span>
+                  <Badge variant="primary">{q.difficulty}</Badge>
                 </div>
 
-                <p className="text-sm font-semibold text-slate-900 leading-snug">{q.question_text}</p>
+                <p className="text-sm font-semibold text-text-primary leading-snug">{q.question_text}</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                   {(q.options || []).map((opt) => (
                     <div
                       key={opt.id}
-                      className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 flex items-center gap-2"
+                      className="p-2.5 rounded-xl bg-secondary-bg border border-border text-xs text-text-primary flex items-center gap-2"
                     >
-                      <span className="w-5 h-5 rounded bg-white border flex items-center justify-center font-bold text-slate-800">
+                      <span className="w-5 h-5 rounded-md bg-card border border-border flex items-center justify-center font-bold text-text-primary text-[11px]">
                         {opt.option_label}
                       </span>
                       <span>{opt.option_text}</span>
                     </div>
                   ))}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
       )}
 
       {/* Modal: New Question Bank */}
-      {showNewBankModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-scale-in">
-            <h3 className="text-base font-bold text-slate-900">Create Private Question Bank</h3>
-            <form onSubmit={handleCreateBank} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                  Bank Name *
-                </label>
+      <Modal
+        isOpen={showNewBankModal}
+        onClose={() => setShowNewBankModal(false)}
+        title="Create Private Question Bank"
+        description="Organize your personal practice items into focused topic folders."
+      >
+        <form onSubmit={handleCreateBank} className="space-y-4">
+          <Input
+            label="Bank Name *"
+            required
+            value={bankName}
+            onChange={(e) => setBankName(e.target.value)}
+            placeholder="e.g. Tough Geotechnical Formulas, Polity Tricky Cases"
+          />
+          <Textarea
+            label="Description (Optional)"
+            rows={2}
+            value={bankDesc}
+            onChange={(e) => setBankDesc(e.target.value)}
+            placeholder="Personal notes on the scope of this bank..."
+          />
+          <div className="pt-2 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowNewBankModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isPending}
+            >
+              {isPending ? "Creating..." : "Create Bank"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: New Private Question */}
+      <Modal
+        isOpen={showNewQuestionModal}
+        onClose={() => setShowNewQuestionModal(false)}
+        title="Add Private Question"
+        description="Author an MCQ strictly visible to your student account."
+      >
+        <form onSubmit={handleCreateQuestion} className="space-y-4">
+          <Textarea
+            label="Question Text *"
+            required
+            rows={3}
+            value={qText}
+            onChange={(e) => setQText(e.target.value)}
+            placeholder="Type your question statement..."
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Subject (Optional)"
+              value={qSubjectId}
+              onChange={(e) => setQSubjectId(e.target.value)}
+              options={[
+                { value: "", label: "None / General" },
+                ...subjects.map((s) => ({ value: s.id, label: s.name })),
+              ]}
+            />
+            <Select
+              label="Difficulty"
+              value={qDifficulty}
+              onChange={(e) => setQDifficulty(e.target.value as DifficultyLevel)}
+              options={[
+                { value: "Easy", label: "Easy" },
+                { value: "Medium", label: "Medium" },
+                { value: "Hard", label: "Hard" },
+              ]}
+            />
+          </div>
+
+          {/* 4 Options */}
+          <div className="space-y-2 pt-1">
+            <label className="block text-xs font-semibold text-text-primary uppercase">
+              Answer Options (Select correct option radio) *
+            </label>
+            {[
+              { label: "A", val: optA, setter: setOptA },
+              { label: "B", val: optB, setter: setOptB },
+              { label: "C", val: optC, setter: setOptC },
+              { label: "D", val: optD, setter: setOptD },
+            ].map((opt) => (
+              <div key={opt.label} className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="private_key"
+                  checked={correctAns === opt.label}
+                  onChange={() => setCorrectAns(opt.label as OptionLabel)}
+                  className="text-primary focus:ring-primary h-4 w-4"
+                />
+                <span className="w-6 h-6 rounded-lg bg-secondary-bg flex items-center justify-center text-xs font-bold text-text-primary border border-border">
+                  {opt.label}
+                </span>
                 <input
                   type="text"
                   required
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  placeholder="e.g. Tough Geotechnical Formulas, Polity Tricky Cases"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={opt.val}
+                  onChange={(e) => opt.setter(e.target.value)}
+                  placeholder={`Option ${opt.label} text...`}
+                  className="flex-1 px-3 py-1.5 border border-border rounded-xl text-xs bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                  Description (Optional)
-                </label>
-                <textarea
-                  rows={2}
-                  value={bankDesc}
-                  onChange={(e) => setBankDesc(e.target.value)}
-                  placeholder="Personal notes on the scope of this bank..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowNewBankModal(false)}
-                  className="px-3.5 py-1.5 rounded-lg border text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="px-4 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 shadow-sm disabled:opacity-50"
-                >
-                  {isPending ? "Creating..." : "Create Bank"}
-                </button>
-              </div>
-            </form>
+            ))}
           </div>
-        </div>
-      )}
 
-      {/* Modal: New Private Question */}
-      {showNewQuestionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-lg w-full p-6 space-y-4 animate-scale-in my-8">
-            <h3 className="text-base font-bold text-slate-900">Add Private Question</h3>
-            <form onSubmit={handleCreateQuestion} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                  Question Text *
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  value={qText}
-                  onChange={(e) => setQText(e.target.value)}
-                  placeholder="Type your question statement..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+          <Textarea
+            label="Personal Explanation / Formula Notes"
+            rows={2}
+            value={exp}
+            onChange={(e) => setExp(e.target.value)}
+            placeholder="Why is this answer correct? Key equation or trick..."
+          />
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    Subject (Optional)
-                  </label>
-                  <select
-                    value={qSubjectId}
-                    onChange={(e) => setQSubjectId(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white text-slate-700"
-                  >
-                    <option value="">None / General</option>
-                    {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    Difficulty
-                  </label>
-                  <select
-                    value={qDifficulty}
-                    onChange={(e) => setQDifficulty(e.target.value as DifficultyLevel)}
-                    className="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white text-slate-700"
-                  >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* 4 Options */}
-              <div className="space-y-2 pt-1">
-                {[
-                  { label: "A", val: optA, setter: setOptA },
-                  { label: "B", val: optB, setter: setOptB },
-                  { label: "C", val: optC, setter: setOptC },
-                  { label: "D", val: optD, setter: setOptD },
-                ].map((opt) => (
-                  <div key={opt.label} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="private_key"
-                      checked={correctAns === opt.label}
-                      onChange={() => setCorrectAns(opt.label as OptionLabel)}
-                      className="text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span className="w-5 h-5 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-700 border">
-                      {opt.label}
-                    </span>
-                    <input
-                      type="text"
-                      required
-                      value={opt.val}
-                      onChange={(e) => opt.setter(e.target.value)}
-                      placeholder={`Option ${opt.label} text...`}
-                      className="flex-1 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                  Personal Explanation / Formula Notes
-                </label>
-                <textarea
-                  rows={2}
-                  value={exp}
-                  onChange={(e) => setExp(e.target.value)}
-                  placeholder="Why is this answer correct? Key equation or trick..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowNewQuestionModal(false)}
-                  className="px-3.5 py-1.5 rounded-lg border text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="px-4 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 shadow-sm disabled:opacity-50"
-                >
-                  {isPending ? "Saving..." : "Save Question"}
-                </button>
-              </div>
-            </form>
+          <div className="pt-2 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowNewQuestionModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isPending}
+            >
+              {isPending ? "Saving..." : "Save Question"}
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -1,16 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   CalendarDays,
   Plus,
   ExternalLink,
-  ShieldCheck,
   Calendar,
-  AlertCircle,
 } from "lucide-react";
-import { adminCreateExamEventAction, adminToggleExamEventAction } from "@/app/actions/events";
+import {
+  adminCreateExamEventAction,
+  adminToggleExamEventAction,
+} from "@/app/actions/events";
 import type { ExamScheduleEvent, Exam, ExamEventType } from "@/lib/types";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface AdminEventsClientProps {
   events: ExamScheduleEvent[];
@@ -27,17 +37,23 @@ const EVENT_TYPES: ExamEventType[] = [
   "Other",
 ];
 
-export default function AdminEventsClient({ events, exams }: AdminEventsClientProps) {
+export default function AdminEventsClient({
+  events,
+  exams,
+}: AdminEventsClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Form State
   const [examId, setExamId] = useState(exams[0]?.id || "");
-  const [eventType, setEventType] = useState<ExamEventType>("Official Examination");
+  const [eventType, setEventType] =
+    useState<ExamEventType>("Official Examination");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [endDate, setEndDate] = useState("");
   const [officialUrl, setOfficialUrl] = useState("");
   const [verificationDate, setVerificationDate] = useState(
@@ -78,237 +94,230 @@ export default function AdminEventsClient({ events, exams }: AdminEventsClientPr
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-slate-900">
+          <h2 className="text-base font-bold text-text-primary">
             Published Examination Milestones ({events.length})
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-text-secondary">
             Publish verified official deadlines and exam schedules with official source URLs.
           </p>
         </div>
 
-        <button
+        <Button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-purple-700"
+          leftIcon={<Plus className="h-4 w-4" />}
+          size="md"
         >
-          <Plus className="h-4 w-4" />
           Publish Exam Event
-        </button>
+        </Button>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <Card className="overflow-hidden">
         {events.length > 0 ? (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border/60">
             {events.map((ev) => {
               const exam = ev.exam || exams.find((e) => e.id === ev.exam_id);
 
               return (
                 <div
                   key={ev.id}
-                  className="p-5 hover:bg-slate-50/70 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="p-5 hover:bg-background-secondary/40 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
                 >
-                  <div>
+                  <div className="space-y-1.5 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-bold text-purple-700 border border-purple-200">
+                      <Badge variant="accent" size="sm">
                         {ev.event_type}
-                      </span>
+                      </Badge>
                       {exam && (
-                        <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700">
+                        <Badge variant="primary" size="sm">
                           {exam.name}
-                        </span>
+                        </Badge>
+                      )}
+                      {!ev.is_active && (
+                        <Badge variant="secondary" size="sm">
+                          Hidden
+                        </Badge>
                       )}
                     </div>
 
-                    <h3 className="mt-2 text-base font-bold text-slate-900">{ev.title}</h3>
+                    <h3 className="text-base font-bold text-text-primary">
+                      {ev.title}
+                    </h3>
                     {ev.description && (
-                      <p className="text-xs text-slate-500 mt-0.5">{ev.description}</p>
+                      <p className="text-xs text-text-secondary">
+                        {ev.description}
+                      </p>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500">
-                      <span className="flex items-center gap-1 font-semibold text-slate-700">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-text-muted pt-1">
+                      <span className="flex items-center gap-1 font-semibold text-text-primary">
+                        <Calendar className="h-3.5 w-3.5 text-text-muted" />
                         {new Date(ev.start_date).toLocaleDateString("en-US", {
                           month: "long",
                           day: "numeric",
                           year: "numeric",
                         })}
+                        {ev.end_date && (
+                          <span>
+                            {" "}
+                            -{" "}
+                            {new Date(ev.end_date).toLocaleDateString("en-US", {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        )}
                       </span>
 
                       {ev.verification_date && (
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-text-muted">
                           Verified: {ev.verification_date}
                         </span>
+                      )}
+
+                      {ev.official_source_url && (
+                        <a
+                          href={ev.official_source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline flex items-center gap-1 text-[11px] font-semibold"
+                        >
+                          Source Link <ExternalLink className="h-3 w-3" />
+                        </a>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {ev.official_source_url && (
-                      <a
-                        href={ev.official_source_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-600 hover:bg-slate-50"
-                      >
-                        Official Source
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-
-                    <button
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant={ev.is_active ? "outline" : "secondary"}
+                      size="sm"
                       onClick={() => handleToggle(ev)}
-                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border transition ${
-                        ev.is_active
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          : "bg-slate-100 text-slate-500 border-slate-200"
-                      }`}
                     >
-                      {ev.is_active ? "Active" : "Archived"}
-                    </button>
+                      {ev.is_active ? "Hide Event" : "Publish"}
+                    </Button>
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="p-12 text-center text-slate-400 text-xs">
-            No official exam events published yet. Click &quot;Publish Exam Event&quot; to post verified deadlines.
+          <div className="p-8">
+            <EmptyState
+              icon={<CalendarDays className="h-6 w-6" />}
+              title="No events published yet"
+              description="Publish verified exam milestones and deadlines for student calendars."
+              action={
+                <Button
+                  onClick={() => setIsModalOpen(true)}
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  size="sm"
+                >
+                  Publish Exam Event
+                </Button>
+              }
+            />
           </div>
         )}
-      </div>
+      </Card>
 
-      {/* Publish Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-base font-bold text-slate-900">Publish Examination Milestone</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Enter official dates and verified source references for competitive exams.
-            </p>
+      {/* Publish Event Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Publish Official Examination Event"
+        description="Add a verified event milestone to the student preparation calendar."
+      >
+        {errorMsg && (
+          <Alert variant="error" className="mb-4">
+            {errorMsg}
+          </Alert>
+        )}
 
-            <form onSubmit={handleCreate} className="mt-4 space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Examination
-                </label>
-                <select
-                  value={examId}
-                  onChange={(e) => setExamId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                >
-                  {exams.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <form onSubmit={handleCreate} className="space-y-4">
+          <Select
+            label="Examination"
+            value={examId}
+            onChange={(e) => setExamId(e.target.value)}
+            options={exams.map((ex) => ({
+              label: `${ex.name} (${ex.category})`,
+              value: ex.id,
+            }))}
+          />
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Milestone Type
-                </label>
-                <select
-                  value={eventType}
-                  onChange={(e) => setEventType(e.target.value as ExamEventType)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                >
-                  {EVENT_TYPES.map((et) => (
-                    <option key={et} value={et}>
-                      {et}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Event Type"
+              value={eventType}
+              onChange={(e) => setEventType(e.target.value as ExamEventType)}
+              options={EVENT_TYPES.map((t) => ({ label: t, value: t }))}
+            />
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Event Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. GATE 2027 Examination Window"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Event Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Verification Date
-                  </label>
-                  <input
-                    type="date"
-                    value={verificationDate}
-                    onChange={(e) => setVerificationDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Official Notification URL
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://gate2027.iit.ac.in/notifications"
-                  value={officialUrl}
-                  onChange={(e) => setOfficialUrl(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Description / Instructions
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Specific candidate requirements or slot timings..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-purple-700 disabled:opacity-60"
-                >
-                  {isPending ? "Publishing..." : "Publish Event"}
-                </button>
-              </div>
-            </form>
+            <Input
+              label="Verification Date"
+              type="date"
+              value={verificationDate}
+              onChange={(e) => setVerificationDate(e.target.value)}
+            />
           </div>
-        </div>
-      )}
+
+          <Input
+            label="Event Title"
+            required
+            placeholder="e.g. GATE 2027 Official Notification & Registration Opening"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+
+          <Textarea
+            label="Description (Optional)"
+            rows={2}
+            placeholder="Key eligibility details, fee structure, exam format..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Start Date"
+              type="date"
+              required
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+
+            <Input
+              label="End Date (Optional)"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+
+          <Input
+            label="Official Notification / Portal URL"
+            type="url"
+            placeholder="https://gate.iitk.ac.in"
+            value={officialUrl}
+            onChange={(e) => setOfficialUrl(e.target.value)}
+          />
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isPending}>
+              Publish Milestone
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

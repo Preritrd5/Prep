@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader, Card, Badge, Button } from "@/components/ui";
 import { useState } from "react";
 import {
   FileText,
@@ -7,8 +8,6 @@ import {
   Printer,
   Calendar,
   Clock,
-  CheckCircle2,
-  AlertCircle,
   TrendingUp,
   Target,
   BookOpen,
@@ -76,64 +75,68 @@ export default function StudentReportsClient({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 print:hidden">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <FileText className="h-7 w-7 text-indigo-600" />
-            Preparation Reports & Summaries
-          </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            Official periodic audit of your daily consistency, syllabus progress, and test accuracy.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleExportCSV}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition"
-          >
-            <Download className="h-4 w-4 text-slate-500" />
-            Export CSV
-          </button>
-          <button
-            onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
-          >
-            <Printer className="h-4 w-4" />
-            Print / Save PDF
-          </button>
-        </div>
+      <div className="print:hidden">
+        <PageHeader
+          title="Preparation Reports & Summaries"
+          description="Official periodic audit of your daily consistency, syllabus progress, and test accuracy."
+          breadcrumbs={[
+            { label: "Dashboard", href: "/student/dashboard" },
+            { label: "Reports" },
+          ]}
+          actions={
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCSV}
+                className="gap-1.5"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handlePrint}
+                className="gap-1.5"
+              >
+                <Printer className="h-4 w-4" />
+                Print / Save PDF
+              </Button>
+            </div>
+          }
+        />
       </div>
 
       {/* Period Tabs */}
       <div className="flex items-center gap-2 print:hidden">
-        <span className="text-xs font-bold text-slate-500 mr-2">Report Interval:</span>
+        <span className="text-xs font-bold text-text-muted mr-2">Report Interval:</span>
         <button
           onClick={() => setPeriod("daily")}
-          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
             period === "daily"
-              ? "bg-indigo-600 text-white shadow-sm"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              ? "bg-primary text-white shadow-sm"
+              : "bg-card text-text-secondary border border-border hover:bg-secondary-bg"
           }`}
         >
           Daily Summary
         </button>
         <button
           onClick={() => setPeriod("weekly")}
-          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
             period === "weekly"
-              ? "bg-indigo-600 text-white shadow-sm"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              ? "bg-primary text-white shadow-sm"
+              : "bg-card text-text-secondary border border-border hover:bg-secondary-bg"
           }`}
         >
           Weekly Progress (Last 7 Days)
         </button>
         <button
           onClick={() => setPeriod("monthly")}
-          className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+          className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
             period === "monthly"
-              ? "bg-indigo-600 text-white shadow-sm"
-              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              ? "bg-primary text-white shadow-sm"
+              : "bg-card text-text-secondary border border-border hover:bg-secondary-bg"
           }`}
         >
           Monthly Audit (Last 30 Days)
@@ -141,28 +144,26 @@ export default function StudentReportsClient({
       </div>
 
       {/* Printable Report Canvas */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-sm space-y-8 print:border-none print:shadow-none print:p-0">
+      <Card className="p-6 sm:p-10 space-y-8 print:border-none print:shadow-none print:p-0">
         {/* Report Banner */}
-        <div className="border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="border-b border-border pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-              Official PrepTrack Report
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
+            <Badge variant="primary">Official PrepTrack Report</Badge>
+            <h2 className="text-xl sm:text-2xl font-black text-text-primary mt-2">
               {period === "daily"
                 ? "Daily Performance Summary"
                 : period === "weekly"
                 ? "Weekly Preparation Audit"
                 : "Monthly Comprehensive Progress Report"}
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Candidate: <strong className="text-slate-800">{studentName}</strong> &bull; Generated:{" "}
+            <p className="text-xs text-text-muted mt-1">
+              Candidate: <strong className="text-text-primary">{studentName}</strong> &bull; Generated:{" "}
               {new Date().toLocaleDateString("en-US", { dateStyle: "long" })}
             </p>
           </div>
 
-          <div className="text-left sm:text-right text-xs text-slate-500">
-            <span className="block font-bold text-slate-800">
+          <div className="text-left sm:text-right text-xs text-text-muted">
+            <span className="block font-bold text-text-primary">
               {currentData.totalExaminationsSelected} Examination(s) Active
             </span>
             <span>Target Syllabus: {currentData.totalSyllabusTopics} Topics</span>
@@ -171,42 +172,42 @@ export default function StudentReportsClient({
 
         {/* Core Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-            <span className="text-[11px] font-bold uppercase text-slate-500 block">Total Study Time</span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">
+          <div className="rounded-2xl border border-border bg-secondary-bg/60 p-4">
+            <span className="text-[11px] font-bold uppercase text-text-muted block">Total Study Time</span>
+            <span className="text-2xl font-black text-text-primary mt-1 block">
               {currentData.totalStudyHours} hrs
             </span>
-            <span className="text-[10px] text-slate-500 mt-1 block">
+            <span className="text-[10px] text-text-muted mt-1 block">
               {currentData.tasksCompleted} study tasks completed
             </span>
           </div>
 
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-            <span className="text-[11px] font-bold uppercase text-slate-500 block">Syllabus Progress</span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">
+          <div className="rounded-2xl border border-border bg-secondary-bg/60 p-4">
+            <span className="text-[11px] font-bold uppercase text-text-muted block">Syllabus Progress</span>
+            <span className="text-2xl font-black text-text-primary mt-1 block">
               {currentData.syllabusCompletionPercentage}%
             </span>
-            <span className="text-[10px] text-slate-500 mt-1 block">
+            <span className="text-[10px] text-text-muted mt-1 block">
               {currentData.completedTopics} of {currentData.totalSyllabusTopics} topics
             </span>
           </div>
 
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-            <span className="text-[11px] font-bold uppercase text-slate-500 block">Practice Accuracy</span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">
+          <div className="rounded-2xl border border-border bg-secondary-bg/60 p-4">
+            <span className="text-[11px] font-bold uppercase text-text-muted block">Practice Accuracy</span>
+            <span className="text-2xl font-black text-text-primary mt-1 block">
               {currentData.overallAccuracy}%
             </span>
-            <span className="text-[10px] text-slate-500 mt-1 block">
+            <span className="text-[10px] text-text-muted mt-1 block">
               {currentData.correctAnswers} / {currentData.mcqsAttempted} correct
             </span>
           </div>
 
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-            <span className="text-[11px] font-bold uppercase text-slate-500 block">Mock Exam Score</span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">
+          <div className="rounded-2xl border border-border bg-secondary-bg/60 p-4">
+            <span className="text-[11px] font-bold uppercase text-text-muted block">Mock Exam Score</span>
+            <span className="text-2xl font-black text-text-primary mt-1 block">
               {currentData.bestMockScore}
             </span>
-            <span className="text-[10px] text-slate-500 mt-1 block">
+            <span className="text-[10px] text-text-muted mt-1 block">
               Average: {currentData.averageMockScore} marks
             </span>
           </div>
@@ -214,70 +215,64 @@ export default function StudentReportsClient({
 
         {/* Detailed Breakdown Section */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-text-primary">
             Performance Breakdown
           </h3>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+          <div className="overflow-x-auto rounded-2xl border border-border">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-600">
+              <thead className="bg-secondary-bg/50 border-b border-border font-semibold text-text-secondary">
                 <tr>
                   <th className="py-3 px-4">Evaluation Dimension</th>
                   <th className="py-3 px-4">Result</th>
                   <th className="py-3 px-4">Assessment / Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-border text-text-primary">
                 <tr>
-                  <td className="py-3 px-4 font-semibold text-slate-900">Syllabus Coverage</td>
-                  <td className="py-3 px-4 font-bold text-slate-900">
+                  <td className="py-3 px-4 font-semibold text-text-primary">Syllabus Coverage</td>
+                  <td className="py-3 px-4 font-bold text-text-primary">
                     {currentData.syllabusCompletionPercentage}% ({currentData.completedTopics} topics)
                   </td>
                   <td className="py-3 px-4">
-                    {currentData.syllabusCompletionPercentage >= 75 ? (
-                      <span className="text-emerald-700 font-semibold">On Track</span>
-                    ) : (
-                      <span className="text-amber-700 font-semibold">Progress In Progress</span>
-                    )}
+                    <Badge variant={currentData.syllabusCompletionPercentage >= 75 ? "success" : "warning"}>
+                      {currentData.syllabusCompletionPercentage >= 75 ? "On Track" : "Progress In Progress"}
+                    </Badge>
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-4 font-semibold text-slate-900">Task Completion Rate</td>
-                  <td className="py-3 px-4 font-bold text-slate-900">
+                  <td className="py-3 px-4 font-semibold text-text-primary">Task Completion Rate</td>
+                  <td className="py-3 px-4 font-bold text-text-primary">
                     {currentData.tasksCompleted} / {currentData.tasksCompleted + currentData.incompleteTasks}
                   </td>
                   <td className="py-3 px-4">
                     {currentData.incompleteTasks === 0 ? (
-                      <span className="text-emerald-700 font-semibold">100% Tasks Done</span>
+                      <Badge variant="success">100% Tasks Done</Badge>
                     ) : (
-                      <span className="text-slate-600">{currentData.incompleteTasks} Pending</span>
+                      <span className="text-text-muted font-medium">{currentData.incompleteTasks} Pending</span>
                     )}
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-4 font-semibold text-slate-900">MCQ Practice Accuracy</td>
-                  <td className="py-3 px-4 font-bold text-slate-900">
+                  <td className="py-3 px-4 font-semibold text-text-primary">MCQ Practice Accuracy</td>
+                  <td className="py-3 px-4 font-bold text-text-primary">
                     {currentData.overallAccuracy}% ({currentData.mcqsAttempted} attempted)
                   </td>
                   <td className="py-3 px-4">
-                    {currentData.overallAccuracy >= 65 ? (
-                      <span className="text-emerald-700 font-semibold">Good Accuracy</span>
-                    ) : (
-                      <span className="text-rose-700 font-semibold">Needs Improvement</span>
-                    )}
+                    <Badge variant={currentData.overallAccuracy >= 65 ? "success" : "error"}>
+                      {currentData.overallAccuracy >= 65 ? "Good Accuracy" : "Needs Improvement"}
+                    </Badge>
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-4 font-semibold text-slate-900">Mock Examination Readiness</td>
-                  <td className="py-3 px-4 font-bold text-slate-900">
+                  <td className="py-3 px-4 font-semibold text-text-primary">Mock Examination Readiness</td>
+                  <td className="py-3 px-4 font-bold text-text-primary">
                     {currentData.totalMockExaminationsAttempted} Attempts Logged
                   </td>
                   <td className="py-3 px-4">
-                    {currentData.totalMockExaminationsAttempted > 0 ? (
-                      <span className="text-indigo-700 font-semibold">Benchmarked</span>
-                    ) : (
-                      <span className="text-amber-700 font-semibold">No Mock Exam Taken Yet</span>
-                    )}
+                    <Badge variant={currentData.totalMockExaminationsAttempted > 0 ? "primary" : "warning"}>
+                      {currentData.totalMockExaminationsAttempted > 0 ? "Benchmarked" : "No Mock Exam Taken Yet"}
+                    </Badge>
                   </td>
                 </tr>
               </tbody>
@@ -286,11 +281,11 @@ export default function StudentReportsClient({
         </div>
 
         {/* Footer Audit Signature */}
-        <div className="border-t border-slate-100 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400">
+        <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-text-muted">
           <span>PrepTrack Automated Performance Ledger &bull; Strict Supabase Data Integrity</span>
           <span className="mt-1 sm:mt-0">Document Verification ID: {new Date().getTime().toString(36).toUpperCase()}</span>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Card, Badge, Button, Alert, EmptyState } from "@/components/ui";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
@@ -13,8 +14,6 @@ import {
   Sparkles,
   Upload,
   FileQuestion,
-  AlertCircle,
-  Eye,
   Layers,
 } from "lucide-react";
 import type { Question, QuestionStatus } from "@/lib/types";
@@ -132,33 +131,25 @@ export default function ReviewQueueClient({ initialQuestions }: ReviewQueueClien
   return (
     <div className="space-y-6">
       {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/admin/questions"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Question Bank
+      <div>
+        <Link href="/admin/questions">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-text-muted hover:text-text-primary">
+            <ArrowLeft className="w-4 h-4" /> Back to Question Bank
+          </Button>
         </Link>
       </div>
 
       {bannerMsg && (
-        <div
-          className={`p-4 rounded-lg flex items-center justify-between text-sm ${
-            bannerMsg.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-red-50 text-red-800 border border-red-200"
-          }`}
-        >
-          <span>{bannerMsg.text}</span>
-          <button onClick={() => setBannerMsg(null)} className="text-xs font-bold underline">
-            Dismiss
-          </button>
-        </div>
+        <Alert
+          variant={bannerMsg.type === "success" ? "success" : "error"}
+          title={bannerMsg.text}
+          onClose={() => setBannerMsg(null)}
+        />
       )}
 
       {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 overflow-x-auto">
-        <div className="flex items-center gap-1 min-w-max">
+      <Card className="p-2 overflow-x-auto">
+        <div className="flex items-center gap-1.5 min-w-max">
           {(
             [
               { id: "Pending Review", label: `Pending Review (${pendingCount})`, icon: Clock },
@@ -180,10 +171,10 @@ export default function ReviewQueueClient({ initialQuestions }: ReviewQueueClien
                   setActiveTab(tab.id as TabType);
                   setSelectedIds([]);
                 }}
-                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition ${
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                   isActive
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100"
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-text-secondary hover:bg-secondary-bg"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -192,53 +183,57 @@ export default function ReviewQueueClient({ initialQuestions }: ReviewQueueClien
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* Bulk Action Strip */}
       {selectedIds.length > 0 && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 animate-fade-in">
-          <span className="text-xs font-semibold text-indigo-900">
+        <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+          <span className="text-xs font-semibold text-text-primary">
             {selectedIds.length} question(s) selected
           </span>
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={() => handleBulkStatus("Published")}
               disabled={isPending}
-              className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition"
+              className="text-xs bg-success hover:bg-success/90"
             >
               Approve & Publish Selected
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => handleBulkStatus("Rejected")}
               disabled={isPending}
-              className="px-3 py-1.5 rounded-md bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition"
+              className="text-xs text-error border-error/30 hover:bg-error-light"
             >
               Reject Selected
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setSelectedIds([])}
-              className="px-2 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900"
+              className="text-xs text-text-muted hover:text-text-primary"
             >
               Clear
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* Review Cards Grid */}
       {filteredQuestions.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
-          <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-          <p className="font-medium text-base text-slate-800">Queue is Clear</p>
-          <p className="text-xs text-slate-400 mt-1">
-            No questions currently matching the &quot;{activeTab}&quot; filter.
-          </p>
-        </div>
+        <EmptyState
+          icon={CheckCircle}
+          title="Queue is Clear"
+          description={`No questions currently matching the "${activeTab}" filter.`}
+        />
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center justify-between px-1 text-xs text-slate-500">
-            <button onClick={toggleSelectAll} className="flex items-center gap-2 hover:text-slate-800">
-              {allSelected ? <CheckSquare className="w-4 h-4 text-indigo-600" /> : <Square className="w-4 h-4" />}
+          <div className="flex items-center justify-between px-1 text-xs text-text-muted">
+            <button onClick={toggleSelectAll} className="flex items-center gap-2 hover:text-text-primary transition-colors">
+              {allSelected ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
               <span>Select all in this view</span>
             </button>
             <span>Showing {filteredQuestions.length} questions</span>
@@ -248,83 +243,87 @@ export default function ReviewQueueClient({ initialQuestions }: ReviewQueueClien
             {filteredQuestions.map((q) => {
               const isSelected = selectedIds.includes(q.id);
               return (
-                <div
+                <Card
                   key={q.id}
-                  className={`bg-white rounded-xl shadow-sm border p-5 transition space-y-4 ${
-                    isSelected ? "border-indigo-400 bg-indigo-50/20" : "border-slate-200"
+                  className={`p-5 transition-all space-y-4 ${
+                    isSelected ? "border-primary bg-primary/5" : ""
                   }`}
                 >
                   {/* Card Header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => toggleSelectOne(q.id)}
-                        className="text-slate-400 hover:text-slate-700"
+                        className="text-text-muted hover:text-text-primary"
                       >
                         {isSelected ? (
-                          <CheckSquare className="w-4 h-4 text-indigo-600" />
+                          <CheckSquare className="w-4 h-4 text-primary" />
                         ) : (
                           <Square className="w-4 h-4" />
                         )}
                       </button>
 
-                      <span
-                        className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                      <Badge
+                        variant={
                           q.status === "Published"
-                            ? "bg-emerald-100 text-emerald-800"
+                            ? "success"
                             : q.status === "Pending Review"
-                            ? "bg-amber-100 text-amber-800"
+                            ? "warning"
                             : q.status === "Rejected"
-                            ? "bg-rose-100 text-rose-800"
-                            : "bg-slate-100 text-slate-700"
-                        }`}
+                            ? "error"
+                            : "secondary"
+                        }
                       >
                         {q.status}
-                      </span>
+                      </Badge>
 
-                      <span className="text-xs font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">
+                      <Badge variant="info">
                         {q.source_type}
-                      </span>
+                      </Badge>
 
-                      <span
-                        className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                      <Badge
+                        variant={
                           q.difficulty === "Easy"
-                            ? "bg-emerald-50 text-emerald-700"
+                            ? "success"
                             : q.difficulty === "Medium"
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-rose-50 text-rose-700"
-                        }`}
+                            ? "warning"
+                            : "error"
+                        }
                       >
                         {q.difficulty}
-                      </span>
+                      </Badge>
                     </div>
 
                     {/* Quick Action Buttons */}
                     <div className="flex items-center gap-2">
                       {q.status !== "Published" && (
-                        <button
+                        <Button
+                          variant="primary"
+                          size="sm"
                           onClick={() => handleUpdateStatus(q.id, "Published")}
                           disabled={isPending}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition"
+                          className="gap-1 text-xs bg-success hover:bg-success/90"
                         >
                           <CheckCircle className="w-3.5 h-3.5" /> Approve & Publish
-                        </button>
+                        </Button>
                       )}
 
                       {q.status !== "Rejected" && (
-                        <button
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleUpdateStatus(q.id, "Rejected")}
                           disabled={isPending}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg border border-rose-300 text-rose-700 text-xs font-semibold hover:bg-rose-50 transition"
+                          className="gap-1 text-xs text-error border-error/30 hover:bg-error-light"
                         >
                           <XCircle className="w-3.5 h-3.5" /> Reject
-                        </button>
+                        </Button>
                       )}
 
                       <button
                         onClick={() => handleDelete(q.id)}
                         disabled={isPending}
-                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                        className="p-1.5 rounded-xl text-text-muted hover:text-error hover:bg-error-light transition-colors"
                         title="Delete question"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -333,7 +332,7 @@ export default function ReviewQueueClient({ initialQuestions }: ReviewQueueClien
                   </div>
 
                   {/* Question Stem */}
-                  <p className="text-sm font-semibold text-slate-900 leading-snug">
+                  <p className="text-sm font-semibold text-text-primary leading-snug">
                     {q.question_text}
                   </p>
 
@@ -342,9 +341,9 @@ export default function ReviewQueueClient({ initialQuestions }: ReviewQueueClien
                     {(q.options || []).map((opt) => (
                       <div
                         key={opt.id}
-                        className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-800 flex items-center gap-2"
+                        className="p-2.5 rounded-xl bg-secondary-bg border border-border text-xs text-text-primary flex items-center gap-2"
                       >
-                        <span className="w-5 h-5 rounded bg-white border border-slate-300 flex items-center justify-center font-bold text-xs text-slate-700">
+                        <span className="w-5 h-5 rounded-md bg-card border border-border flex items-center justify-center font-bold text-xs text-text-primary">
                           {opt.option_label}
                         </span>
                         <span>{opt.option_text}</span>
@@ -354,11 +353,11 @@ export default function ReviewQueueClient({ initialQuestions }: ReviewQueueClien
 
                   {/* Source Reference Footer */}
                   {q.source_reference && (
-                    <p className="text-xs text-slate-500 italic">
+                    <p className="text-xs text-text-muted italic">
                       Source: {q.source_reference}
                     </p>
                   )}
-                </div>
+                </Card>
               );
             })}
           </div>

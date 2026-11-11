@@ -1,18 +1,12 @@
 "use client";
 
+import { Card, Badge, Button, Alert, Input, Textarea, Select } from "@/components/ui";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
   Sparkles,
   ArrowLeft,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
   Clock,
-  Layers,
-  Check,
-  X,
-  FileText,
   Loader2,
 } from "lucide-react";
 import type { Exam, Subject, AIQuestionGenerationJob } from "@/lib/types";
@@ -78,26 +72,25 @@ export default function AIGeneratorClient({
     <div className="space-y-6">
       {/* Top Header */}
       <div>
-        <Link
-          href="/admin/questions"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Question Bank
+        <Link href="/admin/questions">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-text-muted hover:text-text-primary">
+            <ArrowLeft className="w-4 h-4" /> Back to Question Bank
+          </Button>
         </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Generator Controls (Left Column) */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-5">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <Card className="p-6 space-y-5">
+            <div className="flex items-center justify-between pb-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-violet-100 text-violet-700">
+                <div className="p-2 rounded-xl bg-accent/10 text-accent">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Gemini 2.5 Flash MCQ Generator</h2>
-                  <p className="text-xs text-slate-500">
+                  <h2 className="text-lg font-bold text-text-primary">Gemini 2.5 Flash MCQ Generator</h2>
+                  <p className="text-xs text-text-muted">
                     Generates syllabus-aligned multiple-choice questions with 4 options and verified rationales.
                   </p>
                 </div>
@@ -107,143 +100,100 @@ export default function AIGeneratorClient({
             <form onSubmit={handleGenerate} className="space-y-4">
               {/* Exam & Subject */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    Target Examination (Optional)
-                  </label>
-                  <select
-                    value={selectedExamId}
-                    onChange={(e) => setSelectedExamId(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  >
-                    <option value="">Any / General Competitive</option>
-                    {exams.map((exam) => (
-                      <option key={exam.id} value={exam.id}>
-                        {exam.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  label="Target Examination (Optional)"
+                  value={selectedExamId}
+                  onChange={(e) => setSelectedExamId(e.target.value)}
+                  options={[
+                    { value: "", label: "Any / General Competitive" },
+                    ...exams.map((exam) => ({ value: exam.id, label: exam.name })),
+                  ]}
+                />
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    Subject *
-                  </label>
-                  <select
-                    required
-                    value={selectedSubjectId}
-                    onChange={(e) => setSelectedSubjectId(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  >
-                    <option value="">Select Target Subject</option>
-                    {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  label="Subject *"
+                  required
+                  value={selectedSubjectId}
+                  onChange={(e) => setSelectedSubjectId(e.target.value)}
+                  options={[
+                    { value: "", label: "Select Target Subject" },
+                    ...subjects.map((s) => ({ value: s.id, label: s.name })),
+                  ]}
+                />
               </div>
 
               {/* Specific Topic / Subtopic */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                  Specific Topic / Focus Area (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={topicName}
-                  onChange={(e) => setTopicName(e.target.value)}
-                  placeholder="e.g. Fundamental Rights, Shear Force Diagrams, Vijayanagara Empire"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
-              </div>
+              <Input
+                label="Specific Topic / Focus Area (Optional)"
+                type="text"
+                value={topicName}
+                onChange={(e) => setTopicName(e.target.value)}
+                placeholder="e.g. Fundamental Rights, Shear Force Diagrams, Vijayanagara Empire"
+              />
 
               {/* Count & Difficulty & Language */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    Number of Questions
-                  </label>
-                  <select
-                    value={count}
-                    onChange={(e) => setCount(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  >
-                    <option value="5">5 Questions</option>
-                    <option value="10">10 Questions</option>
-                    <option value="20">20 Questions</option>
-                    <option value="30">30 Questions</option>
-                    <option value="50">50 Questions</option>
-                  </select>
-                </div>
+                <Select
+                  label="Number of Questions"
+                  value={count}
+                  onChange={(e) => setCount(e.target.value)}
+                  options={[
+                    { value: "5", label: "5 Questions" },
+                    { value: "10", label: "10 Questions" },
+                    { value: "20", label: "20 Questions" },
+                    { value: "30", label: "30 Questions" },
+                    { value: "50", label: "50 Questions" },
+                  ]}
+                />
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    Difficulty Level
-                  </label>
-                  <select
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                    <option value="Mixed">Mixed (Adaptive)</option>
-                  </select>
-                </div>
+                <Select
+                  label="Difficulty Level"
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                  options={[
+                    { value: "Easy", label: "Easy" },
+                    { value: "Medium", label: "Medium" },
+                    { value: "Hard", label: "Hard" },
+                    { value: "Mixed", label: "Mixed (Adaptive)" },
+                  ]}
+                />
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                    Language
-                  </label>
-                  <select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  >
-                    <option value="English">English</option>
-                    <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
-                  </select>
-                </div>
+                <Select
+                  label="Language"
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  options={[
+                    { value: "English", label: "English" },
+                    { value: "Kannada", label: "Kannada (ಕನ್ನಡ)" },
+                  ]}
+                />
               </div>
 
               {/* Custom Prompt Instructions */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                  Custom Generation Prompt / Instructions (Optional)
-                </label>
-                <textarea
-                  rows={2}
-                  value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
-                  placeholder="e.g. Focus on case law precedents, include numerical questions on deflection, etc."
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
-              </div>
+              <Textarea
+                label="Custom Generation Prompt / Instructions (Optional)"
+                rows={2}
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                placeholder="e.g. Focus on case law precedents, include numerical questions on deflection, etc."
+              />
 
               {/* Source Text Context */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                  Source Reference / Syllabus Text Snippet (Optional)
-                </label>
-                <textarea
-                  rows={3}
-                  value={sourceText}
-                  onChange={(e) => setSourceText(e.target.value)}
-                  placeholder="Paste text notes, official notification excerpts, or syllabus points to ground question generation..."
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
-              </div>
+              <Textarea
+                label="Source Reference / Syllabus Text Snippet (Optional)"
+                rows={3}
+                value={sourceText}
+                onChange={(e) => setSourceText(e.target.value)}
+                placeholder="Paste text notes, official notification excerpts, or syllabus points to ground question generation..."
+              />
 
               {/* Test Mode Mock Toggle */}
-              <div className="p-3 bg-violet-50 rounded-lg border border-violet-100 flex items-center justify-between">
+              <div className="p-3 bg-secondary-bg rounded-xl border border-border flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-violet-900 block">
+                  <span className="text-xs font-bold text-text-primary block">
                     Fast Test Mode (Mock Engine)
                   </span>
-                  <span className="text-[11px] text-violet-700">
+                  <span className="text-[11px] text-text-muted">
                     Generates valid sample questions instantly without consuming Gemini API tokens.
                   </span>
                 </div>
@@ -254,16 +204,18 @@ export default function AIGeneratorClient({
                     onChange={(e) => setUseMock(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+                  <div className="w-11 h-6 bg-secondary-bg border border-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
 
               {/* Submit Button */}
               <div className="pt-2">
-                <button
+                <Button
                   type="submit"
+                  variant="primary"
+                  size="md"
                   disabled={!selectedSubjectId || isPending}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-violet-600 text-white font-medium text-sm hover:bg-violet-700 shadow-sm transition disabled:opacity-50"
+                  className="w-full gap-2 text-xs"
                 >
                   {isPending ? (
                     <>
@@ -276,34 +228,29 @@ export default function AIGeneratorClient({
                       Generate {count} MCQs & Stage for Review
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </form>
 
             {/* Results Feedback */}
             {result && (
-              <div className="mt-4 pt-4 border-t border-slate-100">
+              <div className="mt-4 pt-4 border-t border-border">
                 {result.error ? (
-                  <div className="p-4 rounded-lg bg-rose-50 border border-rose-200 text-sm text-rose-800 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{result.error}</span>
-                  </div>
+                  <Alert variant="error" title={result.error} />
                 ) : (
                   <div className="space-y-3">
-                    <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                      <span>
-                        Successfully generated <strong>{result.count}</strong> questions! All items are staged under <strong>Pending Review</strong>.
-                      </span>
-                    </div>
+                    <Alert
+                      variant="success"
+                      title={`Successfully generated ${result.count} questions! All items are staged under Pending Review.`}
+                    />
 
                     <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="text-slate-500">
+                      <span className="text-text-muted">
                         Admin approval is required before questions appear in student practice.
                       </span>
                       <Link
                         href="/admin/questions/review"
-                        className="text-xs font-bold text-violet-700 hover:underline"
+                        className="text-xs font-bold text-primary hover:underline"
                       >
                         Open Review Queue ({result.count} items) →
                       </Link>
@@ -312,16 +259,16 @@ export default function AIGeneratorClient({
                 )}
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
         {/* Sidebar Specifications & Recent Jobs (Right Column) */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-violet-600" /> Module 5 Safety Workflow
+          <Card className="p-5 space-y-3">
+            <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-accent" /> Module 5 Safety Workflow
             </h3>
-            <ul className="text-xs text-slate-600 space-y-2 pl-4 list-disc">
+            <ul className="text-xs text-text-secondary space-y-2 pl-4 list-disc">
               <li>
                 <strong>Draft Only:</strong> AI generated questions never publish directly to student practice sessions.
               </li>
@@ -329,46 +276,46 @@ export default function AIGeneratorClient({
                 <strong>Strict 4 Options:</strong> Every generated question conforms to four distinct options (A, B, C, D).
               </li>
               <li>
-                <strong>Protected Answers:</strong> Answer keys and pedagogical rationales are saved to the isolated <code className="text-indigo-600 font-mono">question_answer_keys</code> table.
+                <strong>Protected Answers:</strong> Answer keys and pedagogical rationales are saved to the isolated <code className="text-primary font-mono">question_answer_keys</code> table.
               </li>
               <li>
                 <strong>Admin Approval:</strong> Admins can inspect questions, tweak distractors, and publish selectively from the Review Queue.
               </li>
             </ul>
-          </div>
+          </Card>
 
           {/* Recent AI Generation Jobs */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-slate-600" /> Recent AI Generation Jobs
+          <Card className="p-5 space-y-3">
+            <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <Clock className="w-4 h-4 text-text-muted" /> Recent AI Generation Jobs
             </h3>
 
             {recentJobs.length === 0 ? (
-              <p className="text-xs text-slate-400">No AI generation jobs recorded yet.</p>
+              <p className="text-xs text-text-muted">No AI generation jobs recorded yet.</p>
             ) : (
               <div className="space-y-2">
                 {recentJobs.map((job) => (
                   <div
                     key={job.id}
-                    className="p-2.5 rounded-lg border border-slate-100 bg-slate-50 text-xs space-y-1"
+                    className="p-3 rounded-xl border border-border bg-secondary-bg/50 text-xs space-y-1"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-800 truncate max-w-[200px]">
+                      <span className="font-semibold text-text-primary truncate max-w-[200px]">
                         {job.prompt || "MCQ Batch"}
                       </span>
-                      <span
-                        className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
+                      <Badge
+                        variant={
                           job.status === "Completed"
-                            ? "bg-emerald-100 text-emerald-800"
+                            ? "success"
                             : job.status === "Failed"
-                            ? "bg-rose-100 text-rose-800"
-                            : "bg-amber-100 text-amber-800"
-                        }`}
+                            ? "error"
+                            : "warning"
+                        }
                       >
                         {job.status}
-                      </span>
+                      </Badge>
                     </div>
-                    <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                    <div className="flex items-center justify-between text-text-muted text-[11px]">
                       <span>{job.generated_count} / {job.requested_count} generated ({job.difficulty})</span>
                       <span>{new Date(job.created_at).toLocaleDateString()}</span>
                     </div>
@@ -376,7 +323,7 @@ export default function AIGeneratorClient({
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </div>

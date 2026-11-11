@@ -1,8 +1,8 @@
+import { Card, Badge, PageHeader } from "@/components/ui";
 import { requireAuth } from "@/lib/auth";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+import AppLayout from "@/components/layout/AppLayout";
 import ProfileForm from "./ProfileForm";
-import { User, Calendar, ShieldCheck } from "lucide-react";
+import { Calendar, ShieldCheck } from "lucide-react";
 
 export default async function ProfilePage() {
   const { profile } = await requireAuth();
@@ -14,58 +14,61 @@ export default async function ProfilePage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar profile={profile} />
+    <AppLayout profile={profile} maxWidth="5xl">
+      <PageHeader
+        title="Account Profile"
+        description="Manage your personal details and view your account authorization credentials."
+        breadcrumbs={[
+          { label: profile.role === "admin" ? "Admin" : "Student", href: `/${profile.role}/dashboard` },
+          { label: "Profile" },
+        ]}
+      />
 
-      <div className="flex-1 flex">
-        <Sidebar role={profile.role} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left summary card */}
+        <Card className="p-6 h-fit">
+          <div className="flex flex-col items-center text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--color-primary-subtle)] text-primary font-heading text-2xl font-bold border-2 border-primary/25 shadow-xs">
+              {profile.full_name
+                ? profile.full_name.charAt(0).toUpperCase()
+                : profile.email.charAt(0).toUpperCase()}
+            </div>
+            <h3 className="mt-4 font-heading text-lg font-bold text-text-primary">
+              {profile.full_name || "PrepTrack User"}
+            </h3>
+            <p className="text-xs text-text-muted break-all mt-0.5">{profile.email}</p>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-slate-900">Account Profile</h1>
-            <p className="text-sm text-slate-600 mt-1">
-              Manage your personal details and view your account authorization status.
-            </p>
-          </div>
+            <div className="mt-4">
+              <Badge variant={profile.role === "admin" ? "secondary" : "primary"}>
+                <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+                Role: <span className="capitalize ml-1">{profile.role}</span>
+              </Badge>
+            </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left summary card */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm h-fit">
-              <div className="flex flex-col items-center text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-2xl font-bold border-2 border-indigo-200">
-                  {profile.full_name
-                    ? profile.full_name.charAt(0).toUpperCase()
-                    : profile.email.charAt(0).toUpperCase()}
-                </div>
-                <h3 className="mt-4 text-lg font-bold text-slate-900">
-                  {profile.full_name || "PrepTrack User"}
-                </h3>
-                <p className="text-xs text-slate-500 break-all">{profile.email}</p>
-
-                <div className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                  <ShieldCheck className="h-3.5 w-3.5 text-indigo-600" />
-                  Role: <span className="capitalize">{profile.role}</span>
-                </div>
-
-                <div className="mt-6 w-full border-t border-slate-100 pt-4 text-left">
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <Calendar className="h-4 w-4" />
-                    <span>Member since {formattedDate}</span>
-                  </div>
-                </div>
+            <div className="mt-6 w-full border-t border-border pt-4 text-left">
+              <div className="flex items-center gap-2 text-xs text-text-muted">
+                <Calendar className="h-4 w-4 text-text-secondary" />
+                <span>Member since {formattedDate}</span>
               </div>
             </div>
+          </div>
+        </Card>
 
-            {/* Right form card */}
-            <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-slate-900 border-b border-slate-100 pb-3 mb-4">
+        {/* Right form card */}
+        <div className="lg:col-span-2">
+          <Card className="p-6">
+            <div className="border-b border-border pb-3 mb-6">
+              <h2 className="font-heading text-base font-bold text-text-primary">
                 Personal Information
               </h2>
-              <ProfileForm profile={profile} />
+              <p className="text-xs text-text-secondary mt-0.5">
+                Update your public display name and review account credentials.
+              </p>
             </div>
-          </div>
-        </main>
+            <ProfileForm profile={profile} />
+          </Card>
+        </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }

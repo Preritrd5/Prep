@@ -1,5 +1,6 @@
 "use client";
 
+import { Card, Badge, Button, PageHeader, StatCard, EmptyState } from "@/components/ui";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
@@ -14,6 +15,10 @@ import {
   Activity,
   Award,
   BookOpen,
+  FileText,
+  Users,
+  Eye,
+  RefreshCw,
 } from "lucide-react";
 import type { ExamAttempt, ExamAuditEvent } from "@/lib/types";
 import {
@@ -68,140 +73,192 @@ export default function AdminMonitorClient({ metrics }: AdminMonitorClientProps)
     });
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "In Progress":
+        return <Badge variant="primary" dot pulse>Live In Progress</Badge>;
+      case "Submitted":
+      case "Evaluated":
+        return <Badge variant="success">Completed</Badge>;
+      case "Auto Submitted":
+        return <Badge variant="warning">Auto-Submitted</Badge>;
+      case "Cancelled":
+        return <Badge variant="danger">Cancelled</Badge>;
+      default:
+        return <Badge variant="neutral">{status}</Badge>;
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/admin/exams/manage"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Examinations List
-        </Link>
-      </div>
+      <PageHeader
+        title="Live Exam Monitor & Audits"
+        description="Real-time oversight across active examination sessions, attempt progress, and security audit logs."
+        breadcrumbs={[
+          { label: "Admin", href: "/admin/dashboard" },
+          { label: "Online Exams", href: "/admin/exams/manage" },
+          { label: "Monitor" },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/admin/exams/manage">
+              <Button variant="outline" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>
+                Back to Exams
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<RefreshCw className={`w-4 h-4 ${isPending ? "animate-spin" : ""}`} />}
+              onClick={() => window.location.reload()}
+            >
+              Refresh
+            </Button>
+          </div>
+        }
+      />
 
       {msg && (
         <div
-          className={`p-4 rounded-lg flex items-center justify-between text-sm ${
+          className={`p-4 rounded-xl flex items-center justify-between text-sm border ${
             msg.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-red-50 text-red-800 border border-red-200"
+              ? "bg-success/10 text-success border-success/20"
+              : "bg-error/10 text-error border-error/20"
           }`}
         >
           <span>{msg.text}</span>
-          <button onClick={() => setMsg(null)} className="text-xs font-bold underline">
+          <button
+            onClick={() => setMsg(null)}
+            className="text-xs font-semibold hover:underline cursor-pointer"
+          >
             Dismiss
           </button>
         </div>
       )}
 
       {/* Real-time Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <p className="text-xs font-semibold text-slate-500 uppercase">Total Tests</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{metrics.totalExams}</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <p className="text-xs font-semibold text-emerald-700 uppercase">Published</p>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{metrics.publishedExams}</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <p className="text-xs font-semibold text-indigo-700 uppercase">Ongoing Live</p>
-          <p className="text-2xl font-bold text-indigo-600 mt-1">{metrics.ongoingAttempts}</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <p className="text-xs font-semibold text-purple-700 uppercase">Completed</p>
-          <p className="text-2xl font-bold text-purple-600 mt-1">{metrics.completedAttempts}</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <p className="text-xs font-semibold text-amber-700 uppercase">Awaiting Release</p>
-          <p className="text-2xl font-bold text-amber-600 mt-1">{metrics.awaitingPublication}</p>
-        </div>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <StatCard
+          title="Total Tests"
+          value={metrics.totalExams}
+          icon={<FileText className="w-5 h-5" />}
+          accentColor="primary"
+        />
+        <StatCard
+          title="Published"
+          value={metrics.publishedExams}
+          icon={<CheckCircle className="w-5 h-5" />}
+          accentColor="success"
+        />
+        <StatCard
+          title="Ongoing Live"
+          value={metrics.ongoingAttempts}
+          icon={<Activity className="w-5 h-5" />}
+          accentColor="accent"
+        />
+        <StatCard
+          title="Completed"
+          value={metrics.completedAttempts}
+          icon={<Award className="w-5 h-5" />}
+          accentColor="secondary"
+        />
+        <StatCard
+          title="Awaiting Release"
+          value={metrics.awaitingPublication}
+          icon={<Clock className="w-5 h-5" />}
+          accentColor="warning"
+        />
       </div>
 
       {/* Recent Student Attempts Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-indigo-600" /> Student Examination Attempts Log
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Live audit and performance monitoring across all student examination sessions.
-            </p>
+      <Card variant="default" padding="none">
+        <div className="p-5 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="w-5 h-5 text-primary" />
+            <div>
+              <h2 className="text-base font-bold text-text-primary">
+                Student Examination Attempts Log
+              </h2>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Live monitoring and status audit across candidate test sessions.
+              </p>
+            </div>
           </div>
+          <Badge variant="neutral">{attempts.length} attempts recorded</Badge>
         </div>
 
         {attempts.length === 0 ? (
-          <div className="p-12 text-center text-slate-500">
-            <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm font-medium text-slate-800">No Attempts Logged Yet</p>
-            <p className="text-xs text-slate-400 mt-1">
-              Student mock exam attempts will populate here automatically in real time.
-            </p>
-          </div>
+          <EmptyState
+            title="No Attempts Logged Yet"
+            description="Student mock exam attempts will populate here automatically in real time as candidates begin tests."
+            icon={<BookOpen className="w-10 h-10 text-text-muted" />}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase font-semibold">
-                  <th className="p-3">Student</th>
-                  <th className="p-3">Examination</th>
-                  <th className="p-3">Attempt</th>
-                  <th className="p-3">Started</th>
-                  <th className="p-3">Score</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 text-right">Actions</th>
+                <tr className="bg-bg-secondary/60 border-b border-border text-text-secondary uppercase font-semibold text-[11px] tracking-wider">
+                  <th className="p-3.5 pl-5">Student</th>
+                  <th className="p-3.5">Examination</th>
+                  <th className="p-3.5">Attempt</th>
+                  <th className="p-3.5">Started At</th>
+                  <th className="p-3.5">Score</th>
+                  <th className="p-3.5">Status</th>
+                  <th className="p-3.5 pr-5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-800">
+              <tbody className="divide-y divide-border/60 text-text-primary">
                 {attempts.map((att) => (
-                  <tr key={att.id} className="hover:bg-slate-50/80 transition">
-                    <td className="p-3 font-medium">
-                      {att.student?.full_name || att.student?.email || "Student"}
+                  <tr key={att.id} className="hover:bg-bg-secondary/40 transition-colors">
+                    <td className="p-3.5 pl-5 font-medium">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
+                          {(att.student?.full_name || att.student?.email || "S")[0]}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-text-primary">
+                            {att.student?.full_name || "Student"}
+                          </div>
+                          <div className="text-[10px] text-text-muted">{att.student?.email}</div>
+                        </div>
+                      </div>
                     </td>
-                    <td className="p-3 font-semibold max-w-[200px] truncate">
+                    <td className="p-3.5 font-medium max-w-[200px] truncate">
                       {att.template?.title || "Examination"}
                     </td>
-                    <td className="p-3">#{att.attempt_number}</td>
-                    <td className="p-3 text-slate-500">
-                      {new Date(att.started_at).toLocaleString()}
+                    <td className="p-3.5 text-text-secondary font-mono">
+                      #{att.attempt_number}
                     </td>
-                    <td className="p-3 font-bold">
-                      {att.score} / {att.max_marks} ({att.percentage}%)
+                    <td className="p-3.5 text-text-secondary">
+                      {new Date(att.started_at).toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </td>
-                    <td className="p-3">
-                      <span
-                        className={`px-2 py-0.5 rounded font-semibold ${
-                          att.status === "In Progress"
-                            ? "bg-indigo-100 text-indigo-800"
-                            : att.status === "Submitted" || att.status === "Evaluated"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : att.status === "Auto Submitted"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-rose-100 text-rose-800"
-                        }`}
-                      >
-                        {att.status}
+                    <td className="p-3.5 font-bold">
+                      {att.score} / {att.max_marks}{" "}
+                      <span className="text-[10px] font-normal text-text-muted">
+                        ({att.percentage}%)
                       </span>
                     </td>
-                    <td className="p-3 text-right space-x-2">
-                      <Link
-                        href={`/student/exams/online/result/${att.id}`}
-                        className="text-indigo-600 font-semibold hover:underline"
-                      >
-                        Inspect Result
+                    <td className="p-3.5">{getStatusBadge(att.status)}</td>
+                    <td className="p-3.5 pr-5 text-right space-x-2">
+                      <Link href={`/student/exams/online/result/${att.id}`}>
+                        <Button variant="ghost" size="sm" icon={<Eye className="w-3.5 h-3.5" />}>
+                          Inspect
+                        </Button>
                       </Link>
                       {att.status === "In Progress" && (
-                        <button
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          icon={<XCircle className="w-3.5 h-3.5" />}
                           onClick={() => handleCancelAttempt(att.id)}
-                          className="text-rose-600 font-semibold hover:underline"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       )}
                     </td>
                   </tr>
@@ -210,37 +267,48 @@ export default function AdminMonitorClient({ metrics }: AdminMonitorClientProps)
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Audit Log Strip */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
-        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-          <Shield className="w-4 h-4 text-slate-600" /> Recent Administrative & Examination Audit Events
-        </h3>
-
-        {metrics.recentAudits.length === 0 ? (
-          <p className="text-xs text-slate-400">No recent audit events logged.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {metrics.recentAudits.map((aud) => (
-              <div
-                key={aud.id}
-                className="p-2 rounded bg-slate-50 border border-slate-100 text-xs flex items-center justify-between text-slate-700"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-800">
-                    {aud.event_type}
-                  </span>
-                  <span>{JSON.stringify(aud.details_json || {})}</span>
-                </div>
-                <span className="text-[11px] text-slate-400">
-                  {new Date(aud.created_at).toLocaleTimeString()}
-                </span>
-              </div>
-            ))}
+      <Card variant="default">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <Shield className="w-4 h-4 text-primary" /> Examination & Security Audit Events
+            </h3>
+            <Badge variant="neutral">{metrics.recentAudits.length} events</Badge>
           </div>
-        )}
-      </div>
+
+          {metrics.recentAudits.length === 0 ? (
+            <p className="text-xs text-text-muted py-4 text-center">No recent audit events logged.</p>
+          ) : (
+            <div className="space-y-2">
+              {metrics.recentAudits.map((aud) => (
+                <div
+                  key={aud.id}
+                  className="p-3 rounded-lg bg-bg-secondary/60 border border-border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-text-secondary"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Badge variant="outline" size="sm">
+                      {aud.event_type}
+                    </Badge>
+                    <span className="font-mono text-[11px] text-text-primary truncate max-w-xl">
+                      {JSON.stringify(aud.details_json || {})}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-text-muted whitespace-nowrap">
+                    {new Date(aud.created_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }

@@ -1,21 +1,15 @@
 "use client";
 
+import { Card, Badge, Button, EmptyState } from "@/components/ui";
 import { useState } from "react";
 import Link from "next/link";
 import {
   BookOpen,
   Clock,
-  Award,
-  CheckCircle,
-  AlertCircle,
   Play,
-  RotateCcw,
   Search,
-  Filter,
-  Calendar,
-  Layers,
 } from "lucide-react";
-import type { ExamTemplate, ExamAttempt, ExamCategory } from "@/lib/types";
+import type { ExamTemplate, ExamAttempt } from "@/lib/types";
 
 interface StudentExamsClientProps {
   availableExams: ExamTemplate[];
@@ -53,43 +47,42 @@ export default function StudentExamsClient({
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Online Examination & Mock Test Portal</h1>
-          <p className="text-sm text-slate-600 mt-1">
+          <h2 className="text-xl font-bold text-text-primary">Online CBT Mock Tests</h2>
+          <p className="text-xs text-text-muted mt-1">
             Simulate real computer-based competitive examinations under timed, server-enforced conditions.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/student/exams/online/history"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium text-xs hover:bg-slate-50 transition"
-          >
-            <Clock className="w-3.5 h-3.5 text-slate-500" /> My Attempt History
+          <Link href="/student/exams/online/history">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+              <Clock className="w-3.5 h-3.5" /> My Attempt History
+            </Button>
           </Link>
         </div>
-      </div>
+      </Card>
 
       {/* Tabs & Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3">
+      <Card className="p-4 space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex p-0.5 bg-slate-100 rounded-lg border border-slate-200 text-xs font-semibold">
+          <div className="flex p-0.5 bg-secondary-bg rounded-xl border border-border text-xs font-semibold">
             <button
               onClick={() => setActiveTab("Available")}
-              className={`px-4 py-2 rounded-md transition ${
+              className={`px-4 py-2 rounded-lg transition-all ${
                 activeTab === "Available"
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-card text-primary font-bold shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               Available Examinations ({availableExams.length})
             </button>
             <button
               onClick={() => setActiveTab("Completed")}
-              className={`px-4 py-2 rounded-md transition ${
+              className={`px-4 py-2 rounded-lg transition-all ${
                 activeTab === "Completed"
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-card text-primary font-bold shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               Completed Tests ({completedTemplateIds.size})
@@ -98,20 +91,20 @@ export default function StudentExamsClient({
 
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-text-muted absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Search mock exams..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="pl-9 pr-3 py-1.5 border border-border rounded-xl text-xs bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold bg-white text-slate-700 focus:outline-none"
+              className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Categories</option>
               <option value="UPSC">UPSC</option>
@@ -123,17 +116,15 @@ export default function StudentExamsClient({
             </select>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Examination Cards Grid */}
       {filteredExams.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
-          <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="font-semibold text-base text-slate-800">No Examinations Found</h3>
-          <p className="text-xs text-slate-400 mt-1">
-            There are no examinations matching your current filters.
-          </p>
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title="No Examinations Found"
+          description="There are no examinations matching your current filters."
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredExams.map((exam) => {
@@ -149,68 +140,68 @@ export default function StudentExamsClient({
             );
 
             return (
-              <div
+              <Card
                 key={exam.id}
-                className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between space-y-4 hover:shadow-md transition"
+                className="p-5 flex flex-col justify-between space-y-4 hover:border-primary/40 transition-all"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700">
+                    <Badge variant="primary">
                       {exam.exam_category}
-                    </span>
-                    <span className="text-[11px] font-semibold text-slate-400">
+                    </Badge>
+                    <span className="text-[11px] font-semibold text-text-muted">
                       {exam.exam_type}
                     </span>
                   </div>
 
-                  <h3 className="text-base font-bold text-slate-900 leading-snug line-clamp-2">
+                  <h3 className="text-base font-bold text-text-primary leading-snug line-clamp-2">
                     {exam.title}
                   </h3>
 
-                  <p className="text-xs text-slate-500 line-clamp-2">{exam.description}</p>
+                  <p className="text-xs text-text-muted line-clamp-2">{exam.description}</p>
 
-                  <div className="grid grid-cols-3 gap-2 pt-2 text-center border-t border-slate-100">
-                    <div className="p-2 rounded bg-slate-50">
-                      <span className="text-[10px] text-slate-400 block font-bold uppercase">Duration</span>
-                      <span className="text-xs font-bold text-slate-800">{exam.duration_minutes} M</span>
+                  <div className="grid grid-cols-3 gap-2 pt-2 text-center border-t border-border">
+                    <div className="p-2 rounded-xl bg-secondary-bg">
+                      <span className="text-[10px] text-text-muted block font-bold uppercase">Duration</span>
+                      <span className="text-xs font-bold text-text-primary">{exam.duration_minutes} M</span>
                     </div>
-                    <div className="p-2 rounded bg-slate-50">
-                      <span className="text-[10px] text-slate-400 block font-bold uppercase">Questions</span>
-                      <span className="text-xs font-bold text-slate-800">{exam.total_questions}</span>
+                    <div className="p-2 rounded-xl bg-secondary-bg">
+                      <span className="text-[10px] text-text-muted block font-bold uppercase">Questions</span>
+                      <span className="text-xs font-bold text-text-primary">{exam.total_questions}</span>
                     </div>
-                    <div className="p-2 rounded bg-slate-50">
-                      <span className="text-[10px] text-slate-400 block font-bold uppercase">Marks</span>
-                      <span className="text-xs font-bold text-slate-800">{exam.total_marks}</span>
+                    <div className="p-2 rounded-xl bg-secondary-bg">
+                      <span className="text-[10px] text-text-muted block font-bold uppercase">Marks</span>
+                      <span className="text-xs font-bold text-text-primary">{exam.total_marks}</span>
                     </div>
                   </div>
 
-                  <div className="text-[11px] text-slate-500 flex items-center justify-between">
+                  <div className="text-[11px] text-text-muted flex items-center justify-between">
                     <span>
                       Attempts: <strong>{completedCount}</strong> / {exam.max_attempts || "∞"}
                     </span>
                     {exam.has_negative_marking && (
-                      <span className="text-rose-600 font-semibold">
+                      <span className="text-error font-semibold">
                         -{exam.negative_marks} Neg Marking
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div className="pt-3 border-t border-border flex items-center justify-between">
                   {activeAttempt ? (
                     <Link
                       href={`/student/exams/online/attempt/${activeAttempt.id}`}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-amber-600 text-white font-semibold text-xs hover:bg-amber-700 shadow-sm transition animate-pulse"
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-warning text-white font-semibold text-xs shadow-sm hover:bg-warning/90 transition-all animate-pulse"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" /> Resume Active Attempt
                     </Link>
                   ) : attemptsRemaining === 0 ? (
                     <div className="w-full flex items-center justify-between">
-                      <span className="text-xs text-slate-400 font-medium">Max attempts reached</span>
+                      <span className="text-xs text-text-muted font-medium">Max attempts reached</span>
                       {latestCompleted && (
                         <Link
                           href={`/student/exams/online/result/${latestCompleted.id}`}
-                          className="text-xs font-semibold text-indigo-600 hover:underline"
+                          className="text-xs font-semibold text-primary hover:underline"
                         >
                           View Results ({latestCompleted.score}m) →
                         </Link>
@@ -219,13 +210,13 @@ export default function StudentExamsClient({
                   ) : (
                     <Link
                       href={`/student/exams/online/${exam.id}/instructions`}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold text-xs hover:bg-indigo-700 shadow-sm transition"
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white font-semibold text-xs hover:bg-primary-hover shadow-sm transition-all"
                     >
                       <Play className="w-3.5 h-3.5" /> Start Examination
                     </Link>
                   )}
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

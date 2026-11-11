@@ -1,7 +1,8 @@
 "use client";
 
+import { Card, Badge, Button, PageHeader } from "@/components/ui";
 import { useState } from "react";
-import { Download, FileText, CheckCircle2, ShieldCheck, Database, Layers } from "lucide-react";
+import { Download, FileText, CheckCircle2, ShieldCheck, Database, Layers, CheckSquare, RotateCcw, Award } from "lucide-react";
 
 interface StudentExportClientProps {
   exportData: {
@@ -118,135 +119,163 @@ export default function StudentExportClient({ exportData }: StudentExportClientP
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <Download className="h-7 w-7 text-indigo-600" />
-            Personal Data Export & Portability
-          </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            Export your preparation records, task schedules, and test history in standard CSV and JSON formats.
-          </p>
-        </div>
+      <PageHeader
+        title="Personal Data Export & Portability"
+        description="Export your syllabus progress, study routine logs, and test performance in open CSV and JSON formats."
+        breadcrumbs={[
+          { label: "Student", href: "/student/dashboard" },
+          { label: "Data Export" },
+        ]}
+        actions={
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Database className="h-4 w-4" />}
+            onClick={handleExportAllJSON}
+          >
+            Export Complete JSON Archive
+          </Button>
+        }
+      />
 
-        <button
-          onClick={handleExportAllJSON}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition"
-        >
-          <Database className="h-4 w-4" />
-          Export Complete JSON Archive
-        </button>
-      </div>
-
-      <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 flex items-center gap-3">
-        <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0" />
-        <p className="text-xs text-emerald-800">
-          <strong>Privacy Guaranteed:</strong> Exports strictly filter and include only your authenticated student records. Private administrative configurations and other students&apos; data are completely excluded.
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
+        <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+        <p className="text-xs text-text-primary">
+          <strong className="font-semibold text-primary">Privacy Guaranteed:</strong> Exports strictly filter and include only your authenticated student records. Private administrative configurations and other students&apos; data are completely excluded.
         </p>
       </div>
 
       {/* Export Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {/* Syllabus Progress */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Syllabus</span>
-            <Layers className="h-4 w-4 text-indigo-600" />
+        <Card variant="default" className="flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Badge variant="primary" size="sm">Syllabus</Badge>
+              <Layers className="h-4 w-4 text-primary" />
+            </div>
+            <h3 className="text-base font-bold text-text-primary">Syllabus Progress Ledger</h3>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              Detailed tracking records for {exportData.topicProgress.length} topics across all enrolled examinations.
+            </p>
           </div>
-          <h3 className="text-base font-bold text-slate-900">Syllabus Progress Ledger</h3>
-          <p className="text-xs text-slate-500">
-            Records for {exportData.topicProgress.length} topics across your enrolled examinations.
-          </p>
-          <button
-            onClick={handleExportSyllabus}
-            disabled={downloadingSection === "syllabus"}
-            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download Syllabus CSV
-          </button>
-        </div>
+          <div className="pt-4 mt-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              isLoading={downloadingSection === "syllabus"}
+              icon={<Download className="h-3.5 w-3.5" />}
+              onClick={handleExportSyllabus}
+            >
+              Download Syllabus CSV
+            </Button>
+          </div>
+        </Card>
 
         {/* Study Tasks */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Study Routine</span>
-            <FileText className="h-4 w-4 text-purple-600" />
+        <Card variant="default" className="flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Badge variant="secondary" size="sm">Study Routine</Badge>
+              <CheckSquare className="h-4 w-4 text-secondary" />
+            </div>
+            <h3 className="text-base font-bold text-text-primary">Study Tasks & Routine Log</h3>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              {exportData.studyTasks.length} daily task items, logged study durations, and completion milestones.
+            </p>
           </div>
-          <h3 className="text-base font-bold text-slate-900">Study Tasks & Routine Log</h3>
-          <p className="text-xs text-slate-500">
-            {exportData.studyTasks.length} daily tasks, hours studied, and completion statuses.
-          </p>
-          <button
-            onClick={handleExportTasks}
-            disabled={downloadingSection === "tasks"}
-            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download Tasks CSV
-          </button>
-        </div>
+          <div className="pt-4 mt-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              isLoading={downloadingSection === "tasks"}
+              icon={<Download className="h-3.5 w-3.5" />}
+              onClick={handleExportTasks}
+            >
+              Download Tasks CSV
+            </Button>
+          </div>
+        </Card>
 
         {/* Revision History */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Spaced Review</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+        <Card variant="default" className="flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Badge variant="success" size="sm">Spaced Review</Badge>
+              <RotateCcw className="h-4 w-4 text-success" />
+            </div>
+            <h3 className="text-base font-bold text-text-primary">Spaced Revision History</h3>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              {exportData.revisionSchedules.length} spaced repetition cycles and self-reported confidence ratings.
+            </p>
           </div>
-          <h3 className="text-base font-bold text-slate-900">Spaced Revision History</h3>
-          <p className="text-xs text-slate-500">
-            {exportData.revisionSchedules.length} spaced repetition cycles and self-reported ratings.
-          </p>
-          <button
-            onClick={handleExportRevisions}
-            disabled={downloadingSection === "revisions"}
-            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download Revisions CSV
-          </button>
-        </div>
+          <div className="pt-4 mt-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              isLoading={downloadingSection === "revisions"}
+              icon={<Download className="h-3.5 w-3.5" />}
+              onClick={handleExportRevisions}
+            >
+              Download Revisions CSV
+            </Button>
+          </div>
+        </Card>
 
         {/* MCQ Practice */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">MCQ Bank</span>
-            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+        <Card variant="default" className="flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Badge variant="neutral" size="sm">MCQ Bank</Badge>
+              <CheckCircle2 className="h-4 w-4 text-accent" />
+            </div>
+            <h3 className="text-base font-bold text-text-primary">Question Practice Log</h3>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              Recent {exportData.practiceAttempts.length} question attempts with speed metrics and correctness.
+            </p>
           </div>
-          <h3 className="text-base font-bold text-slate-900">Question Practice Log</h3>
-          <p className="text-xs text-slate-500">
-            Recent {exportData.practiceAttempts.length} question attempts with speed and correctness.
-          </p>
-          <button
-            onClick={handleExportPracticeMCQ}
-            disabled={downloadingSection === "mcq"}
-            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download MCQs CSV
-          </button>
-        </div>
+          <div className="pt-4 mt-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              isLoading={downloadingSection === "mcq"}
+              icon={<Download className="h-3.5 w-3.5" />}
+              onClick={handleExportPracticeMCQ}
+            >
+              Download MCQs CSV
+            </Button>
+          </div>
+        </Card>
 
         {/* Mock Exam Results */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">CBT Tests</span>
-            <CheckCircle2 className="h-4 w-4 text-amber-600" />
+        <Card variant="default" className="flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Badge variant="warning" size="sm">CBT Tests</Badge>
+              <Award className="h-4 w-4 text-warning" />
+            </div>
+            <h3 className="text-base font-bold text-text-primary">Online Mock Exam Results</h3>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              {exportData.mockExamResults.length} finalized test attempts with negative marking and accuracy breakdowns.
+            </p>
           </div>
-          <h3 className="text-base font-bold text-slate-900">Online Mock Examination Results</h3>
-          <p className="text-xs text-slate-500">
-            {exportData.mockExamResults.length} finalized test attempts with negative marking breakdowns.
-          </p>
-          <button
-            onClick={handleExportMockResults}
-            disabled={downloadingSection === "mocks"}
-            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download Mock Results CSV
-          </button>
-        </div>
+          <div className="pt-4 mt-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              isLoading={downloadingSection === "mocks"}
+              icon={<Download className="h-3.5 w-3.5" />}
+              onClick={handleExportMockResults}
+            >
+              Download Mock Results CSV
+            </Button>
+          </div>
+        </Card>
       </div>
     </div>
   );

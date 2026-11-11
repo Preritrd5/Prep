@@ -1,8 +1,8 @@
 "use client";
 
+import { Card, Badge, Button, EmptyState } from "@/components/ui";
 import { useState } from "react";
-import Link from "next/link";
-import { AlertCircle, RotateCcw, BookOpen, CheckCircle } from "lucide-react";
+import { RotateCcw, CheckCircle, ChevronLeft } from "lucide-react";
 import type { Question } from "@/lib/types";
 import PracticeRunner from "@/components/practice/PracticeRunner";
 
@@ -19,33 +19,31 @@ export default function IncorrectQuestionsClient({
 
   if (incorrectQuestions.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center text-slate-500">
-        <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-        <h3 className="font-semibold text-lg text-slate-800">Clean Slate — No Incorrect Questions!</h3>
-        <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-          You currently have zero uncorrected mistakes logged in your practice sessions. Excellent accuracy!
-        </p>
-        <div className="mt-5">
-          <Link
-            href="/student/practice/topic"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium text-xs hover:bg-indigo-700 transition"
-          >
-            Practice New Topics →
-          </Link>
-        </div>
-      </div>
+      <EmptyState
+        icon={CheckCircle}
+        title="Clean Slate — No Incorrect Questions!"
+        description="You currently have zero uncorrected mistakes logged in your practice sessions. Excellent accuracy!"
+        action={{
+          label: "Practice New Topics",
+          onClick: () => {
+            window.location.href = "/student/practice/topic";
+          },
+        }}
+      />
     );
   }
 
   if (isPracticing) {
     return (
       <div className="space-y-4">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setIsPracticing(false)}
-          className="text-xs font-semibold text-indigo-600 hover:underline"
+          className="text-xs text-primary hover:text-primary-hover gap-1"
         >
-          ← Exit Mistakes Practice
-        </button>
+          <ChevronLeft className="h-4 w-4" /> Exit Mistakes Practice
+        </Button>
         <PracticeRunner
           questions={incorrectQuestions}
           title="Mistake Notebook Drill Session"
@@ -60,61 +58,60 @@ export default function IncorrectQuestionsClient({
   return (
     <div className="space-y-6">
       {/* Top action header */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center justify-between">
+      <Card className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-slate-900">
+          <h2 className="text-base font-bold text-text-primary">
             Mistake Notebook ({incorrectQuestions.length} Items)
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-text-muted mt-0.5">
             Questions answered incorrectly in previous practice attempts.
           </p>
         </div>
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => setIsPracticing(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 text-white font-medium text-xs hover:bg-rose-700 transition shadow-sm"
+          className="gap-2 text-xs bg-error hover:bg-error/90 text-white"
         >
           <RotateCcw className="w-4 h-4" /> Re-Attempt Past Mistakes ({incorrectQuestions.length})
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       {/* Questions list */}
       <div className="space-y-3">
         {incorrectQuestions.map((q, idx) => (
-          <div
-            key={q.id}
-            className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3"
-          >
+          <Card key={q.id} className="p-5 space-y-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-400">Mistake #{idx + 1}</span>
-              <span
-                className={`px-2 py-0.5 rounded font-semibold ${
+              <span className="font-bold text-text-muted">Mistake #{idx + 1}</span>
+              <Badge
+                variant={
                   q.difficulty === "Easy"
-                    ? "bg-emerald-50 text-emerald-700"
+                    ? "success"
                     : q.difficulty === "Medium"
-                    ? "bg-amber-50 text-amber-700"
-                    : "bg-rose-50 text-rose-700"
-                }`}
+                    ? "warning"
+                    : "error"
+                }
               >
                 {q.difficulty}
-              </span>
+              </Badge>
             </div>
 
-            <p className="text-sm font-semibold text-slate-900 leading-snug">{q.question_text}</p>
+            <p className="text-sm font-semibold text-text-primary leading-snug">{q.question_text}</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
               {(q.options || []).map((opt) => (
                 <div
                   key={opt.id}
-                  className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 flex items-center gap-2"
+                  className="p-2.5 rounded-xl bg-secondary-bg border border-border text-xs text-text-primary flex items-center gap-2"
                 >
-                  <span className="w-5 h-5 rounded bg-white border flex items-center justify-center font-bold text-slate-800">
+                  <span className="w-5 h-5 rounded-md bg-card border border-border flex items-center justify-center font-bold text-text-primary text-[11px]">
                     {opt.option_label}
                   </span>
                   <span>{opt.option_text}</span>
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

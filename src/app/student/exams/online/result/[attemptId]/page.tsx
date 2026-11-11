@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
 import { getExamResult } from "@/lib/data/exams-online";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+import AppLayout from "@/components/layout/AppLayout";
 import ExamResultClient from "./ExamResultClient";
 
 interface PageProps {
@@ -22,21 +21,13 @@ export default async function ExamResultPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar profile={profile} />
-
-      <div className="flex-1 flex">
-        <Sidebar role={profile.role} />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-          <ExamResultClient
-            result={result}
-            attempt={attempt}
-            template={template}
-            questionsReview={questionsReview}
-          />
-        </main>
-      </div>
-    </div>
+    <AppLayout profile={profile}>
+      <ExamResultClient
+        result={result}
+        attempt={attempt}
+        template={template}
+        questionsReview={questionsReview}
+      />
+    </AppLayout>
   );
 }

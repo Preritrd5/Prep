@@ -1,9 +1,9 @@
 import { requireRole } from "@/lib/auth";
 import { getStudentRevisionsExtended } from "@/lib/data/analytics";
 import { getStudentExams, getExamSyllabus } from "@/lib/data/syllabus";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+import AppLayout from "@/components/layout/AppLayout";
 import RevisionsClient from "./RevisionsClient";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function StudentRevisionsPage() {
   const { profile, user } = await requireRole("student");
@@ -36,19 +36,20 @@ export default async function StudentRevisionsPage() {
   const availableTopics = Array.from(availableTopicsMap.values());
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar profile={profile} />
+    <AppLayout profile={profile}>
+      <PageHeader
+        title="Spaced Repetition & Revision Tracker"
+        description="Automated retention intervals (1d, 3d, 7d, 21d, 45d, 90d) to cement formulas, theory, and problem archetypes."
+        breadcrumbs={[
+          { label: "Dashboard", href: "/student/dashboard" },
+          { label: "Revisions" },
+        ]}
+      />
 
-      <div className="flex-1 flex">
-        <Sidebar role="student" />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-          <RevisionsClient
-            revisions={revisions}
-            availableTopics={availableTopics}
-          />
-        </main>
-      </div>
-    </div>
+      <RevisionsClient
+        revisions={revisions}
+        availableTopics={availableTopics}
+      />
+    </AppLayout>
   );
 }
