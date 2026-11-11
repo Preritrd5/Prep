@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { SidebarProvider } from "@/components/layout/sidebar-context";
+import RouteProgressBar from "@/components/ui/route-progress-bar";
 import "./globals.css";
 
 const inter = Inter({
@@ -48,6 +50,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background text-text-primary antialiased font-sans transition-colors duration-150">
+        <Suspense fallback={null}>
+          <RouteProgressBar />
+        </Suspense>
         <a href="#main-content" className="skip-to-content">
           Skip to main content
         </a>

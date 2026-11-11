@@ -13,6 +13,7 @@ import {
   FileText,
   Search,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import {
   updateTopicProgressAction,
@@ -342,7 +343,11 @@ export default function SyllabusClient({
                   ))}
                 </select>
                 <div className="pointer-events-none absolute right-3.5 top-3.5 flex items-center text-text-muted">
-                  <ChevronDown className="h-4 w-4" />
+                  {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </div>
               </div>
               {isPending && (

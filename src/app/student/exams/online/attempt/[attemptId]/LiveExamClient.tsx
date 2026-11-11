@@ -544,10 +544,10 @@ export default function LiveExamClient({
               variant="primary"
               size="sm"
               onClick={() => handleFinalSubmit(false)}
-              disabled={isPending}
+              isLoading={isPending}
               className="bg-success hover:bg-success/90 text-white font-bold"
             >
-              {isPending ? "Evaluating Responses..." : "Confirm & Submit"}
+              Confirm & Submit
             </Button>
           </div>
         </div>

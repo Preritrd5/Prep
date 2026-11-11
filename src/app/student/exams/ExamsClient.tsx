@@ -328,9 +328,9 @@ export default function ExamsClient({ allExams, enrolledExams }: ExamsClientProp
                 type="submit"
                 variant="primary"
                 size="sm"
-                disabled={isPending}
+                isLoading={isPending}
               >
-                {isPending ? "Enrolling..." : "Confirm Enrollment"}
+                Confirm Enrollment
               </Button>
             </div>
           </form>

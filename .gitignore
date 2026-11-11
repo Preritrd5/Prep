@@ -33,3 +33,7 @@ Thumbs.db
 .idea/
 
 supabase/.temp/
+
+# Local fallback data storage
+.data/
+

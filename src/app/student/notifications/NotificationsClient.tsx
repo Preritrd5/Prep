@@ -17,6 +17,8 @@ import {
   ShieldAlert,
   Inbox,
   Filter,
+  CheckCheck,
+  Loader2,
 } from "lucide-react";
 import type { StudentNotification, NotificationCategory } from "@/lib/types";
 import {
@@ -39,6 +41,8 @@ export default function NotificationsClient({
       : "default"
   );
   const [isRequestingBrowser, setIsRequestingBrowser] = useState(false);
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
@@ -55,20 +59,35 @@ export default function NotificationsClient({
   });
 
   const handleMarkAsRead = async (id: string) => {
-    await studentMarkNotificationReadAction(id);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-    );
+    setProcessingId(id);
+    try {
+      await studentMarkNotificationReadAction(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      );
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const handleMarkAllAsRead = async () => {
-    await studentMarkNotificationReadAction();
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setIsMarkingAll(true);
+    try {
+      await studentMarkNotificationReadAction();
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } finally {
+      setIsMarkingAll(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await studentDeleteNotificationAction(id);
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    setProcessingId(id);
+    try {
+      await studentDeleteNotificationAction(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const handleEnableBrowserNotifications = async () => {
@@ -224,9 +243,23 @@ export default function NotificationsClient({
           </button>
         </div>
 
-        <Badge variant={unreadCount > 0 ? "primary" : "neutral"} size="sm">
-          {unreadCount} unread alert{unreadCount !== 1 ? "s" : ""}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              isLoading={isMarkingAll}
+              onClick={handleMarkAllAsRead}
+              className="text-xs h-8"
+              leftIcon={<CheckCheck className="h-3.5 w-3.5" />}
+            >
+              Mark All Read
+            </Button>
+          )}
+          <Badge variant={unreadCount > 0 ? "primary" : "neutral"} size="sm">
+            {unreadCount} unread alert{unreadCount !== 1 ? "s" : ""}
+          </Badge>
+        </div>
       </div>
 
       {/* Notifications List */}
@@ -288,22 +321,30 @@ export default function NotificationsClient({
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 shrink-0">
-                  {!notif.is_read && (
-                    <button
-                      onClick={() => handleMarkAsRead(notif.id)}
-                      title="Mark as read"
-                      className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-bg-secondary transition-colors cursor-pointer"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                    </button>
+                  {processingId === notif.id ? (
+                    <div className="p-1.5 flex items-center justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <>
+                      {!notif.is_read && (
+                        <button
+                          onClick={() => handleMarkAsRead(notif.id)}
+                          title="Mark as read"
+                          className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-bg-secondary transition-colors cursor-pointer"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(notif.id)}
+                        title="Delete notification"
+                        className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-bg-secondary transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
                   )}
-                  <button
-                    onClick={() => handleDelete(notif.id)}
-                    title="Delete notification"
-                    className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-bg-secondary transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
               </div>
             ))}

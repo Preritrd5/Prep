@@ -539,7 +539,7 @@ export default function PracticeRunner({
                       variant="primary"
                       size="sm"
                       onClick={handleSubmitTest}
-                      disabled={isPending}
+                      isLoading={isPending}
                       className="gap-1.5 text-xs bg-success hover:bg-success/90"
                     >
                       <Send className="w-3.5 h-3.5" /> Submit Test
