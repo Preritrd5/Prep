@@ -4,7 +4,16 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { saveStoredRoutine, deleteStoredRoutine } from "@/lib/data/routine-store";
-import type { TaskStatus, DayOfWeek, RoutineTemplate } from "@/lib/types";
+import {
+  saveStoredTask,
+  saveStoredTasks,
+  updateStoredTask,
+  deleteStoredTask,
+  saveStoredPreferences,
+  getStoredPreferences,
+  getStoredTasks,
+} from "@/lib/data/local-store";
+import type { TaskStatus, DayOfWeek, RoutineTemplate, StudyTask, StudyPreferences } from "@/lib/types";
 
 export async function createStudyTaskAction(formData: FormData) {
   const { user } = await requireAuth();
@@ -24,9 +33,8 @@ export async function createStudyTaskAction(formData: FormData) {
     return { error: "Title and scheduled date are required." };
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("study_tasks").insert({
+  const taskRecord: StudyTask = {
+    id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     student_id: user.id,
     title,
     description,
@@ -39,10 +47,44 @@ export async function createStudyTaskAction(formData: FormData) {
     exam_id: examId,
     subject_id: subjectId,
     topic_id: topicId,
-  });
+    completed_at: null,
+    carried_from_task_id: null,
+    is_carried_forward: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("study_tasks")
+      .insert({
+        student_id: user.id,
+        title,
+        description,
+        scheduled_date: scheduledDate,
+        start_time: startTime,
+        end_time: endTime,
+        duration_minutes: durationMinutes,
+        priority,
+        status: "Upcoming",
+        exam_id: examId,
+        subject_id: subjectId,
+        topic_id: topicId,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.warn("[Tasks] Supabase insert failed, saving to local store:", error.message);
+      await saveStoredTask(taskRecord);
+    } else if (data?.id) {
+      taskRecord.id = data.id;
+      await saveStoredTask(taskRecord);
+    }
+  } catch (err: any) {
+    console.warn("[Tasks] Database exception, saving to local store:", err?.message);
+    await saveStoredTask(taskRecord);
   }
 
   revalidatePath("/tasks");
@@ -53,8 +95,6 @@ export async function createStudyTaskAction(formData: FormData) {
 
 export async function toggleTaskStatusAction(taskId: string, newStatus: TaskStatus) {
   const { user } = await requireAuth();
-
-  const supabase = await createClient();
 
   const updateData: Record<string, any> = {
     status: newStatus,
@@ -67,15 +107,18 @@ export async function toggleTaskStatusAction(taskId: string, newStatus: TaskStat
     updateData.completed_at = null;
   }
 
-  const { error } = await supabase
-    .from("study_tasks")
-    .update(updateData)
-    .eq("id", taskId)
-    .eq("student_id", user.id);
-
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    await supabase
+      .from("study_tasks")
+      .update(updateData)
+      .eq("id", taskId)
+      .eq("student_id", user.id);
+  } catch (err: any) {
+    console.warn("[Tasks] Database update exception:", err?.message);
   }
+
+  await updateStoredTask(taskId, user.id, updateData);
 
   revalidatePath("/tasks");
   revalidatePath("/calendar");
@@ -86,108 +129,133 @@ export async function toggleTaskStatusAction(taskId: string, newStatus: TaskStat
 export async function deleteStudyTaskAction(taskId: string) {
   const { user } = await requireAuth();
 
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("study_tasks")
-    .delete()
-    .eq("id", taskId)
-    .eq("student_id", user.id);
-
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    await supabase
+      .from("study_tasks")
+      .delete()
+      .eq("id", taskId)
+      .eq("student_id", user.id);
+  } catch (err: any) {
+    console.warn("[Tasks] Database delete exception:", err?.message);
   }
+
+  await deleteStoredTask(taskId, user.id);
 
   revalidatePath("/tasks");
   revalidatePath("/calendar");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
 /**
  * Module 8: Carry-Forward Engine
- * Automatically carries forward incomplete/missed tasks from past dates to the next available date.
- * Rules:
- * - Never create duplicate tasks (checks existing carried_from_task_id)
- * - Never overwrite existing tasks
- * - Preserves original task reference (carried_from_task_id)
- * - Checks student auto_carry_forward preference
  */
 export async function carryForwardIncompleteTasksAction() {
   const { user } = await requireAuth();
-  const supabase = await createClient();
+  const todayStr = new Date().toISOString().split("T")[0];
 
   // 1. Check student preference
-  const { data: pref } = await supabase
-    .from("study_preferences")
-    .select("auto_carry_forward")
-    .eq("student_id", user.id)
-    .single();
+  let autoCarry = true;
+  try {
+    const supabase = await createClient();
+    const { data: pref } = await supabase
+      .from("study_preferences")
+      .select("auto_carry_forward")
+      .eq("student_id", user.id)
+      .single();
 
-  if (pref && !pref.auto_carry_forward) {
+    if (pref) {
+      autoCarry = pref.auto_carry_forward ?? true;
+    } else {
+      const localPref = await getStoredPreferences(user.id);
+      if (localPref) autoCarry = localPref.auto_carry_forward;
+    }
+  } catch {
+    const localPref = await getStoredPreferences(user.id);
+    if (localPref) autoCarry = localPref.auto_carry_forward;
+  }
+
+  if (!autoCarry) {
     return { success: false, message: "Automatic carry-forward is disabled in your preferences." };
   }
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  // 2. Find eligible overdue tasks
+  let pastTasks: StudyTask[] = [];
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("study_tasks")
+      .select("*")
+      .eq("student_id", user.id)
+      .lt("scheduled_date", todayStr)
+      .in("status", ["Incomplete", "Missed", "Upcoming", "In Progress"]);
 
-  // 2. Find incomplete or missed tasks before today that haven't been carried forward yet
-  const { data: pastIncompleteTasks } = await supabase
-    .from("study_tasks")
-    .select("*")
-    .eq("student_id", user.id)
-    .lt("scheduled_date", todayStr)
-    .in("status", ["Incomplete", "Missed", "Upcoming", "In Progress"]);
+    if (data && data.length > 0) {
+      pastTasks = data as StudyTask[];
+    }
+  } catch {
+    // fallback to local tasks
+  }
 
-  if (!pastIncompleteTasks || pastIncompleteTasks.length === 0) {
+  if (pastTasks.length === 0) {
+    const localTasks = await getStoredTasks(user.id);
+    pastTasks = localTasks.filter(
+      (t) =>
+        t.scheduled_date < todayStr &&
+        ["Incomplete", "Missed", "Upcoming", "In Progress"].includes(t.status)
+    );
+  }
+
+  if (pastTasks.length === 0) {
     return { success: true, count: 0, message: "No overdue tasks require carry-forward." };
   }
 
-  // Find already carried-from IDs to prevent duplicates
-  const { data: existingCarried } = await supabase
-    .from("study_tasks")
-    .select("carried_from_task_id")
-    .eq("student_id", user.id)
-    .not("carried_from_task_id", "is", null);
-
-  const carriedSet = new Set((existingCarried || []).map((t: any) => t.carried_from_task_id));
-
-  // Eligible tasks to carry forward
-  const tasksToCarry = pastIncompleteTasks.filter((t: any) => !carriedSet.has(t.id));
-
+  // Filter tasks already carried forward
+  const tasksToCarry = pastTasks.filter((t) => !t.is_carried_forward);
   if (tasksToCarry.length === 0) {
     return { success: true, count: 0, message: "All overdue tasks are already rescheduled." };
   }
 
-  // Create new task entries scheduled for today
-  const newTasks = tasksToCarry.map((task: any) => ({
+  const newTasks: StudyTask[] = tasksToCarry.map((task) => ({
+    id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     student_id: user.id,
     exam_id: task.exam_id,
     subject_id: task.subject_id,
     topic_id: task.topic_id,
     title: `[Carry-Forward] ${task.title.replace(/^\[Carry-Forward\]\s*/, "")}`,
-    description: task.description ? `${task.description} (Rescheduled from ${task.scheduled_date})` : `Rescheduled from ${task.scheduled_date}`,
+    description: task.description
+      ? `${task.description} (Rescheduled from ${task.scheduled_date})`
+      : `Rescheduled from ${task.scheduled_date}`,
     scheduled_date: todayStr,
     start_time: task.start_time,
     end_time: task.end_time,
     duration_minutes: task.duration_minutes,
     priority: task.priority,
     status: "Upcoming",
+    completed_at: null,
     carried_from_task_id: task.id,
     is_carried_forward: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   }));
 
-  const { error: insertError } = await supabase.from("study_tasks").insert(newTasks);
-
-  if (insertError) {
-    return { error: insertError.message };
+  try {
+    const supabase = await createClient();
+    await supabase.from("study_tasks").insert(newTasks);
+    await supabase
+      .from("study_tasks")
+      .update({ status: "Incomplete", updated_at: new Date().toISOString() })
+      .in("id", tasksToCarry.map((t) => t.id))
+      .eq("student_id", user.id);
+  } catch (err: any) {
+    console.warn("[Tasks] Database carry forward exception:", err?.message);
   }
 
-  // Mark original past tasks as 'Incomplete'
-  const taskIdsToMark = tasksToCarry.map((t: any) => t.id);
-  await supabase
-    .from("study_tasks")
-    .update({ status: "Incomplete", updated_at: new Date().toISOString() })
-    .in("id", taskIdsToMark)
-    .eq("student_id", user.id);
+  await saveStoredTasks(newTasks);
+  for (const t of tasksToCarry) {
+    await updateStoredTask(t.id, user.id, { status: "Incomplete" });
+  }
 
   revalidatePath("/tasks");
   revalidatePath("/calendar");
@@ -253,7 +321,7 @@ export async function createDailyRoutineAction(formData: FormData) {
       .single();
 
     if (error) {
-      console.warn("[Tasks] Supabase routine insert failed, saving to persistent fallback store:", error.message);
+      console.warn("[Tasks] Supabase routine insert failed, saving to fallback store:", error.message);
       await saveStoredRoutine(routineRecord);
     } else if (data?.id) {
       routineRecord.id = data.id;
@@ -301,26 +369,45 @@ export async function updateStudyPreferencesAction(formData: FormData) {
   const rawDays = formData.getAll("availableDays") as string[];
   const availableDays = rawDays.length > 0 ? rawDays : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-  const supabase = await createClient();
+  const prefsPayload: StudyPreferences = {
+    id: `pref-${user.id}`,
+    student_id: user.id,
+    daily_study_hours: dailyStudyHours,
+    available_days: availableDays,
+    preferred_slot_duration_minutes: preferredSlotMinutes,
+    timezone,
+    auto_carry_forward: autoCarryForward,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 
-  const { error } = await supabase.from("study_preferences").upsert(
-    {
-      student_id: user.id,
-      daily_study_hours: dailyStudyHours,
-      available_days: availableDays,
-      preferred_slot_duration_minutes: preferredSlotMinutes,
-      timezone,
-      auto_carry_forward: autoCarryForward,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "student_id" }
-  );
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from("study_preferences").upsert(
+      {
+        student_id: user.id,
+        daily_study_hours: dailyStudyHours,
+        available_days: availableDays,
+        preferred_slot_duration_minutes: preferredSlotMinutes,
+        timezone,
+        auto_carry_forward: autoCarryForward,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "student_id" }
+    );
 
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      console.warn("[Tasks] Supabase preference upsert failed, saving to local store:", error.message);
+    }
+  } catch (err: any) {
+    console.warn("[Tasks] Database preference exception, saving to local store:", err?.message);
   }
 
+  await saveStoredPreferences(prefsPayload);
+
   revalidatePath("/routine");
+  revalidatePath("/planner");
   revalidatePath("/study-planner");
+  revalidatePath("/dashboard");
   return { success: true };
 }

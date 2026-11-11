@@ -349,7 +349,7 @@ export default function Sidebar({ className }: SidebarProps) {
       {/* ---------------------------------------------------- */}
       <aside
         className={cn(
-          "hidden lg:flex flex-col border-r border-border bg-card shrink-0 transition-all duration-200 ease-in-out sticky top-16 h-[calc(100vh-4rem)] select-none",
+          "hidden lg:flex flex-col border-r border-border bg-card shrink-0 transition-all duration-200 ease-in-out h-[calc(100vh-4rem)] overflow-hidden select-none",
           isCollapsed ? "w-16" : "w-60",
           className
         )}
@@ -390,7 +390,7 @@ export default function Sidebar({ className }: SidebarProps) {
         </div>
 
         {/* Desktop Navigation Groups List */}
-        <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3.5">
+        <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3.5 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {sections.map((section) => (
             <div key={section.title} className="space-y-0.5">
               {!isCollapsed ? (

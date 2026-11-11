@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getExamSyllabus, getStudyPreferences } from "@/lib/data/syllabus";
+import { saveStoredTasks } from "@/lib/data/local-store";
 import type { StudyTask } from "@/lib/types";
 
 export interface GeneratedPlanItem {
@@ -21,10 +22,12 @@ export interface GeneratedPlanItem {
 export interface PlanGenerationResult {
   success: boolean;
   error?: string;
+  message?: string;
   plan?: GeneratedPlanItem[];
   totalTopicsAllocated?: number;
   totalHoursAllocated?: number;
   daysAnalyzed?: number;
+  isRevisionPlan?: boolean;
 }
 
 export async function generateStudyPlanAction(formData: FormData): Promise<PlanGenerationResult> {
@@ -33,6 +36,7 @@ export async function generateStudyPlanAction(formData: FormData): Promise<PlanG
   const examId = formData.get("examId") as string;
   const targetDateStr = formData.get("targetDate") as string;
   const daysCount = parseInt((formData.get("planHorizonDays") as string) || "14", 10);
+  const includeCompleted = formData.get("includeCompleted") === "true";
 
   if (!examId) {
     return { success: false, error: "Please select an examination to plan for." };
@@ -46,7 +50,7 @@ export async function generateStudyPlanAction(formData: FormData): Promise<PlanG
     return { success: false, error: "Exam details not found." };
   }
 
-  // 2. Identify Pending Topics (status != 'COMPLETED')
+  // 2. Identify Pending Topics vs All Topics
   const pendingTopics: Array<{
     topicId: string;
     topicTitle: string;
@@ -55,37 +59,47 @@ export async function generateStudyPlanAction(formData: FormData): Promise<PlanG
     estimatedMinutes: number;
   }> = [];
 
-  let totalTopics = 0;
+  const allTopics: Array<{
+    topicId: string;
+    topicTitle: string;
+    subjectId: string;
+    subjectName: string;
+    estimatedMinutes: number;
+  }> = [];
+
   subjects.forEach((subj) => {
     (subj.chapters || []).forEach((chap) => {
       (chap.topics || []).forEach((top) => {
-        totalTopics++;
+        const item = {
+          topicId: top.id,
+          topicTitle: top.title,
+          subjectId: subj.id,
+          subjectName: subj.name,
+          estimatedMinutes: top.estimated_minutes || 60,
+        };
+        allTopics.push(item);
         const status = (top.progress?.status || "").toUpperCase();
         if (status !== "COMPLETED") {
-          pendingTopics.push({
-            topicId: top.id,
-            topicTitle: top.title,
-            subjectId: subj.id,
-            subjectName: subj.name,
-            estimatedMinutes: top.estimated_minutes || 60,
-          });
+          pendingTopics.push(item);
         }
       });
     });
   });
 
-  if (totalTopics === 0) {
+  if (allTopics.length === 0) {
     return {
       success: false,
       error: `No syllabus topics found for ${exam.name}. Please ensure curriculum topics are loaded.`,
     };
   }
 
-  if (pendingTopics.length === 0) {
-    return {
-      success: false,
-      error: `All ${totalTopics} topics for ${exam.name} are marked as completed! You can reset topic progress in the Syllabus Tracker to generate a revision plan.`,
-    };
+  let isRevisionPlan = false;
+  let targetTopicList = pendingTopics;
+
+  // If user requested completed topics or all topics are already completed, automatically allocate a revision plan
+  if (includeCompleted || pendingTopics.length === 0) {
+    isRevisionPlan = true;
+    targetTopicList = allTopics;
   }
 
   // 3. Generate Day Slots based on Available Days & Study Hours
@@ -101,7 +115,7 @@ export async function generateStudyPlanAction(formData: FormData): Promise<PlanG
   const startDate = new Date();
 
   for (let i = 1; i <= daysCount; i++) {
-    if (topicIndex >= pendingTopics.length) break;
+    if (topicIndex >= targetTopicList.length) break;
 
     const slotDate = new Date(startDate);
     slotDate.setDate(startDate.getDate() + i);
@@ -115,9 +129,9 @@ export async function generateStudyPlanAction(formData: FormData): Promise<PlanG
 
     // Allocate topics into daily slots
     for (let slot = 0; slot < dailySlotsCount; slot++) {
-      if (topicIndex >= pendingTopics.length) break;
+      if (topicIndex >= targetTopicList.length) break;
 
-      const currentTopic = pendingTopics[topicIndex];
+      const currentTopic = targetTopicList[topicIndex];
       plan.push({
         examId: exam.id,
         examName: exam.name,
@@ -127,7 +141,7 @@ export async function generateStudyPlanAction(formData: FormData): Promise<PlanG
         topicTitle: currentTopic.topicTitle,
         scheduledDate: dateStr,
         durationMinutes: prefs.preferred_slot_duration_minutes,
-        priority: 1,
+        priority: isRevisionPlan ? 2 : 1,
       });
 
       topicIndex++;
@@ -144,6 +158,10 @@ export async function generateStudyPlanAction(formData: FormData): Promise<PlanG
     totalTopicsAllocated: plan.length,
     totalHoursAllocated: totalHours,
     daysAnalyzed: daysCount,
+    isRevisionPlan,
+    message: isRevisionPlan
+      ? `Generated a comprehensive Revision Schedule for ${plan.length} topics across ${exam.name}.`
+      : undefined,
   };
 }
 
@@ -161,9 +179,8 @@ export async function saveGeneratedPlanAction(planItemsJson: string) {
     return { error: "No items to schedule." };
   }
 
-  const supabase = await createClient();
-
-  const newTasks = planItems.map((item) => ({
+  const newTasks: StudyTask[] = planItems.map((item) => ({
+    id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     student_id: user.id,
     exam_id: item.examId,
     subject_id: item.subjectId,
@@ -171,16 +188,29 @@ export async function saveGeneratedPlanAction(planItemsJson: string) {
     title: `Study: ${item.topicTitle}`,
     description: `Auto-planned study session for ${item.subjectName} (${item.examName})`,
     scheduled_date: item.scheduledDate,
+    start_time: null,
+    end_time: null,
     duration_minutes: item.durationMinutes,
     priority: item.priority,
     status: "Upcoming",
+    completed_at: null,
+    carried_from_task_id: null,
+    is_carried_forward: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   }));
 
-  const { error } = await supabase.from("study_tasks").insert(newTasks);
-
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from("study_tasks").insert(newTasks);
+    if (error) {
+      console.warn("[Planner] Supabase tasks insert failed, saving to local store:", error.message);
+    }
+  } catch (err: any) {
+    console.warn("[Planner] Database exception, saving to local store:", err?.message);
   }
+
+  await saveStoredTasks(newTasks);
 
   revalidatePath("/tasks");
   revalidatePath("/calendar");

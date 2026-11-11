@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getStoredBookmarks } from "./local-store";
 import type {
   Question,
   QuestionBank,
@@ -557,13 +558,12 @@ export async function getStudentBookmarks(studentId: string): Promise<string[]> 
       .select("question_id")
       .eq("student_id", studentId);
 
-    if (error || !data) {
-      return [];
+    if (!error && data && data.length > 0) {
+      return data.map((b: any) => b.question_id);
     }
-    return data.map((b: any) => b.question_id);
-  } catch {
-    return [];
-  }
+  } catch {}
+
+  return await getStoredBookmarks(studentId);
 }
 
 export async function getStudentIncorrectQuestionIds(studentId: string): Promise<string[]> {

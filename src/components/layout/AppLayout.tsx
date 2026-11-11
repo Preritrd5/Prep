@@ -29,20 +29,21 @@ export function AppLayout({
   };
 
   return (
-    <div className="min-h-screen bg-background text-text-primary flex flex-col transition-colors">
-      {/* Global Application Topbar */}
+    <div className="h-screen max-h-screen overflow-hidden bg-background text-text-primary flex flex-col transition-colors">
+      {/* Global Application Topbar (Fixed Height: 4rem / 64px) */}
       <Navbar profile={profile} />
 
-      {/* Main Shell Container */}
-      <div className="flex-1 flex w-full min-w-0">
-        {/* Responsive Collapsible Sidebar */}
+      {/* Main Shell Container (Exact viewport minus topbar) */}
+      <div className="flex-1 flex w-full min-w-0 h-[calc(100vh-4rem)] overflow-hidden">
+        {/* Responsive Collapsible Sidebar (Independent Scroll Section) */}
         <Sidebar />
 
-        {/* Viewport Content Area */}
+        {/* Viewport Content Area (Independent Scroll Section with Vertical Scrollbar) */}
         <main
           id="main-content"
+          tabIndex={-1}
           className={cn(
-            "flex-1 w-full min-w-0 overflow-x-hidden min-h-[calc(100vh-4rem)] flex flex-col",
+            "flex-1 w-full min-w-0 h-[calc(100vh-4rem)] overflow-y-auto overflow-x-hidden flex flex-col focus:outline-none scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent",
             !noPadding && "px-3 sm:px-5 md:px-6 lg:px-8 py-5 sm:py-6 lg:py-8",
             className
           )}

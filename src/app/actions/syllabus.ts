@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { TopicProgressStatus } from "@/lib/types";
+import {
+  saveStoredTopicProgress,
+  saveStoredPersonalNote,
+  deleteStoredPersonalNote,
+} from "@/lib/data/local-store";
+import type { TopicProgressStatus, TopicProgress, PersonalNote } from "@/lib/types";
 
 export async function updateTopicProgressAction(formData: FormData) {
   const { user } = await requireAuth();
@@ -17,8 +22,6 @@ export async function updateTopicProgressAction(formData: FormData) {
   if (!topicId || !status) {
     return { error: "Missing required topic or status." };
   }
-
-  const supabase = await createClient();
 
   const now = new Date().toISOString();
   const updatePayload: Record<string, any> = {
@@ -38,13 +41,37 @@ export async function updateTopicProgressAction(formData: FormData) {
     updatePayload.completed_date = now;
   }
 
-  const { error } = await supabase
-    .from("topic_progress")
-    .upsert(updatePayload, { onConflict: "student_id,topic_id,exam_id" });
+  const progressRecord: TopicProgress = {
+    id: `prog-${user.id}-${topicId}`,
+    student_id: user.id,
+    topic_id: topicId,
+    exam_id: examId,
+    status,
+    actual_minutes: actualMinutes,
+    notes,
+    scheduled_date: null,
+    started_date: status === "In Progress" || status === "Completed" ? now : null,
+    completed_date: status === "Completed" ? now : null,
+    last_studied_date: now,
+    revision_count: 0,
+    created_at: now,
+    updated_at: now,
+  };
 
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("topic_progress")
+      .upsert(updatePayload, { onConflict: "student_id,topic_id,exam_id" });
+
+    if (error) {
+      console.warn("[Syllabus] Supabase topic progress upsert failed, saving to local store:", error.message);
+    }
+  } catch (err: any) {
+    console.warn("[Syllabus] Database exception, saving to local store:", err?.message);
   }
+
+  await saveStoredTopicProgress(progressRecord);
 
   revalidatePath("/syllabus");
   revalidatePath("/dashboard");
@@ -63,20 +90,23 @@ export async function createPersonalTopicAction(formData: FormData) {
     return { error: "Topic title is required." };
   }
 
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from("topics").insert({
+      chapter_id: chapterId,
+      title,
+      description,
+      estimated_minutes: estimatedMinutes,
+      is_personal: true,
+      is_published: false,
+      created_by: user.id,
+    });
 
-  const { error } = await supabase.from("topics").insert({
-    chapter_id: chapterId,
-    title,
-    description,
-    estimated_minutes: estimatedMinutes,
-    is_personal: true,
-    is_published: false,
-    created_by: user.id,
-  });
-
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      console.warn("[Syllabus] Topic insert failed:", error.message);
+    }
+  } catch (err: any) {
+    console.warn("[Syllabus] Database exception:", err?.message);
   }
 
   revalidatePath("/syllabus");
@@ -95,19 +125,56 @@ export async function savePersonalNoteAction(formData: FormData) {
     return { error: "Title and content cannot be empty." };
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("personal_notes").insert({
+  const noteRecord: PersonalNote = {
+    id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     student_id: user.id,
     topic_id: topicId,
     exam_id: examId,
     title,
     content,
-  });
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from("personal_notes").insert({
+      student_id: user.id,
+      topic_id: topicId,
+      exam_id: examId,
+      title,
+      content,
+    });
+
+    if (error) {
+      console.warn("[Syllabus] Personal note insert failed, saving to local store:", error.message);
+    }
+  } catch (err: any) {
+    console.warn("[Syllabus] Database exception, saving to local store:", err?.message);
   }
+
+  await saveStoredPersonalNote(noteRecord);
+
+  revalidatePath("/syllabus");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function deletePersonalNoteAction(noteId: string) {
+  const { user } = await requireAuth();
+
+  try {
+    const supabase = await createClient();
+    await supabase
+      .from("personal_notes")
+      .delete()
+      .eq("id", noteId)
+      .eq("student_id", user.id);
+  } catch (err: any) {
+    console.warn("[Syllabus] Database exception:", err?.message);
+  }
+
+  await deleteStoredPersonalNote(noteId, user.id);
 
   revalidatePath("/syllabus");
   revalidatePath("/dashboard");
@@ -126,21 +193,19 @@ export async function adminCreateSubjectAction(formData: FormData) {
     return { error: "Subject Name and Code are required." };
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("subjects").insert({
-    name,
-    code,
-    category,
-    description,
-    is_published: true,
-  });
-
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    await supabase.from("subjects").insert({
+      name,
+      code,
+      category,
+      description,
+      is_published: true,
+    });
+  } catch (err: any) {
+    console.warn("[Syllabus] Database exception:", err?.message);
   }
 
-  revalidatePath("/syllabus");
   revalidatePath("/syllabus");
   return { success: true };
 }
@@ -156,17 +221,16 @@ export async function adminCreateChapterAction(formData: FormData) {
     return { error: "Subject and Chapter title are required." };
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("chapters").insert({
-    subject_id: subjectId,
-    title,
-    description,
-    is_published: true,
-  });
-
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    await supabase.from("chapters").insert({
+      subject_id: subjectId,
+      title,
+      description,
+      is_published: true,
+    });
+  } catch (err: any) {
+    console.warn("[Syllabus] Database exception:", err?.message);
   }
 
   revalidatePath("/syllabus");
@@ -193,23 +257,22 @@ export async function adminCreateTopicAction(formData: FormData) {
     return { error: "Chapter and Topic title are required." };
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("topics").insert({
-    chapter_id: chapterId,
-    title,
-    description,
-    estimated_minutes: estimatedMinutes,
-    official_syllabus_ref: officialSyllabusRef,
-    textbook_ref: textbookRef,
-    textbook_page_start: textbookPageStart,
-    textbook_page_end: textbookPageEnd,
-    is_published: true,
-    is_personal: false,
-  });
-
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    await supabase.from("topics").insert({
+      chapter_id: chapterId,
+      title,
+      description,
+      estimated_minutes: estimatedMinutes,
+      official_syllabus_ref: officialSyllabusRef,
+      textbook_ref: textbookRef,
+      textbook_page_start: textbookPageStart,
+      textbook_page_end: textbookPageEnd,
+      is_published: true,
+      is_personal: false,
+    });
+  } catch (err: any) {
+    console.warn("[Syllabus] Database exception:", err?.message);
   }
 
   revalidatePath("/syllabus");
@@ -227,19 +290,18 @@ export async function adminMapSubjectToExamAction(formData: FormData) {
     return { error: "Exam and Subject are required." };
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("exam_subject_mappings").upsert(
-    {
-      exam_id: examId,
-      subject_id: subjectId,
-      weightage_percent: weightage,
-    },
-    { onConflict: "exam_id,subject_id" }
-  );
-
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    await supabase.from("exam_subject_mappings").upsert(
+      {
+        exam_id: examId,
+        subject_id: subjectId,
+        weightage_percent: weightage,
+      },
+      { onConflict: "exam_id,subject_id" }
+    );
+  } catch (err: any) {
+    console.warn("[Syllabus] Database exception:", err?.message);
   }
 
   revalidatePath("/syllabus");

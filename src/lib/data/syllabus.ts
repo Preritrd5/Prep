@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { allowDemoFallback } from "./questions";
 import { getStoredRoutines } from "./routine-store";
+import {
+  getStoredTasks,
+  getStoredPreferences,
+  getStoredTopicProgress,
+  getStoredPersonalNotes,
+} from "./local-store";
 import type {
   Exam,
   StudentExam,
@@ -978,6 +984,7 @@ export async function getExamSyllabus(
         });
 
         if (allTopicIds.length > 0) {
+          let progressList: TopicProgress[] = [];
           try {
             const { data: progressData } = await supabase
               .from("topic_progress")
@@ -986,15 +993,23 @@ export async function getExamSyllabus(
               .in("topic_id", allTopicIds);
 
             if (progressData && progressData.length > 0) {
-              const progressMap = new Map(progressData.map((p: any) => [p.topic_id, p]));
-              chapters.forEach((chap) => {
-                (chap.topics || []).forEach((top) => {
-                  top.progress = progressMap.get(top.id) as TopicProgress | undefined;
-                });
-              });
+              progressList = progressData as TopicProgress[];
             }
           } catch {
-            // Silently allow default uncompleted status
+            // allow fallback
+          }
+
+          if (progressList.length === 0) {
+            progressList = await getStoredTopicProgress(studentId, allTopicIds);
+          }
+
+          if (progressList.length > 0) {
+            const progressMap = new Map(progressList.map((p: any) => [p.topic_id, p]));
+            chapters.forEach((chap) => {
+              (chap.topics || []).forEach((top) => {
+                top.progress = progressMap.get(top.id) as TopicProgress | undefined;
+              });
+            });
           }
         }
       }
@@ -1037,6 +1052,7 @@ export async function getStudentTasks(
   studentId: string,
   filterStatus?: string
 ): Promise<StudyTask[]> {
+  let tasks: StudyTask[] = [];
   try {
     const supabase = await createClient();
     let query = supabase
@@ -1050,13 +1066,24 @@ export async function getStudentTasks(
     }
 
     const { data, error } = await query;
-    if (error || !data) {
-      return [];
+    if (!error && data && data.length > 0) {
+      tasks = data as StudyTask[];
     }
-    return data as StudyTask[];
-  } catch {
-    return [];
+  } catch {}
+
+  if (tasks.length === 0) {
+    const localTasks = await getStoredTasks(studentId);
+    let filtered = localTasks;
+    if (filterStatus && filterStatus !== "All") {
+      filtered = filtered.filter((t) => t.status === filterStatus);
+    }
+    tasks = filtered.map((t) => ({
+      ...t,
+      exam: t.exam_id ? FALLBACK_EXAMS.find((e) => e.id === t.exam_id) : undefined,
+      subject: t.subject_id ? FALLBACK_SUBJECTS.find((s) => s.id === t.subject_id) : undefined,
+    }));
   }
+  return tasks;
 }
 
 export async function getStudentRoutines(studentId: string): Promise<RoutineTemplate[]> {
@@ -1109,13 +1136,13 @@ export async function getStudyPreferences(studentId: string): Promise<StudyPrefe
       .eq("student_id", studentId)
       .single();
 
-    if (error || !data) {
-      return defaultPrefs;
+    if (!error && data) {
+      return data as StudyPreferences;
     }
-    return data as StudyPreferences;
-  } catch {
-    return defaultPrefs;
-  }
+  } catch {}
+
+  const stored = await getStoredPreferences(studentId);
+  return stored || defaultPrefs;
 }
 
 export async function getExamScheduleEvents(examIds?: string[]): Promise<ExamScheduleEvent[]> {
@@ -1168,11 +1195,10 @@ export async function getStudentNotes(studentId: string): Promise<PersonalNote[]
       .eq("student_id", studentId)
       .order("created_at", { ascending: false });
 
-    if (error || !data) {
-      return [];
+    if (!error && data && data.length > 0) {
+      return data as PersonalNote[];
     }
-    return data as PersonalNote[];
-  } catch {
-    return [];
-  }
+  } catch {}
+
+  return await getStoredPersonalNotes(studentId);
 }

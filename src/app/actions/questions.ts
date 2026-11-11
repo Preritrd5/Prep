@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import * as XLSX from "xlsx";
 import { generateMCQBatch } from "@/lib/ai/question-generator";
 import { FALLBACK_ANSWER_KEYS } from "@/lib/data/questions";
+import { toggleStoredBookmark } from "@/lib/data/local-store";
 import type {
   DifficultyLevel,
   OptionLabel,
@@ -631,30 +632,43 @@ export async function studentCreatePersonalQuestionAction(formData: FormData) {
 
 export async function toggleQuestionBookmarkAction(questionId: string) {
   const { user } = await requireAuth();
-  const supabase = await createClient();
 
-  // Check if already bookmarked
-  const { data: existing } = await supabase
-    .from("question_bookmarks")
-    .select("id")
-    .eq("student_id", user.id)
-    .eq("question_id", questionId)
-    .single();
+  let bookmarked = false;
+  try {
+    const supabase = await createClient();
+    const { data: existing } = await supabase
+      .from("question_bookmarks")
+      .select("id")
+      .eq("student_id", user.id)
+      .eq("question_id", questionId)
+      .single();
 
-  if (existing) {
-    // Remove bookmark
-    await supabase.from("question_bookmarks").delete().eq("id", existing.id);
-    revalidatePath("/practice/bookmarks");
-    return { bookmarked: false };
-  } else {
-    // Add bookmark
-    await supabase.from("question_bookmarks").insert({
-      student_id: user.id,
-      question_id: questionId,
-    });
-    revalidatePath("/practice/bookmarks");
-    return { bookmarked: true };
+    if (existing) {
+      await supabase.from("question_bookmarks").delete().eq("id", existing.id);
+      bookmarked = false;
+    } else {
+      await supabase.from("question_bookmarks").insert({
+        student_id: user.id,
+        question_id: questionId,
+      });
+      bookmarked = true;
+    }
+  } catch {
+    bookmarked = await toggleStoredBookmark(user.id, questionId);
   }
+
+  // Also ensure local store stays in sync
+  try {
+    const localResult = await toggleStoredBookmark(user.id, questionId);
+    // If supabase succeeded, align local store state
+    if (localResult !== bookmarked) {
+      await toggleStoredBookmark(user.id, questionId);
+    }
+  } catch {}
+
+  revalidatePath("/practice/bookmarks");
+  revalidatePath("/dashboard");
+  return { bookmarked };
 }
 
 // ===========================================================================
