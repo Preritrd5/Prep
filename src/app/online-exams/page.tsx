@@ -1,3 +1,5 @@
-import StudentOnlineExamsPage from "@/app/student/exams/online/page";
+import { redirect } from "next/navigation";
 
-export default StudentOnlineExamsPage;
+export default function OnlineExamsRootPage() {
+  redirect("/online-exams/create");
+}

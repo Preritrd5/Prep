@@ -36,7 +36,7 @@ export async function updateSession(request: NextRequest) {
     "/student/questions/create": "/question-bank/create",
     "/student/questions/ai": "/question-bank/ai",
     "/student/questions/import": "/question-import",
-    "/student/exams/online": "/online-exams",
+    "/student/exams/online": "/online-exams/create",
     "/student/exams/create": "/online-exams/create",
     "/student/exams/online/history": "/attempts",
     "/student/assistant": "/assistant",

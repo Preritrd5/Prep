@@ -47,7 +47,7 @@ const routeTitleMap: Record<string, { portal: string; title: string }> = {
   "/question-import": { portal: "Workspace", title: "Bulk Question Import" },
   "/question-bank/ai": { portal: "Workspace", title: "AI Question Generator" },
   "/question-bank/create": { portal: "Workspace", title: "Add Question" },
-  "/online-exams": { portal: "Workspace", title: "Online Mock Examinations" },
+  "/online-exams": { portal: "Workspace", title: "Create MCQ Examination" },
   "/online-exams/create": { portal: "Workspace", title: "Create MCQ Examination" },
   "/attempts": { portal: "Workspace", title: "My Attempts & Results" },
   "/assistant": { portal: "Workspace", title: "AI Study Assistant" },

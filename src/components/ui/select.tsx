@@ -57,6 +57,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
               error && "border-error focus:border-error focus:ring-error/25",
               className
             )}
+            style={{ colorScheme: "dark" }}
             {...props}
           >
             {options
@@ -65,7 +66,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                     key={String(opt.value)}
                     value={opt.value}
                     disabled={opt.disabled}
-                    className="bg-card text-text-primary"
+                    className="bg-[#0e1726] text-white"
                   >
                     {opt.label}
                   </option>

@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { TaskStatus, DayOfWeek } from "@/lib/types";
+import { saveStoredRoutine, deleteStoredRoutine } from "@/lib/data/routine-store";
+import type { TaskStatus, DayOfWeek, RoutineTemplate } from "@/lib/types";
 
 export async function createStudyTaskAction(formData: FormData) {
   const { user } = await requireAuth();
@@ -215,9 +216,8 @@ export async function createDailyRoutineAction(formData: FormData) {
     return { error: "Title, Day, Start Time and End Time are required." };
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("routine_templates").insert({
+  const routineRecord: RoutineTemplate = {
+    id: `routine-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     student_id: user.id,
     title,
     day_of_week: dayOfWeek,
@@ -227,11 +227,41 @@ export async function createDailyRoutineAction(formData: FormData) {
     priority,
     exam_id: examId,
     subject_id: subjectId,
+    topic_id: null,
     is_active: true,
-  });
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("routine_templates")
+      .insert({
+        student_id: user.id,
+        title,
+        day_of_week: dayOfWeek,
+        start_time: startTime,
+        end_time: endTime,
+        duration_minutes: durationMinutes,
+        priority,
+        exam_id: examId,
+        subject_id: subjectId,
+        is_active: true,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.warn("[Tasks] Supabase routine insert failed, saving to persistent fallback store:", error.message);
+      await saveStoredRoutine(routineRecord);
+    } else if (data?.id) {
+      routineRecord.id = data.id;
+      await saveStoredRoutine(routineRecord);
+    }
+  } catch (err: any) {
+    console.warn("[Tasks] Database operation exception, saving to fallback store:", err?.message);
+    await saveStoredRoutine(routineRecord);
   }
 
   revalidatePath("/routine");
@@ -242,19 +272,21 @@ export async function createDailyRoutineAction(formData: FormData) {
 export async function deleteDailyRoutineAction(routineId: string) {
   const { user } = await requireAuth();
 
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("routine_templates")
-    .delete()
-    .eq("id", routineId)
-    .eq("student_id", user.id);
-
-  if (error) {
-    return { error: error.message };
+  try {
+    const supabase = await createClient();
+    await supabase
+      .from("routine_templates")
+      .delete()
+      .eq("id", routineId)
+      .eq("student_id", user.id);
+  } catch (err: any) {
+    console.warn("[Tasks] Database delete exception:", err?.message);
   }
 
+  await deleteStoredRoutine(routineId, user.id);
+
   revalidatePath("/routine");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 

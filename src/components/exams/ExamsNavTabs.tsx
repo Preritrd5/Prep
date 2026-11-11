@@ -8,12 +8,6 @@ import { cn } from "@/lib/utils";
 
 const examTabs = [
   {
-    name: "Online Mock Tests",
-    href: "/online-exams",
-    legacyHref: "/student/exams/online",
-    icon: Play,
-  },
-  {
     name: "Create Examination",
     href: "/online-exams/create",
     legacyHref: "/student/exams/create",
@@ -42,8 +36,7 @@ export default function ExamsNavTabs() {
         const Icon = tab.icon;
         const isActive =
           pathname === tab.href ||
-          pathname === tab.legacyHref ||
-          (tab.href === "/online-exams" && pathname.startsWith("/online-exams") && pathname !== "/online-exams/create");
+          pathname === tab.legacyHref;
 
         return (
           <Link

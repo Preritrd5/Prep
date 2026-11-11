@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { allowDemoFallback } from "./questions";
+import { getStoredRoutines } from "./routine-store";
 import type {
   Exam,
   StudentExam,
@@ -1067,12 +1068,23 @@ export async function getStudentRoutines(studentId: string): Promise<RoutineTemp
       .eq("student_id", studentId)
       .order("start_time", { ascending: true });
 
-    if (error || !data) {
-      return [];
+    if (!error && data && data.length > 0) {
+      return data as RoutineTemplate[];
     }
-    return data as RoutineTemplate[];
+
+    const localRoutines = await getStoredRoutines(studentId);
+    return localRoutines.map((r) => ({
+      ...r,
+      exam: r.exam_id ? FALLBACK_EXAMS.find((e) => e.id === r.exam_id) : undefined,
+      subject: r.subject_id ? FALLBACK_SUBJECTS.find((s) => s.id === r.subject_id) : undefined,
+    }));
   } catch {
-    return [];
+    const localRoutines = await getStoredRoutines(studentId);
+    return localRoutines.map((r) => ({
+      ...r,
+      exam: r.exam_id ? FALLBACK_EXAMS.find((e) => e.id === r.exam_id) : undefined,
+      subject: r.subject_id ? FALLBACK_SUBJECTS.find((s) => s.id === r.subject_id) : undefined,
+    }));
   }
 }
 

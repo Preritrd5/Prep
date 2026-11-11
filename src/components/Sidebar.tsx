@@ -163,14 +163,6 @@ export default function Sidebar({ className }: SidebarProps) {
             pathname === "/student/exams/create",
         },
         {
-          name: "Online Mock Tests",
-          href: "/online-exams",
-          icon: Play,
-          active:
-            (pathname.startsWith("/online-exams") && pathname !== "/online-exams/create") ||
-            pathname.startsWith("/student/exams/online"),
-        },
-        {
           name: "My Attempts & Results",
           href: "/attempts",
           icon: Award,

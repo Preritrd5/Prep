@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Clock,
   Plus,
@@ -52,6 +53,7 @@ export default function RoutineClient({
   allExams,
   allSubjects,
 }: RoutineClientProps) {
+  const router = useRouter();
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>("Monday");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isPrefModalOpen, setIsPrefModalOpen] = useState(false);
@@ -66,6 +68,35 @@ export default function RoutineClient({
   const [examId, setExamId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [priority, setPriority] = useState(2);
+
+  // Filter subjects by selected examination
+  const filteredSubjects = useMemo(() => {
+    if (!examId) return allSubjects;
+    const selectedExam = allExams.find((e) => e.id === examId);
+    if (!selectedExam) return allSubjects;
+
+    const examCode = selectedExam.code || "";
+    let targetCodes: string[] = [];
+    if (examCode === "GATE-CS") targetCodes = ["GATE-EM", "GK-COMP", "GK-APT", "GK-SCITECH"];
+    else if (examCode === "GATE-CE") targetCodes = ["GATE-EM", "CE-STRUCT", "CE-GEO", "GK-APT"];
+    else if (examCode === "KAS-GS" || selectedExam.category === "KAS") targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-APT"];
+    else if (examCode === "UPSC-CSE" || selectedExam.category === "UPSC") targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-SCITECH", "GK-CA", "GK-APT"];
+    else if (examCode === "RRB-NTPC" || selectedExam.category === "Railway") targetCodes = ["GK-STATIC", "GK-SCI", "GK-APT", "GK-CA"];
+    else if (examCode === "KEA-LS") targetCodes = ["CE-GEO", "GATE-EM", "GK-POLITY", "GK-APT"];
+    else if (examCode === "KEA-VAO" || examCode === "KEA-SDA") targetCodes = ["GK-POLITY", "GK-HIST", "GK-COMP", "GK-APT"];
+    else if (examCode === "KEA-FDA") targetCodes = ["GK-POLITY", "GK-ECON", "GK-GEOG", "GK-APT"];
+    else if (examCode === "AE-CIVIL") targetCodes = ["CE-STRUCT", "CE-GEO", "GATE-EM", "GK-POLITY"];
+    else return allSubjects;
+
+    return allSubjects.filter((s) => targetCodes.includes(s.code));
+  }, [examId, allExams, allSubjects]);
+
+  const openAddRoutineModal = () => {
+    setErrorMsg(null);
+    setTitle("");
+    setDayOfWeek(selectedDay);
+    setIsAddModalOpen(true);
+  };
 
   // Preference Form State
   const [dailyHours, setDailyHours] = useState(preferences.daily_study_hours);
@@ -85,12 +116,18 @@ export default function RoutineClient({
     setIsPending(true);
     setErrorMsg(null);
 
+    // Compute dynamic duration
+    const [startH, startM] = startTime.split(":").map(Number);
+    const [endH, endM] = endTime.split(":").map(Number);
+    let diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+    if (isNaN(diffMinutes) || diffMinutes <= 0) diffMinutes = 60;
+
     const formData = new FormData();
     formData.append("title", title);
     formData.append("dayOfWeek", dayOfWeek);
     formData.append("startTime", startTime);
     formData.append("endTime", endTime);
-    formData.append("durationMinutes", "90");
+    formData.append("durationMinutes", diffMinutes.toString());
     formData.append("priority", priority.toString());
     formData.append("examId", examId);
     formData.append("subjectId", subjectId);
@@ -103,12 +140,15 @@ export default function RoutineClient({
     } else {
       setIsAddModalOpen(false);
       setTitle("");
+      setErrorMsg(null);
+      router.refresh();
     }
   };
 
   const handleDeleteRoutine = async (id: string) => {
     if (!confirm("Delete this recurring study routine slot?")) return;
     await deleteDailyRoutineAction(id);
+    router.refresh();
   };
 
   const handleUpdatePreferences = async (e: React.FormEvent) => {
@@ -184,10 +224,7 @@ export default function RoutineClient({
           </Button>
           <Button
             size="sm"
-            onClick={() => {
-              setDayOfWeek(selectedDay);
-              setIsAddModalOpen(true);
-            }}
+            onClick={openAddRoutineModal}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Add Routine Slot
@@ -292,10 +329,7 @@ export default function RoutineClient({
                 action={
                   <Button
                     size="sm"
-                    onClick={() => {
-                      setDayOfWeek(selectedDay);
-                      setIsAddModalOpen(true);
-                    }}
+                    onClick={openAddRoutineModal}
                     leftIcon={<Plus className="h-4 w-4" />}
                   >
                     Add Routine Slot
@@ -384,7 +418,7 @@ export default function RoutineClient({
               onChange={(e) => setSubjectId(e.target.value)}
               options={[
                 { label: "None", value: "" },
-                ...allSubjects.map((s) => ({ label: s.name, value: s.id })),
+                ...filteredSubjects.map((s) => ({ label: s.name, value: s.id })),
               ]}
             />
           </div>
