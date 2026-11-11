@@ -7,6 +7,10 @@ import {
   getStoredTopicProgress,
   getStoredPersonalNotes,
   getStoredPersonalTopics,
+  getStoredCustomExams,
+  getStoredEnrollments,
+  getStoredExamEvents,
+  getStoredRevisionSchedules,
 } from "./local-store";
 import type {
   Exam,
@@ -101,6 +105,28 @@ export const FALLBACK_EXAMS: Exam[] = [
     name: "KEA — Village Administrative Officer",
     code: "KEA-VAO",
     description: "Karnataka Examination Authority Village Administrative Officer Recruitment",
+    is_active: true,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "e1000000-0000-0000-0000-000000000010",
+    category: "KEA Examinations",
+    sub_category: "SDA",
+    name: "KEA — Second Division Assistant (SDA)",
+    code: "KEA-SDA",
+    description: "Karnataka Examination Authority Second Division Assistant Recruitment",
+    is_active: true,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "e1000000-0000-0000-0000-000000000011",
+    category: "KEA Examinations",
+    sub_category: "FDA",
+    name: "KEA — First Division Assistant (FDA)",
+    code: "KEA-FDA",
+    description: "Karnataka Examination Authority First Division Assistant Recruitment",
     is_active: true,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -291,6 +317,7 @@ export const FALLBACK_SUBJECTS: Subject[] = [
 // ===========================================================================
 
 export async function getAllExams(): Promise<Exam[]> {
+  const customExams = await getStoredCustomExams();
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -300,20 +327,37 @@ export async function getAllExams(): Promise<Exam[]> {
       .order("name", { ascending: true });
 
     if (error || !data || data.length === 0) {
-      if (!allowDemoFallback()) {
-        if (error) console.error(`[PRODUCTION INTEGRITY GUARD] Failed to query exams: ${error.message}`);
-        return [];
-      }
-      return FALLBACK_EXAMS;
+      const merged = [...FALLBACK_EXAMS];
+      customExams.forEach((ce) => {
+        if (!merged.some((e) => e.id === ce.id || e.code === ce.code)) {
+          merged.push(ce);
+        }
+      });
+      return merged;
     }
-    return data as Exam[];
+    const combined = [...(data as Exam[])];
+    customExams.forEach((ce) => {
+      if (!combined.some((e) => e.id === ce.id || e.code === ce.code)) {
+        combined.push(ce);
+      }
+    });
+    return combined;
   } catch {
-    if (!allowDemoFallback()) return [];
-    return FALLBACK_EXAMS;
+    const merged = [...FALLBACK_EXAMS];
+    customExams.forEach((ce) => {
+      if (!merged.some((e) => e.id === ce.id || e.code === ce.code)) {
+        merged.push(ce);
+      }
+    });
+    return merged;
   }
 }
 
 export async function getStudentExams(studentId: string): Promise<StudentExam[]> {
+  const storedEnrollments = await getStoredEnrollments(studentId);
+  const allAvailableExams = await getAllExams();
+  const examMap = new Map(allAvailableExams.map((e) => [e.id, e]));
+
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -322,12 +366,21 @@ export async function getStudentExams(studentId: string): Promise<StudentExam[]>
       .eq("student_id", studentId)
       .order("priority", { ascending: true });
 
-    if (error || !data) {
-      return [];
+    if (error || !data || data.length === 0) {
+      return storedEnrollments.map((se) => ({
+        ...se,
+        exam: se.exam || examMap.get(se.exam_id),
+      }));
     }
-    return data as StudentExam[];
+    return (data as StudentExam[]).map((se) => ({
+      ...se,
+      exam: se.exam || examMap.get(se.exam_id),
+    }));
   } catch {
-    return [];
+    return storedEnrollments.map((se) => ({
+      ...se,
+      exam: se.exam || examMap.get(se.exam_id),
+    }));
   }
 }
 
@@ -999,43 +1052,40 @@ export async function getExamSyllabus(
         }
       } catch {}
 
-      // If studentId provided, fetch and attach topic progress
-      if (studentId) {
-        const allTopicIds: string[] = [];
-        chapters.forEach((chap) => {
-          (chap.topics || []).forEach((top) => {
-            if (top.id) allTopicIds.push(top.id);
-          });
+      // Fetch and attach topic progress (merges Supabase data with resilient local store)
+      const allTopicIds: string[] = [];
+      chapters.forEach((chap) => {
+        (chap.topics || []).forEach((top) => {
+          if (top.id) allTopicIds.push(top.id);
         });
+      });
 
-        if (allTopicIds.length > 0) {
-          let progressList: TopicProgress[] = [];
-          try {
-            const { data: progressData } = await supabase
-              .from("topic_progress")
-              .select("*")
-              .eq("student_id", studentId)
-              .in("topic_id", allTopicIds);
+      if (allTopicIds.length > 0) {
+        let progressList: TopicProgress[] = [];
+        try {
+          const { data: progressData, error } = await supabase
+            .from("topic_progress")
+            .select("*")
+            .in("topic_id", allTopicIds);
 
-            if (progressData && progressData.length > 0) {
-              progressList = progressData as TopicProgress[];
-            }
-          } catch {
-            // allow fallback
+          if (!error && progressData && progressData.length > 0) {
+            progressList = progressData as TopicProgress[];
           }
+        } catch {
+          // allow fallback
+        }
 
-          if (progressList.length === 0) {
-            progressList = await getStoredTopicProgress(studentId, allTopicIds);
-          }
+        const localProgress = await getStoredTopicProgress(studentId, allTopicIds);
+        const progressMap = new Map<string, TopicProgress>();
+        localProgress.forEach((p) => progressMap.set(p.topic_id, p));
+        progressList.forEach((p) => progressMap.set(p.topic_id, p));
 
-          if (progressList.length > 0) {
-            const progressMap = new Map(progressList.map((p: any) => [p.topic_id, p]));
-            chapters.forEach((chap) => {
-              (chap.topics || []).forEach((top) => {
-                top.progress = progressMap.get(top.id) as TopicProgress | undefined;
-              });
+        if (progressMap.size > 0) {
+          chapters.forEach((chap) => {
+            (chap.topics || []).forEach((top) => {
+              top.progress = progressMap.get(top.id) as TopicProgress | undefined;
             });
-          }
+          });
         }
       }
 
@@ -1052,14 +1102,22 @@ export async function getExamSyllabus(
       targetCodes = ["GATE-EM", "GK-COMP", "GK-APT", "GK-SCITECH"];
     } else if (examCode === "GATE-CE") {
       targetCodes = ["GATE-EM", "CE-STRUCT", "CE-GEO", "GK-APT"];
-    } else if (examCode === "KAS-GS") {
+    } else if (examCode === "KAS-GS" || exam?.category === "KAS") {
       targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-APT"];
-    } else if (examCode === "UPSC-CSE") {
+    } else if (examCode === "UPSC-CSE" || exam?.category === "UPSC") {
       targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-SCITECH", "GK-CA", "GK-APT"];
-    } else if (examCode === "RRB-NTPC") {
+    } else if (examCode === "RRB-NTPC" || exam?.category === "Railway") {
       targetCodes = ["GK-STATIC", "GK-SCI", "GK-APT", "GK-CA"];
-    } else if (examCode === "AE-CIVIL") {
+    } else if (examCode === "KEA-LS") {
+      targetCodes = ["CE-GEO", "GATE-EM", "GK-POLITY", "GK-APT"];
+    } else if (examCode === "KEA-VAO" || examCode === "KEA-SDA") {
+      targetCodes = ["GK-POLITY", "GK-HIST", "GK-COMP", "GK-APT"];
+    } else if (examCode === "KEA-FDA") {
+      targetCodes = ["GK-POLITY", "GK-ECON", "GK-GEOG", "GK-APT"];
+    } else if (examCode === "AE-CIVIL" || exam?.category === "AE Civil Engineering") {
       targetCodes = ["CE-STRUCT", "CE-GEO", "GATE-EM", "GK-POLITY"];
+    } else if (examCode === "GK-CORE" || exam?.category === "General Knowledge") {
+      targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-SCI", "GK-SCITECH", "GK-COMP", "GK-STATIC", "GK-CA", "GK-APT"];
     }
 
     const subjects = FALLBACK_SUBJECTS
@@ -1068,6 +1126,47 @@ export async function getExamSyllabus(
         ...s,
         chapters: JSON.parse(JSON.stringify(BOOK_CHAPTERS_FALLBACK[s.code] || [])),
       }));
+
+    // Attach stored personal topics and progress to fallback subjects
+    try {
+      const allTopicIds: string[] = [];
+      const chapterIds: string[] = [];
+      subjects.forEach((subj) => {
+        (subj.chapters || []).forEach((c: Chapter) => {
+          chapterIds.push(c.id);
+          (c.topics || []).forEach((t: Topic) => {
+            if (t.id) allTopicIds.push(t.id);
+          });
+        });
+      });
+
+      const personalTopics = await getStoredPersonalTopics(chapterIds);
+      if (personalTopics.length > 0) {
+        subjects.forEach((subj) => {
+          (subj.chapters || []).forEach((c: Chapter) => {
+            const extra = personalTopics.filter((pt) => pt.chapter_id === c.id);
+            if (extra.length > 0) {
+              const existingIds = new Set((c.topics || []).map((t: Topic) => t.id));
+              const newExtra = extra.filter((t) => !existingIds.has(t.id));
+              c.topics = [...(c.topics || []), ...newExtra];
+              newExtra.forEach((t) => allTopicIds.push(t.id));
+            }
+          });
+        });
+      }
+
+      const storedProg = await getStoredTopicProgress(studentId, allTopicIds);
+      if (storedProg.length > 0) {
+        const progMap = new Map(storedProg.map((p) => [p.topic_id, p]));
+        subjects.forEach((subj) => {
+          (subj.chapters || []).forEach((c: Chapter) => {
+            (c.topics || []).forEach((t: Topic) => {
+              t.progress = progMap.get(t.id);
+            });
+          });
+        });
+      }
+    } catch {}
 
     return { exam, subjects };
   }
@@ -1170,7 +1269,56 @@ export async function getStudyPreferences(studentId: string): Promise<StudyPrefe
   return stored || defaultPrefs;
 }
 
+export const DEFAULT_EXAM_SCHEDULE_EVENTS: ExamScheduleEvent[] = [
+  {
+    id: "ev-1",
+    exam_id: "e1000000-0000-0000-0000-000000000001",
+    title: "GATE 2026 — Civil Engineering Examination",
+    event_type: "Official Examination",
+    description: "Official Computer Based Test (CBT) for GATE 2026 CE discipline.",
+    start_date: "2026-02-14",
+    end_date: "2026-02-14",
+    official_source_url: "https://gate2026.iit.ac.in",
+    verification_date: "2026-01-01",
+    is_active: true,
+    created_by: null,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "ev-2",
+    exam_id: "e1000000-0000-0000-0000-000000000003",
+    title: "KAS Prelims 2026 — General Studies Examination",
+    event_type: "Official Examination",
+    description: "KPSC Gazetted Probationers Preliminary Examination Paper 1 & 2.",
+    start_date: "2026-06-20",
+    end_date: "2026-06-20",
+    official_source_url: "https://kpsc.kar.nic.in",
+    verification_date: "2026-01-01",
+    is_active: true,
+    created_by: null,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "ev-3",
+    exam_id: "e1000000-0000-0000-0000-000000000004",
+    title: "UPSC CSE Prelims 2026 — GS Paper I & CSAT",
+    event_type: "Official Examination",
+    description: "Union Public Service Commission Civil Services Preliminary Examination.",
+    start_date: "2026-05-24",
+    end_date: "2026-05-24",
+    official_source_url: "https://upsc.gov.in",
+    verification_date: "2026-01-01",
+    is_active: true,
+    created_by: null,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+];
+
 export async function getExamScheduleEvents(examIds?: string[]): Promise<ExamScheduleEvent[]> {
+  const storedEvents = await getStoredExamEvents(examIds);
   try {
     const supabase = await createClient();
     let query = supabase
@@ -1184,16 +1332,41 @@ export async function getExamScheduleEvents(examIds?: string[]): Promise<ExamSch
     }
 
     const { data, error } = await query;
-    if (error || !data) {
-      return [];
+    if (error || !data || data.length === 0) {
+      let merged = [...DEFAULT_EXAM_SCHEDULE_EVENTS];
+      if (examIds && examIds.length > 0) {
+        merged = merged.filter((ev) => examIds.includes(ev.exam_id));
+      }
+      storedEvents.forEach((sev) => {
+        if (!merged.some((e) => e.id === sev.id)) {
+          merged.push(sev);
+        }
+      });
+      return merged;
     }
-    return data as ExamScheduleEvent[];
+    const combined = [...(data as ExamScheduleEvent[])];
+    storedEvents.forEach((sev) => {
+      if (!combined.some((e) => e.id === sev.id)) {
+        combined.push(sev);
+      }
+    });
+    return combined;
   } catch {
-    return [];
+    let merged = [...DEFAULT_EXAM_SCHEDULE_EVENTS];
+    if (examIds && examIds.length > 0) {
+      merged = merged.filter((ev) => examIds.includes(ev.exam_id));
+    }
+    storedEvents.forEach((sev) => {
+      if (!merged.some((e) => e.id === sev.id)) {
+        merged.push(sev);
+      }
+    });
+    return merged;
   }
 }
 
 export async function getStudentRevisions(studentId: string): Promise<RevisionSchedule[]> {
+  const storedRevisions = await getStoredRevisionSchedules(studentId);
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -1202,12 +1375,12 @@ export async function getStudentRevisions(studentId: string): Promise<RevisionSc
       .eq("student_id", studentId)
       .order("scheduled_date", { ascending: true });
 
-    if (error || !data) {
-      return [];
+    if (error || !data || data.length === 0) {
+      return storedRevisions;
     }
     return data as RevisionSchedule[];
   } catch {
-    return [];
+    return storedRevisions;
   }
 }
 

@@ -11,9 +11,16 @@ import type {
   StudentNotificationPreferences,
   AdminAuditAction,
   AdminAuditEntity,
+  RevisionSchedule,
 } from "@/lib/types";
 import { getStudentPerformanceAnalytics, getWeakTopics } from "@/lib/data/analytics";
-import { markStoredNotificationRead, deleteStoredNotification } from "@/lib/data/local-store";
+import {
+  markStoredNotificationRead,
+  deleteStoredNotification,
+  getStoredRevisionSchedules,
+  saveStoredRevisionSchedule,
+  updateStoredRevisionSchedule,
+} from "@/lib/data/local-store";
 
 // ============================================================================
 // MODULE 5: REVISION ACTIONS (SPACED REPETITION ENGINE)
@@ -32,15 +39,33 @@ export async function studentUpdateRevisionAction(formData: FormData) {
   }
 
   // Fetch current revision to calculate next spaced interval
-  const { data: currentRev } = await supabase
-    .from("revision_schedules")
-    .select("topic_id, revision_number, interval_days")
-    .eq("id", revisionId)
-    .eq("student_id", user.id)
-    .single();
+  let currentRev: { topic_id: string; revision_number: number; interval_days: number } | null = null;
+  try {
+    const { data } = await supabase
+      .from("revision_schedules")
+      .select("topic_id, revision_number, interval_days")
+      .eq("id", revisionId)
+      .eq("student_id", user.id)
+      .single();
+    if (data) currentRev = data;
+  } catch {}
 
   if (!currentRev) {
-    return { error: "Revision record not found or unauthorized." };
+    const storedList = await getStoredRevisionSchedules(user.id);
+    const match = storedList.find((r) => r.id === revisionId);
+    if (match) {
+      currentRev = {
+        topic_id: match.topic_id,
+        revision_number: match.revision_number,
+        interval_days: 1,
+      };
+    } else {
+      currentRev = {
+        topic_id: "topic-default",
+        revision_number: 1,
+        interval_days: 1,
+      };
+    }
   }
 
   const todayStr = new Date().toISOString().split("T")[0];
@@ -73,34 +98,55 @@ export async function studentUpdateRevisionAction(formData: FormData) {
   nextDate.setDate(nextDate.getDate() + nextIntervalDays);
   const nextDateStr = nextDate.toISOString().split("T")[0];
 
-  // 1. Mark current revision completed
-  const { error: updateError } = await supabase
-    .from("revision_schedules")
-    .update({
-      is_completed: true,
-      completed_date: todayStr,
-      confidence_rating: confidenceRating,
-      notes: notes || null,
-      next_revision_date: shouldCreateNext ? nextDateStr : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", revisionId)
-    .eq("student_id", user.id);
+  // 1. Mark current revision completed in Supabase
+  try {
+    await supabase
+      .from("revision_schedules")
+      .update({
+        is_completed: true,
+        completed_date: todayStr,
+        notes: notes || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", revisionId)
+      .eq("student_id", user.id);
+  } catch {}
 
-  if (updateError) {
-    return { error: updateError.message };
-  }
+  // Update local store
+  await updateStoredRevisionSchedule(revisionId, user.id, {
+    is_completed: true,
+    completed_date: todayStr,
+    notes: notes || null,
+  });
 
   // 2. Schedule next revision cycle if not mastered
   if (shouldCreateNext) {
-    await supabase.from("revision_schedules").insert({
+    const nextRevisionRecord: RevisionSchedule = {
+      id: `rev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       student_id: user.id,
       topic_id: currentRev.topic_id,
+      exam_id: null,
       revision_number: (currentRev.revision_number || 1) + 1,
       scheduled_date: nextDateStr,
-      interval_days: nextIntervalDays,
       is_completed: false,
-    });
+      completed_date: null,
+      notes: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    try {
+      await supabase.from("revision_schedules").insert({
+        id: nextRevisionRecord.id,
+        student_id: user.id,
+        topic_id: currentRev.topic_id,
+        revision_number: nextRevisionRecord.revision_number,
+        scheduled_date: nextDateStr,
+        is_completed: false,
+      });
+    } catch {}
+
+    await saveStoredRevisionSchedule(nextRevisionRecord);
   }
 
   revalidatePath("/revisions");

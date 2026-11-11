@@ -13,6 +13,7 @@ import type {
   ExamTemplateStatus,
 } from "@/lib/types";
 import { FALLBACK_QUESTIONS, allowDemoFallback } from "./questions";
+import { getStoredExamAttempts, getStoredExamAttemptById } from "./local-store";
 
 // ===========================================================================
 // FALLBACK SEED EXAM TEMPLATES (Used if remote PostgreSQL is awaiting migration)
@@ -316,6 +317,7 @@ export async function getStudentAvailableExams(studentId: string): Promise<{
       .order("created_at", { ascending: false });
 
     // 2. Fetch student's past attempts
+    const storedAttempts = await getStoredExamAttempts(studentId);
     const { data: attempts } = await supabase
       .from("exam_attempts")
       .select("*")
@@ -323,16 +325,28 @@ export async function getStudentAvailableExams(studentId: string): Promise<{
       .order("started_at", { ascending: false });
 
     const activeTemplates = (templates && templates.length > 0) ? (templates as ExamTemplate[]) : FALLBACK_EXAM_TEMPLATES;
-    const pastAttempts = (attempts || []) as ExamAttempt[];
+    
+    let combinedAttempts: ExamAttempt[] = [];
+    if (attempts && attempts.length > 0) {
+      combinedAttempts = [...(attempts as ExamAttempt[])];
+      storedAttempts.forEach((sa) => {
+        if (!combinedAttempts.some((a) => a.id === sa.id)) {
+          combinedAttempts.push(sa);
+        }
+      });
+    } else {
+      combinedAttempts = storedAttempts;
+    }
 
     return {
       availableExams: activeTemplates,
-      studentAttempts: pastAttempts,
+      studentAttempts: combinedAttempts,
     };
   } catch {
+    const storedAttempts = await getStoredExamAttempts(studentId);
     return {
       availableExams: FALLBACK_EXAM_TEMPLATES,
-      studentAttempts: [],
+      studentAttempts: storedAttempts,
     };
   }
 }
@@ -358,34 +372,52 @@ export async function getStudentAttemptById(
     }
 
     const { data: attemptData, error: aErr } = await query.single();
-    if (aErr || !attemptData) {
+    if (!aErr && attemptData) {
+      // Fetch snapshot questions
+      const { data: qData } = await supabase
+        .from("exam_attempt_questions")
+        .select("*")
+        .eq("attempt_id", attemptId)
+        .order("order_index", { ascending: true });
+
+      // Fetch student's current saved answers
+      const { data: ansData } = await supabase
+        .from("exam_attempt_answers")
+        .select("*")
+        .eq("attempt_id", attemptId);
+
+      return {
+        attempt: attemptData as ExamAttempt,
+        questions: (qData || []) as ExamAttemptQuestion[],
+        answers: (ansData || []) as ExamAttemptAnswer[],
+      };
+    }
+  } catch {}
+
+  // Fallback to local stored attempt
+  const stored = await getStoredExamAttemptById(attemptId);
+  if (stored) {
+    if (studentId && stored.attempt.student_id !== studentId) {
       return { attempt: null, questions: [], answers: [] };
     }
-
-    // Fetch snapshot questions
-    const { data: qData } = await supabase
-      .from("exam_attempt_questions")
-      .select("*")
-      .eq("attempt_id", attemptId)
-      .order("order_index", { ascending: true });
-
-    // Fetch student's current saved answers
-    const { data: ansData } = await supabase
-      .from("exam_attempt_answers")
-      .select("*")
-      .eq("attempt_id", attemptId);
-
+    // Attach template if not present
+    if (!stored.attempt.template) {
+      stored.attempt.template = FALLBACK_EXAM_TEMPLATES.find(
+        (t) => t.id === stored.attempt.template_id
+      );
+    }
     return {
-      attempt: attemptData as ExamAttempt,
-      questions: (qData || []) as ExamAttemptQuestion[],
-      answers: (ansData || []) as ExamAttemptAnswer[],
+      attempt: stored.attempt,
+      questions: stored.questions,
+      answers: stored.answers,
     };
-  } catch {
-    return { attempt: null, questions: [], answers: [] };
   }
+
+  return { attempt: null, questions: [], answers: [] };
 }
 
 export async function getStudentExamAttempts(studentId: string): Promise<ExamAttempt[]> {
+  const storedAttempts = await getStoredExamAttempts(studentId);
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -394,10 +426,18 @@ export async function getStudentExamAttempts(studentId: string): Promise<ExamAtt
       .eq("student_id", studentId)
       .order("started_at", { ascending: false });
 
-    if (error || !data) return [];
-    return data as ExamAttempt[];
+    if (!error && data && data.length > 0) {
+      const combined = [...(data as ExamAttempt[])];
+      storedAttempts.forEach((sa) => {
+        if (!combined.some((a) => a.id === sa.id)) {
+          combined.push(sa);
+        }
+      });
+      return combined;
+    }
+    return storedAttempts;
   } catch {
-    return [];
+    return storedAttempts;
   }
 }
 
@@ -433,14 +473,25 @@ export async function getExamResult(
       resQuery = resQuery.eq("student_id", studentId);
     }
 
-    const { data: resultData } = await resQuery.single();
+    const { data: rawResultData } = await resQuery.single();
 
     // 2. Fetch Attempt & Template
-    const { data: attemptData } = await adminDb
+    const { data: rawAttemptData } = await adminDb
       .from("exam_attempts")
       .select("*, template:exam_templates(*)")
       .eq("id", attemptId)
       .single();
+
+    let attemptData = rawAttemptData;
+    let resultData = rawResultData;
+
+    if (!attemptData) {
+      const stored = await getStoredExamAttemptById(attemptId);
+      if (stored) {
+        attemptData = stored.attempt as any;
+        resultData = (stored.result || null) as any;
+      }
+    }
 
     if (!attemptData) {
       return { result: null, attempt: null, template: null, questionsReview: [] };

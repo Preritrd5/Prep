@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Bookmark } from "lucide-react";
+import { BarChart3, Bookmark, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const analyticsTabs = [
@@ -12,6 +12,12 @@ const analyticsTabs = [
     href: "/analytics",
     legacyHref: "/student/analytics",
     icon: BarChart3,
+  },
+  {
+    name: "Study Reports",
+    href: "/reports",
+    legacyHref: "/student/reports",
+    icon: FileText,
   },
   {
     name: "Bookmarks & Mistakes",

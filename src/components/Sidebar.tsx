@@ -209,6 +209,12 @@ export default function Sidebar({ className }: SidebarProps) {
           active: pathname.startsWith("/analytics") || pathname.startsWith("/student/analytics"),
         },
         {
+          name: "Study Reports",
+          href: "/reports",
+          icon: FileText,
+          active: pathname.startsWith("/reports") || pathname.startsWith("/student/reports"),
+        },
+        {
           name: "Bookmarks & Incorrect Questions",
           href: "/practice/bookmarks",
           icon: Bookmark,

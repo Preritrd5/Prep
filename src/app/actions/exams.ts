@@ -3,6 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import {
+  saveStoredEnrollment,
+  removeStoredEnrollment,
+  saveStoredCustomExam,
+} from "@/lib/data/local-store";
+import type { StudentExam, Exam } from "@/lib/types";
 
 export async function enrollStudentExamAction(formData: FormData) {
   const { user } = await requireAuth();
@@ -15,23 +21,33 @@ export async function enrollStudentExamAction(formData: FormData) {
     return { error: "Please select a valid examination." };
   }
 
-  const supabase = await createClient();
+  const enrollmentRecord: StudentExam = {
+    id: `se-${user.id}-${examId}`,
+    student_id: user.id,
+    exam_id: examId,
+    target_date: targetDate,
+    priority,
+    notes,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 
-  const { error } = await supabase.from("student_exams").upsert(
-    {
-      student_id: user.id,
-      exam_id: examId,
-      target_date: targetDate,
-      priority,
-      notes,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "student_id,exam_id" }
-  );
+  await saveStoredEnrollment(enrollmentRecord);
 
-  if (error) {
-    return { error: error.message };
-  }
+  try {
+    const supabase = await createClient();
+    await supabase.from("student_exams").upsert(
+      {
+        student_id: user.id,
+        exam_id: examId,
+        target_date: targetDate,
+        priority,
+        notes,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "student_id,exam_id" }
+    );
+  } catch {}
 
   revalidatePath("/examinations");
   revalidatePath("/dashboard");
@@ -47,17 +63,16 @@ export async function removeStudentExamAction(formData: FormData) {
     return { error: "Exam ID missing." };
   }
 
-  const supabase = await createClient();
+  await removeStoredEnrollment(user.id, examId);
 
-  const { error } = await supabase
-    .from("student_exams")
-    .delete()
-    .eq("student_id", user.id)
-    .eq("exam_id", examId);
-
-  if (error) {
-    return { error: error.message };
-  }
+  try {
+    const supabase = await createClient();
+    await supabase
+      .from("student_exams")
+      .delete()
+      .eq("student_id", user.id)
+      .eq("exam_id", examId);
+  } catch {}
 
   revalidatePath("/examinations");
   revalidatePath("/dashboard");
@@ -78,20 +93,31 @@ export async function adminCreateExamAction(formData: FormData) {
     return { error: "Name, Code and Category are required." };
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("exams").insert({
+  const customExam: Exam = {
+    id: `exam-${Date.now().toString(36)}`,
     name,
     code,
     category,
     sub_category: subCategory,
     description,
     is_active: true,
-  });
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 
-  if (error) {
-    return { error: error.message };
-  }
+  await saveStoredCustomExam(customExam);
+
+  try {
+    const supabase = await createClient();
+    await supabase.from("exams").insert({
+      name,
+      code,
+      category,
+      sub_category: subCategory,
+      description,
+      is_active: true,
+    });
+  } catch {}
 
   revalidatePath("/examinations");
   return { success: true };

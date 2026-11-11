@@ -81,6 +81,19 @@ export default function SyllabusClient({
     }
   }, [initialSubjects]);
 
+  // Sync with localStorage on initial mount if URL does not specify examId
+  useEffect(() => {
+    try {
+      const savedExamId = localStorage.getItem("preptrack_active_exam_id");
+      if (savedExamId && currentExam?.id && savedExamId !== currentExam.id) {
+        const exists = allExams.some((e) => e.id === savedExamId);
+        if (exists && typeof window !== "undefined" && !window.location.search.includes("examId=")) {
+          router.replace(`/syllabus?examId=${encodeURIComponent(savedExamId)}`);
+        }
+      }
+    } catch {}
+  }, []);
+
   const activeSubject =
     subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
 

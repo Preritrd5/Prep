@@ -314,6 +314,7 @@ export interface Question {
   created_at: string;
   updated_at: string;
   options?: QuestionOption[];
+  answer_key?: QuestionAnswerKey;
   subject?: Subject;
   chapter?: Chapter;
   topic?: Topic;

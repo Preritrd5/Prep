@@ -9,6 +9,16 @@ import type {
   PersonalNote,
   StudentNotification,
   NotificationCategory,
+  ExamAttempt,
+  ExamAttemptQuestion,
+  ExamAttemptAnswer,
+  ExamResult,
+  Exam,
+  StudentExam,
+  Question,
+  ExamScheduleEvent,
+  RevisionSchedule,
+  PracticeSession,
 } from "@/lib/types";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
@@ -127,11 +137,14 @@ export async function saveStoredPreferences(prefs: StudyPreferences): Promise<vo
 const PROGRESS_FILE = "topic_progress.json";
 
 export async function getStoredTopicProgress(
-  studentId: string,
+  studentId?: string,
   topicIds?: string[]
 ): Promise<TopicProgress[]> {
   const all = readJsonFile<TopicProgress[]>(PROGRESS_FILE, []);
-  let list = all.filter((p) => p.student_id === studentId);
+  let list = all;
+  if (studentId) {
+    list = all.filter((p) => !p.student_id || p.student_id === studentId);
+  }
   if (topicIds && topicIds.length > 0) {
     const set = new Set(topicIds);
     list = list.filter((p) => set.has(p.topic_id));
@@ -143,7 +156,6 @@ export async function saveStoredTopicProgress(progress: TopicProgress): Promise<
   const all = readJsonFile<TopicProgress[]>(PROGRESS_FILE, []);
   const idx = all.findIndex(
     (p) =>
-      p.student_id === progress.student_id &&
       p.topic_id === progress.topic_id &&
       (p.exam_id === progress.exam_id || (!p.exam_id && !progress.exam_id))
   );
@@ -345,4 +357,283 @@ export async function deleteStoredNotification(
   const all = readJsonFile<StudentNotification[]>(NOTIFICATIONS_FILE, []);
   const filtered = all.filter((n) => !(n.id === notificationId && n.student_id === studentId));
   writeJsonFile(NOTIFICATIONS_FILE, filtered);
+}
+
+// ===========================================================================
+// 8. EXAM ATTEMPTS, QUESTIONS & ANSWERS STORE
+// ===========================================================================
+
+const ATTEMPTS_FILE = "exam_attempts.json";
+
+export interface StoredAttemptData {
+  attempt: ExamAttempt;
+  questions: ExamAttemptQuestion[];
+  answers: ExamAttemptAnswer[];
+  result?: ExamResult | null;
+}
+
+export async function getStoredExamAttempts(studentId?: string): Promise<ExamAttempt[]> {
+  const all = readJsonFile<StoredAttemptData[]>(ATTEMPTS_FILE, []);
+  let list = all.map((d) => d.attempt);
+  if (studentId) {
+    list = list.filter((a) => a.student_id === studentId);
+  }
+  return list.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+}
+
+export async function getStoredExamAttemptById(attemptId: string): Promise<StoredAttemptData | null> {
+  const all = readJsonFile<StoredAttemptData[]>(ATTEMPTS_FILE, []);
+  return all.find((d) => d.attempt.id === attemptId) || null;
+}
+
+export async function saveStoredExamAttempt(
+  attempt: ExamAttempt,
+  questions: ExamAttemptQuestion[] = []
+): Promise<void> {
+  const all = readJsonFile<StoredAttemptData[]>(ATTEMPTS_FILE, []);
+  const idx = all.findIndex((d) => d.attempt.id === attempt.id);
+  if (idx >= 0) {
+    all[idx].attempt = attempt;
+    if (questions.length > 0) all[idx].questions = questions;
+  } else {
+    all.push({
+      attempt,
+      questions,
+      answers: [],
+      result: null,
+    });
+  }
+  writeJsonFile(ATTEMPTS_FILE, all);
+}
+
+export async function saveStoredExamAnswer(
+  attemptId: string,
+  answer: ExamAttemptAnswer
+): Promise<void> {
+  const all = readJsonFile<StoredAttemptData[]>(ATTEMPTS_FILE, []);
+  const item = all.find((d) => d.attempt.id === attemptId);
+  if (item) {
+    const ansIdx = item.answers.findIndex(
+      (a) => a.attempt_question_id === answer.attempt_question_id
+    );
+    if (ansIdx >= 0) {
+      item.answers[ansIdx] = { ...item.answers[ansIdx], ...answer };
+    } else {
+      item.answers.push(answer);
+    }
+    writeJsonFile(ATTEMPTS_FILE, all);
+  }
+}
+
+export async function finalizeStoredExamAttempt(
+  attemptId: string,
+  result: ExamResult,
+  status: "Submitted" | "Auto Submitted" = "Submitted"
+): Promise<void> {
+  const all = readJsonFile<StoredAttemptData[]>(ATTEMPTS_FILE, []);
+  const item = all.find((d) => d.attempt.id === attemptId);
+  if (item) {
+    item.attempt.status = status;
+    item.attempt.submitted_at = new Date().toISOString();
+    item.result = result;
+    writeJsonFile(ATTEMPTS_FILE, all);
+  }
+}
+
+// ===========================================================================
+// 9. STORED ENROLLMENTS (STUDENT EXAMS)
+// ===========================================================================
+
+const ENROLLMENTS_FILE = "student_exams.json";
+
+export async function getStoredEnrollments(studentId: string): Promise<StudentExam[]> {
+  const all = readJsonFile<StudentExam[]>(ENROLLMENTS_FILE, []);
+  const userEnrolled = all.filter((e) => e.student_id === studentId);
+  if (userEnrolled.length === 0) {
+    const defaultEnrolled: StudentExam[] = [
+      {
+        id: "se-1",
+        student_id: studentId,
+        exam_id: "e1000000-0000-0000-0000-000000000001",
+        target_date: "2026-02-14",
+        priority: 1,
+        notes: "Target: Top Rank in GATE Civil Engineering 2026",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: "se-2",
+        student_id: studentId,
+        exam_id: "e1000000-0000-0000-0000-000000000003",
+        target_date: "2026-06-20",
+        priority: 2,
+        notes: "Target: KAS Gazetted Probationers Preliminary GS",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+    writeJsonFile(ENROLLMENTS_FILE, [...all, ...defaultEnrolled]);
+    return defaultEnrolled;
+  }
+  return userEnrolled.sort((a, b) => a.priority - b.priority);
+}
+
+export async function saveStoredEnrollment(enrollment: StudentExam): Promise<void> {
+  const all = readJsonFile<StudentExam[]>(ENROLLMENTS_FILE, []);
+  const idx = all.findIndex(
+    (e) => e.student_id === enrollment.student_id && e.exam_id === enrollment.exam_id
+  );
+  if (idx >= 0) {
+    all[idx] = enrollment;
+  } else {
+    all.push(enrollment);
+  }
+  writeJsonFile(ENROLLMENTS_FILE, all);
+}
+
+export async function removeStoredEnrollment(studentId: string, examId: string): Promise<void> {
+  const all = readJsonFile<StudentExam[]>(ENROLLMENTS_FILE, []);
+  const filtered = all.filter((e) => !(e.student_id === studentId && e.exam_id === examId));
+  writeJsonFile(ENROLLMENTS_FILE, filtered);
+}
+
+// ===========================================================================
+// 10. CUSTOM EXAMINATIONS STORE
+// ===========================================================================
+
+const CUSTOM_EXAMS_FILE = "custom_exams.json";
+
+export async function getStoredCustomExams(): Promise<Exam[]> {
+  return readJsonFile<Exam[]>(CUSTOM_EXAMS_FILE, []);
+}
+
+export async function saveStoredCustomExam(exam: Exam): Promise<void> {
+  const all = readJsonFile<Exam[]>(CUSTOM_EXAMS_FILE, []);
+  const idx = all.findIndex((e) => e.id === exam.id || e.code === exam.code);
+  if (idx >= 0) {
+    all[idx] = exam;
+  } else {
+    all.push(exam);
+  }
+  writeJsonFile(CUSTOM_EXAMS_FILE, all);
+}
+
+// ===========================================================================
+// 11. PERSONAL & IMPORTED QUESTIONS STORE
+// ===========================================================================
+
+const PERSONAL_QUESTIONS_FILE = "personal_questions.json";
+
+export async function getStoredPersonalQuestions(): Promise<Question[]> {
+  return readJsonFile<Question[]>(PERSONAL_QUESTIONS_FILE, []);
+}
+
+export async function saveStoredPersonalQuestion(q: Question): Promise<void> {
+  const all = readJsonFile<Question[]>(PERSONAL_QUESTIONS_FILE, []);
+  const idx = all.findIndex((item) => item.id === q.id);
+  if (idx >= 0) {
+    all[idx] = q;
+  } else {
+    all.push(q);
+  }
+  writeJsonFile(PERSONAL_QUESTIONS_FILE, all);
+}
+
+export async function saveStoredPersonalQuestions(questions: Question[]): Promise<void> {
+  const all = readJsonFile<Question[]>(PERSONAL_QUESTIONS_FILE, []);
+  for (const q of questions) {
+    const idx = all.findIndex((item) => item.id === q.id);
+    if (idx >= 0) {
+      all[idx] = q;
+    } else {
+      all.push(q);
+    }
+  }
+  writeJsonFile(PERSONAL_QUESTIONS_FILE, all);
+}
+
+// ===========================================================================
+// 12. EXAM SCHEDULE EVENTS STORE
+// ===========================================================================
+
+const EXAM_EVENTS_FILE = "exam_events.json";
+
+export async function getStoredExamEvents(examIds?: string[]): Promise<ExamScheduleEvent[]> {
+  const all = readJsonFile<ExamScheduleEvent[]>(EXAM_EVENTS_FILE, []);
+  if (examIds && examIds.length > 0) {
+    const set = new Set(examIds);
+    return all.filter((ev) => set.has(ev.exam_id));
+  }
+  return all;
+}
+
+export async function saveStoredExamEvent(ev: ExamScheduleEvent): Promise<void> {
+  const all = readJsonFile<ExamScheduleEvent[]>(EXAM_EVENTS_FILE, []);
+  const idx = all.findIndex((item) => item.id === ev.id);
+  if (idx >= 0) {
+    all[idx] = ev;
+  } else {
+    all.push(ev);
+  }
+  writeJsonFile(EXAM_EVENTS_FILE, all);
+}
+
+// ===========================================================================
+// 13. REVISION SCHEDULES STORE
+// ===========================================================================
+
+const REVISIONS_FILE = "revision_schedules.json";
+
+export async function getStoredRevisionSchedules(studentId: string): Promise<RevisionSchedule[]> {
+  const all = readJsonFile<RevisionSchedule[]>(REVISIONS_FILE, []);
+  return all.filter((r) => r.student_id === studentId);
+}
+
+export async function saveStoredRevisionSchedule(rev: RevisionSchedule): Promise<void> {
+  const all = readJsonFile<RevisionSchedule[]>(REVISIONS_FILE, []);
+  const idx = all.findIndex((item) => item.id === rev.id);
+  if (idx >= 0) {
+    all[idx] = rev;
+  } else {
+    all.push(rev);
+  }
+  writeJsonFile(REVISIONS_FILE, all);
+}
+
+export async function updateStoredRevisionSchedule(
+  revId: string,
+  studentId: string,
+  updates: Partial<RevisionSchedule>
+): Promise<void> {
+  const all = readJsonFile<RevisionSchedule[]>(REVISIONS_FILE, []);
+  const idx = all.findIndex((r) => r.id === revId && r.student_id === studentId);
+  if (idx >= 0) {
+    all[idx] = { ...all[idx], ...updates, updated_at: new Date().toISOString() };
+    writeJsonFile(REVISIONS_FILE, all);
+  }
+}
+
+// ===========================================================================
+// 14. PRACTICE SESSIONS STORE
+// ===========================================================================
+
+const PRACTICE_SESSIONS_FILE = "practice_sessions.json";
+
+export async function getStoredPracticeSessions(studentId?: string): Promise<PracticeSession[]> {
+  const all = readJsonFile<PracticeSession[]>(PRACTICE_SESSIONS_FILE, []);
+  if (studentId) {
+    return all.filter((s) => s.student_id === studentId);
+  }
+  return all;
+}
+
+export async function saveStoredPracticeSession(session: PracticeSession): Promise<void> {
+  const all = readJsonFile<PracticeSession[]>(PRACTICE_SESSIONS_FILE, []);
+  const idx = all.findIndex((s) => s.id === session.id);
+  if (idx >= 0) {
+    all[idx] = session;
+  } else {
+    all.push(session);
+  }
+  writeJsonFile(PRACTICE_SESSIONS_FILE, all);
 }

@@ -13,7 +13,12 @@ import {
   normalizeQuestionStem,
   type ExtractedQuestionItem,
 } from "@/lib/ai/bulk-extractor";
-import type { OptionLabel, DifficultyLevel } from "@/lib/types";
+import {
+  saveStoredPersonalQuestion,
+  saveStoredCustomExam,
+  saveStoredEnrollment,
+} from "@/lib/data/local-store";
+import type { OptionLabel, DifficultyLevel, Question, Exam } from "@/lib/types";
 
 export interface FileProcessingSummary {
   fileName: string;
@@ -199,8 +204,9 @@ export async function saveImportedQuestionsAction(
     const chapterId = q.chapterId || null;
     const topicId = q.topicId || null;
 
+    let questionId = `q-import-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     try {
-      // 1. Insert question record
+      // 1. Insert question record into Supabase
       const { data: qData, error: qError } = await supabase
         .from("questions")
         .insert({
@@ -222,43 +228,76 @@ export async function saveImportedQuestionsAction(
         .select("id")
         .single();
 
-      if (qError || !qData) {
-        console.warn("Question insert fallback:", qError?.message);
-        savedCount++;
-        continue;
+      if (!qError && qData?.id) {
+        questionId = qData.id;
+
+        // 2. Insert 4 options
+        await supabase.from("question_options").insert([
+          { question_id: questionId, option_label: "A", option_text: q.options.A || "Option A", order_index: 1 },
+          { question_id: questionId, option_label: "B", option_text: q.options.B || "Option B", order_index: 2 },
+          { question_id: questionId, option_label: "C", option_text: q.options.C || "Option C", order_index: 3 },
+          { question_id: questionId, option_label: "D", option_text: q.options.D || "Option D", order_index: 4 },
+        ]);
+
+        // 3. Insert secure answer key
+        await supabase.from("question_answer_keys").insert({
+          question_id: questionId,
+          correct_option: q.correctOption,
+          explanation: q.explanation || (q.isVerifiedAnswer ? "Verified from source answer key." : "AI suggested answer."),
+        });
+
+        // 4. If target exam selected, link mapping
+        if (targetExamId) {
+          await supabase.from("question_exam_mappings").insert({
+            question_id: questionId,
+            exam_id: targetExamId,
+            is_verified_pyq: q.isVerifiedAnswer,
+          });
+        }
       }
+    } catch (err: any) {
+      console.warn("Save question item DB fallback:", err?.message);
+    }
 
-      const questionId = qData.id;
-
-      // 2. Insert 4 options
-      await supabase.from("question_options").insert([
-        { question_id: questionId, option_label: "A", option_text: q.options.A || "Option A", order_index: 1 },
-        { question_id: questionId, option_label: "B", option_text: q.options.B || "Option B", order_index: 2 },
-        { question_id: questionId, option_label: "C", option_text: q.options.C || "Option C", order_index: 3 },
-        { question_id: questionId, option_label: "D", option_text: q.options.D || "Option D", order_index: 4 },
-      ]);
-
-      // 3. Insert secure answer key
-      await supabase.from("question_answer_keys").insert({
+    // Always persist to local personal questions store
+    const localQ: Question = {
+      id: questionId,
+      bank_id: null,
+      question_text: q.questionText,
+      subject_id: subjectId,
+      chapter_id: chapterId,
+      topic_id: topicId,
+      difficulty: q.difficulty || "Medium",
+      source_type: q.isConvertedFromNonMCQ
+        ? "AI Generated"
+        : q.hasSourceAnswerKey
+        ? "Previous Year Question"
+        : "CSV Import",
+      pyq_exam_name: null,
+      pyq_year: null,
+      source_reference: `${q.sourceFileName}${q.sourcePageNumber ? ` (Page ${q.sourcePageNumber})` : ""}`,
+      status: "Published",
+      is_personal: true,
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      options: [
+        { id: `opt-${questionId}-A`, question_id: questionId, option_label: "A", option_text: q.options.A || "Option A", order_index: 1, created_at: new Date().toISOString() },
+        { id: `opt-${questionId}-B`, question_id: questionId, option_label: "B", option_text: q.options.B || "Option B", order_index: 2, created_at: new Date().toISOString() },
+        { id: `opt-${questionId}-C`, question_id: questionId, option_label: "C", option_text: q.options.C || "Option C", order_index: 3, created_at: new Date().toISOString() },
+        { id: `opt-${questionId}-D`, question_id: questionId, option_label: "D", option_text: q.options.D || "Option D", order_index: 4, created_at: new Date().toISOString() },
+      ],
+      answer_key: {
+        id: `key-${questionId}`,
         question_id: questionId,
         correct_option: q.correctOption,
         explanation: q.explanation || (q.isVerifiedAnswer ? "Verified from source answer key." : "AI suggested answer."),
-      });
-
-      // 4. If target exam selected, link mapping
-      if (targetExamId) {
-        await supabase.from("question_exam_mappings").insert({
-          question_id: questionId,
-          exam_id: targetExamId,
-          is_verified_pyq: q.isVerifiedAnswer,
-        });
-      }
-
-      savedCount++;
-    } catch (err: any) {
-      console.warn("Save question item failed:", err?.message);
-      savedCount++;
-    }
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    };
+    await saveStoredPersonalQuestion(localQ);
+    savedCount++;
   }
 
   revalidatePath("/question-bank");
@@ -339,6 +378,30 @@ export async function createExamFromQuestionsAction(
         target_date: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
       });
     } catch {}
+
+    // Always save custom exam and enrollment in local resilient store
+    const localExam: Exam = {
+      id: newExamId,
+      name: config.title,
+      code: examCode,
+      category: config.category || "Personal Mock Test",
+      sub_category: "Custom Mock Test",
+      description: `Custom MCQ examination created by owner with ${config.questionIds.length} questions.`,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    await saveStoredCustomExam(localExam);
+    await saveStoredEnrollment({
+      id: `enroll-${newExamId}`,
+      student_id: user.id,
+      exam_id: newExamId,
+      priority: 1,
+      target_date: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
+      notes: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
 
     revalidatePath("/examinations");
     revalidatePath("/online-exams");

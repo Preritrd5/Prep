@@ -107,8 +107,9 @@ export default function PersonalBanksClient({
       if (res.error) {
         setMsg({ type: "error", text: res.error });
       } else {
+        const qId = res.questionId || `q-personal-${Date.now()}`;
         const newQ: Question = {
-          id: res.questionId,
+          id: qId,
           bank_id: selectedBankId,
           question_text: qText,
           subject_id: qSubjectId || null,
@@ -125,10 +126,10 @@ export default function PersonalBanksClient({
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           options: [
-            { id: "1", question_id: res.questionId, option_label: "A", option_text: optA, order_index: 1, created_at: "" },
-            { id: "2", question_id: res.questionId, option_label: "B", option_text: optB, order_index: 2, created_at: "" },
-            { id: "3", question_id: res.questionId, option_label: "C", option_text: optC, order_index: 3, created_at: "" },
-            { id: "4", question_id: res.questionId, option_label: "D", option_text: optD, order_index: 4, created_at: "" },
+            { id: "1", question_id: qId, option_label: "A", option_text: optA, order_index: 1, created_at: new Date().toISOString() },
+            { id: "2", question_id: qId, option_label: "B", option_text: optB, order_index: 2, created_at: new Date().toISOString() },
+            { id: "3", question_id: qId, option_label: "C", option_text: optC, order_index: 3, created_at: new Date().toISOString() },
+            { id: "4", question_id: qId, option_label: "D", option_text: optD, order_index: 4, created_at: new Date().toISOString() },
           ],
         };
         setQuestions([newQ, ...questions]);

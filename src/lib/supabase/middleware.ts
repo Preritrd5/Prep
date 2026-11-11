@@ -42,7 +42,7 @@ export async function updateSession(request: NextRequest) {
     "/student/assistant": "/assistant",
     "/student/revisions": "/revisions",
     "/student/analytics": "/analytics",
-    "/student/reports": "/analytics",
+    "/student/reports": "/reports",
     "/student/notifications": "/notifications",
     "/admin": "/dashboard",
     "/admin/dashboard": "/dashboard",
