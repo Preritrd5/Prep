@@ -1,11 +1,12 @@
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getExamScheduleEvents, getAllExams } from "@/lib/data/syllabus";
 import AppLayout from "@/components/layout/AppLayout";
+import AdminExamsNavTabs from "@/components/admin/AdminExamsNavTabs";
 import AdminEventsClient from "./AdminEventsClient";
 import { PageHeader } from "@/components/ui/page-header";
 
 export default async function AdminEventsPage() {
-  const { profile } = await requireRole("admin");
+  const { profile } = await requireOwner();
 
   const [events, exams] = await Promise.all([
     getExamScheduleEvents(),
@@ -22,6 +23,8 @@ export default async function AdminEventsPage() {
           { label: "Official Events" },
         ]}
       />
+
+      <AdminExamsNavTabs />
 
       <AdminEventsClient events={events} exams={exams} />
     </AppLayout>

@@ -44,9 +44,9 @@ export async function createStudyTaskAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/tasks");
-  revalidatePath("/student/calendar");
-  revalidatePath("/student/dashboard");
+  revalidatePath("/tasks");
+  revalidatePath("/calendar");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
@@ -76,9 +76,9 @@ export async function toggleTaskStatusAction(taskId: string, newStatus: TaskStat
     return { error: error.message };
   }
 
-  revalidatePath("/student/tasks");
-  revalidatePath("/student/calendar");
-  revalidatePath("/student/dashboard");
+  revalidatePath("/tasks");
+  revalidatePath("/calendar");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
@@ -97,8 +97,8 @@ export async function deleteStudyTaskAction(taskId: string) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/tasks");
-  revalidatePath("/student/calendar");
+  revalidatePath("/tasks");
+  revalidatePath("/calendar");
   return { success: true };
 }
 
@@ -188,9 +188,9 @@ export async function carryForwardIncompleteTasksAction() {
     .in("id", taskIdsToMark)
     .eq("student_id", user.id);
 
-  revalidatePath("/student/tasks");
-  revalidatePath("/student/calendar");
-  revalidatePath("/student/dashboard");
+  revalidatePath("/tasks");
+  revalidatePath("/calendar");
+  revalidatePath("/dashboard");
 
   return {
     success: true,
@@ -234,8 +234,8 @@ export async function createDailyRoutineAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/routine");
-  revalidatePath("/student/dashboard");
+  revalidatePath("/routine");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
@@ -254,7 +254,7 @@ export async function deleteDailyRoutineAction(routineId: string) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/routine");
+  revalidatePath("/routine");
   return { success: true };
 }
 
@@ -288,7 +288,7 @@ export async function updateStudyPreferencesAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/routine");
-  revalidatePath("/student/planner");
+  revalidatePath("/routine");
+  revalidatePath("/study-planner");
   return { success: true };
 }

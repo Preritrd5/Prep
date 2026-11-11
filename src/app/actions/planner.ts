@@ -172,8 +172,8 @@ export async function saveGeneratedPlanAction(planItemsJson: string) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/tasks");
-  revalidatePath("/student/calendar");
-  revalidatePath("/student/dashboard");
+  revalidatePath("/tasks");
+  revalidatePath("/calendar");
+  revalidatePath("/dashboard");
   return { success: true, count: newTasks.length };
 }

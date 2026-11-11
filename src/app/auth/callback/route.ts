@@ -4,33 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Determine user role and redirect to dashboard
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        const role = (profile as { role?: string } | null)?.role;
-
-        if (role === "admin") {
-          return NextResponse.redirect(`${origin}/admin/dashboard`);
-        }
-        return NextResponse.redirect(`${origin}/student/dashboard`);
-      }
-
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${origin}/dashboard`);
     }
   }
 

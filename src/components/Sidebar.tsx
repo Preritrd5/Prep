@@ -10,7 +10,6 @@ import {
   Calendar as CalendarIcon,
   FileQuestion,
   Layers,
-  User,
   ChevronLeft,
   ChevronRight,
   X,
@@ -21,26 +20,19 @@ import {
   FileText,
   Upload,
   Bookmark,
-  AlertCircle,
-  FolderPlus,
-  History,
   Award,
   Play,
-  Activity,
   BarChart3,
   Bell,
-  Download,
-  ShieldAlert,
   GraduationCap,
+  Plus,
   ShieldCheck,
 } from "lucide-react";
-import type { UserRole } from "@/lib/types";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
-  role: UserRole;
   className?: string;
 }
 
@@ -57,7 +49,7 @@ interface NavSection {
   items: NavItem[];
 }
 
-export default function Sidebar({ role, className }: SidebarProps) {
+export default function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
   const { isCollapsed, isMobileOpen, toggleSidebar, closeMobileSidebar } =
     useSidebar();
@@ -76,286 +68,163 @@ export default function Sidebar({ role, className }: SidebarProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isMobileOpen, closeMobileSidebar]);
 
-  // STUDENT NAVIGATION GROUPS
-  const studentSections: NavSection[] = [
+  // PREPTRACK PERSONAL WORKSPACE NAVIGATION
+  const sections: NavSection[] = [
     {
-      title: "Overview",
+      title: "Dashboard",
       items: [
         {
           name: "Dashboard",
-          href: "/student/dashboard",
+          href: "/dashboard",
           icon: LayoutDashboard,
-          active: pathname === "/student/dashboard",
-        },
-        {
-          name: "Performance Analytics",
-          href: "/student/analytics",
-          icon: BarChart3,
-          active: pathname === "/student/analytics",
-        },
-        {
-          name: "Preparation Reports",
-          href: "/student/reports",
-          icon: FileText,
-          active: pathname === "/student/reports",
+          active: pathname === "/dashboard" || pathname === "/student/dashboard",
         },
       ],
     },
     {
-      title: "AI & Revisions",
-      items: [
-        {
-          name: "AI Study Assistant",
-          href: "/student/assistant",
-          icon: Sparkles,
-          active: pathname === "/student/assistant",
-        },
-        {
-          name: "Spaced Revisions",
-          href: "/student/revisions",
-          icon: RotateCcw,
-          active: pathname === "/student/revisions",
-        },
-      ],
-    },
-    {
-      title: "Practice & CBT",
-      items: [
-        {
-          name: "Online Mock Tests",
-          href: "/student/exams/online",
-          icon: Play,
-          active:
-            pathname.startsWith("/student/exams/online") &&
-            !pathname.includes("/history"),
-        },
-        {
-          name: "Test Attempts History",
-          href: "/student/exams/online/history",
-          icon: Award,
-          active: pathname === "/student/exams/online/history",
-        },
-        {
-          name: "Topic Practice",
-          href: "/student/practice/topic",
-          icon: CheckSquare,
-          active: pathname === "/student/practice/topic",
-        },
-        {
-          name: "Subject Practice",
-          href: "/student/practice/subject",
-          icon: Layers,
-          active: pathname === "/student/practice/subject",
-        },
-        {
-          name: "Exam Practice",
-          href: "/student/practice/exam",
-          icon: Award,
-          active: pathname === "/student/practice/exam",
-        },
-        {
-          name: "PYQ Archive",
-          href: "/student/practice/pyq",
-          icon: FileQuestion,
-          active: pathname === "/student/practice/pyq",
-        },
-        {
-          name: "Saved Bookmarks",
-          href: "/student/practice/bookmarks",
-          icon: Bookmark,
-          active: pathname === "/student/practice/bookmarks",
-        },
-        {
-          name: "Mistake Notebook",
-          href: "/student/practice/incorrect",
-          icon: AlertCircle,
-          active: pathname === "/student/practice/incorrect",
-        },
-        {
-          name: "Private Banks",
-          href: "/student/practice/banks",
-          icon: FolderPlus,
-          active: pathname === "/student/practice/banks",
-        },
-        {
-          name: "Practice History",
-          href: "/student/practice/history",
-          icon: History,
-          active: pathname === "/student/practice/history",
-        },
-      ],
-    },
-    {
-      title: "Academics & Schedule",
+      title: "My Preparation",
       items: [
         {
           name: "My Examinations",
-          href: "/student/exams",
+          href: "/examinations",
           icon: BookOpen,
-          active: pathname === "/student/exams",
+          active: pathname === "/examinations" || pathname === "/student/exams",
         },
         {
           name: "Syllabus Tracker",
-          href: "/student/syllabus",
+          href: "/syllabus",
           icon: Layers,
-          active: pathname.startsWith("/student/syllabus"),
+          active: pathname.startsWith("/syllabus") || pathname.startsWith("/student/syllabus"),
         },
         {
-          name: "Daily Routine",
-          href: "/student/routine",
+          name: "Daily Routine & Tasks",
+          href: "/routine",
           icon: Clock,
-          active: pathname === "/student/routine",
-        },
-        {
-          name: "Study Tasks",
-          href: "/student/tasks",
-          icon: CheckSquare,
-          active: pathname.startsWith("/student/tasks"),
+          active:
+            pathname === "/routine" ||
+            pathname.startsWith("/tasks") ||
+            pathname === "/student/routine" ||
+            pathname.startsWith("/student/tasks"),
         },
         {
           name: "Study Planner",
-          href: "/student/planner",
+          href: "/study-planner",
           icon: CalendarDays,
-          active: pathname === "/student/planner",
+          active: pathname.startsWith("/study-planner") || pathname.startsWith("/student/planner"),
         },
         {
-          name: "Calendar",
-          href: "/student/calendar",
+          name: "Calendar & Exam Dates",
+          href: "/calendar",
           icon: CalendarIcon,
-          active: pathname === "/student/calendar",
+          active:
+            pathname.startsWith("/calendar") ||
+            pathname.startsWith("/student/calendar"),
         },
       ],
     },
     {
-      title: "System & Account",
+      title: "Practice & Exams",
       items: [
         {
-          name: "Notification Center",
-          href: "/student/notifications",
-          icon: Bell,
-          active: pathname.startsWith("/student/notifications"),
+          name: "MCQ Practice",
+          href: "/practice",
+          icon: CheckSquare,
+          active:
+            pathname === "/practice" ||
+            pathname.startsWith("/practice/topic") ||
+            pathname.startsWith("/practice/subject") ||
+            pathname.startsWith("/practice/exam") ||
+            pathname.startsWith("/practice/pyq") ||
+            pathname.startsWith("/practice/history") ||
+            pathname.startsWith("/student/practice"),
         },
         {
-          name: "Data Export",
-          href: "/student/export",
-          icon: Download,
-          active: pathname === "/student/export",
+          name: "My Question Bank",
+          href: "/question-bank",
+          icon: FileQuestion,
+          active:
+            pathname === "/question-bank" ||
+            pathname === "/student/questions",
         },
         {
-          name: "Account Profile",
-          href: "/profile",
-          icon: User,
-          active: pathname === "/profile",
-        },
-      ],
-    },
-  ];
-
-  // ADMIN NAVIGATION GROUPS
-  const adminSections: NavSection[] = [
-    {
-      title: "Overview & Intelligence",
-      items: [
-        {
-          name: "Platform Overview",
-          href: "/admin/dashboard",
-          icon: LayoutDashboard,
-          active: pathname === "/admin/dashboard",
+          name: "Bulk Question Import",
+          href: "/question-import",
+          icon: Upload,
+          active:
+            pathname.startsWith("/question-import") ||
+            pathname.startsWith("/student/questions/import"),
         },
         {
-          name: "Platform Analytics",
-          href: "/admin/analytics",
-          icon: BarChart3,
-          active: pathname === "/admin/analytics",
+          name: "Create MCQ Examination",
+          href: "/online-exams/create",
+          icon: FileText,
+          active:
+            pathname === "/online-exams/create" ||
+            pathname === "/student/exams/create",
         },
-        {
-          name: "Content Quality",
-          href: "/admin/questions/quality",
-          icon: ShieldAlert,
-          active: pathname === "/admin/questions/quality",
-        },
-        {
-          name: "System Audit Logs",
-          href: "/admin/audit-logs",
-          icon: History,
-          active: pathname === "/admin/audit-logs",
-        },
-      ],
-    },
-    {
-      title: "Examinations & CBT Engine",
-      items: [
         {
           name: "Online Mock Tests",
-          href: "/admin/exams/manage",
+          href: "/online-exams",
           icon: Play,
           active:
-            pathname.startsWith("/admin/exams/manage") ||
-            pathname.startsWith("/admin/exams/create"),
+            (pathname.startsWith("/online-exams") && pathname !== "/online-exams/create") ||
+            pathname.startsWith("/student/exams/online"),
         },
         {
-          name: "Monitor Live Attempts",
-          href: "/admin/exams/monitor",
-          icon: Activity,
-          active: pathname === "/admin/exams/monitor",
-        },
-        {
-          name: "Exam Management",
-          href: "/admin/exams",
-          icon: BookOpen,
-          active: pathname === "/admin/exams",
-        },
-        {
-          name: "Official Exam Events",
-          href: "/admin/events",
-          icon: CalendarDays,
-          active: pathname === "/admin/events",
+          name: "My Attempts & Results",
+          href: "/attempts",
+          icon: Award,
+          active:
+            pathname.startsWith("/attempts") ||
+            pathname.startsWith("/results") ||
+            pathname.startsWith("/student/exams/online/history"),
         },
       ],
     },
     {
-      title: "Question Bank Management",
+      title: "AI & Revision",
       items: [
         {
-          name: "Question Bank",
-          href: "/admin/questions",
-          icon: FileQuestion,
-          active: pathname === "/admin/questions",
-        },
-        {
-          name: "Bulk Import",
-          href: "/admin/questions/import",
-          icon: Upload,
-          active: pathname === "/admin/questions/import",
-        },
-        {
-          name: "AI MCQ Generator",
-          href: "/admin/questions/ai",
+          name: "AI Study Assistant",
+          href: "/assistant",
           icon: Sparkles,
-          active: pathname === "/admin/questions/ai",
+          active: pathname.startsWith("/assistant") || pathname.startsWith("/student/assistant"),
+          badge: "AI",
         },
         {
-          name: "Review Queue",
-          href: "/admin/questions/review",
-          icon: Clock,
-          active: pathname === "/admin/questions/review",
+          name: "AI Question Generator",
+          href: "/question-bank/ai",
+          icon: Plus,
+          active:
+            pathname === "/question-bank/ai" ||
+            pathname === "/student/questions/ai",
+        },
+        {
+          name: "Revision Manager",
+          href: "/revisions",
+          icon: RotateCcw,
+          active: pathname.startsWith("/revisions") || pathname.startsWith("/student/revisions"),
         },
       ],
     },
     {
-      title: "Curriculum & Syllabus",
+      title: "Progress",
       items: [
         {
-          name: "Subject Directory",
-          href: "/admin/subjects",
-          icon: Layers,
-          active: pathname === "/admin/subjects",
+          name: "Performance Analytics",
+          href: "/analytics",
+          icon: BarChart3,
+          active: pathname.startsWith("/analytics") || pathname.startsWith("/student/analytics"),
         },
         {
-          name: "Syllabus & Topics",
-          href: "/admin/syllabus",
-          icon: FileText,
-          active: pathname === "/admin/syllabus",
+          name: "Bookmarks & Incorrect Questions",
+          href: "/practice/bookmarks",
+          icon: Bookmark,
+          active:
+            pathname.startsWith("/practice/bookmarks") ||
+            pathname.startsWith("/practice/incorrect") ||
+            pathname.startsWith("/student/practice/bookmarks") ||
+            pathname.startsWith("/student/practice/incorrect"),
         },
       ],
     },
@@ -363,81 +232,79 @@ export default function Sidebar({ role, className }: SidebarProps) {
       title: "Account",
       items: [
         {
-          name: "Account Profile",
+          name: "Profile & Settings",
           href: "/profile",
-          icon: User,
-          active: pathname === "/profile",
+          icon: ShieldCheck,
+          active: pathname.startsWith("/profile"),
         },
       ],
     },
   ];
 
-  const sections = role === "admin" ? adminSections : studentSections;
-
   return (
     <>
       {/* ---------------------------------------------------- */}
-      {/* Mobile Drawer Backdrop */}
+      {/* Mobile Slide-Over Backdrop Overlay */}
       {/* ---------------------------------------------------- */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs transition-opacity duration-200 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-none transition-opacity lg:hidden"
           onClick={closeMobileSidebar}
           aria-hidden="true"
         />
       )}
 
       {/* ---------------------------------------------------- */}
-      {/* Mobile Slide-in Drawer */}
+      {/* Mobile Slide-Over Navigation Drawer */}
       {/* ---------------------------------------------------- */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-card border-r border-border shadow-2xl transition-transform duration-300 ease-in-out lg:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-border bg-card transition-transform duration-200 ease-in-out lg:hidden shadow-xl",
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
         role="dialog"
         aria-modal="true"
-        aria-label="Navigation Menu"
+        aria-label="Mobile navigation drawer"
       >
-        {/* Drawer Header with Brand */}
-        <div className="flex h-16 items-center justify-between border-b border-border/80 px-4">
+        {/* Mobile Drawer Header */}
+        <div className="flex h-16 items-center justify-between border-b border-border px-4 shrink-0">
           <Link
-            href={role === "admin" ? "/admin/dashboard" : "/student/dashboard"}
-            onClick={closeMobileSidebar}
+            href="/dashboard"
             className="flex items-center gap-2.5"
+            onClick={closeMobileSidebar}
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-sm shadow-primary/25">
-              <GraduationCap className="h-5 w-5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-gradient text-white shadow-xs">
+              <GraduationCap className="h-4 w-4" />
             </div>
-            <div>
-              <span className="text-lg font-bold tracking-tight text-text-primary">
+            <div className="flex items-baseline">
+              <span className="font-heading text-base font-bold text-text-primary">
                 Prep<span className="text-primary">Track</span>
               </span>
-              <span className="ml-1.5 text-[10px] font-semibold text-text-muted px-1.5 py-0.5 rounded bg-background-secondary border border-border">
-                {role === "admin" ? "Admin" : "Student"}
+              <span className="ml-1.5 text-[9px] font-mono font-bold text-primary px-1.5 py-0.2 rounded-full bg-[var(--color-primary-subtle)] border border-primary/20">
+                Personal
               </span>
             </div>
           </Link>
           <button
             type="button"
             onClick={closeMobileSidebar}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl p-2 text-text-muted hover:bg-background-secondary hover:text-text-primary transition focus:outline-none focus:ring-2 focus:ring-primary/20"
-            aria-label="Close navigation menu"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-hover-surface hover:text-text-primary transition"
+            aria-label="Close navigation drawer"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Drawer Navigation List */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+        {/* Mobile Drawer Nav Groups List */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {sections.map((section) => (
             <div key={section.title} className="space-y-1">
-              <div className="px-2 pb-1 pt-1">
-                <span className="inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary font-mono">
+              <div className="px-2 pb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted font-mono">
                   {section.title}
                 </span>
               </div>
-              <div className="space-y-0.5 pt-0.5">
+              <div className="space-y-0.5">
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -446,154 +313,17 @@ export default function Sidebar({ role, className }: SidebarProps) {
                       href={item.href}
                       onClick={closeMobileSidebar}
                       className={cn(
-                        "min-h-[40px] flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                        "flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors",
                         item.active
-                          ? "bg-[var(--color-primary-subtle)] text-primary font-semibold"
+                          ? "bg-[var(--color-primary-subtle)] text-primary font-semibold border-l-2 border-primary"
                           : "text-text-secondary hover:bg-hover-surface hover:text-text-primary"
                       )}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <Icon
                           className={cn(
-                            "h-4 w-4 shrink-0 transition-colors",
+                            "h-4 w-4 shrink-0",
                             item.active ? "text-primary" : "text-text-muted"
-                          )}
-                        />
-                        <span className="truncate">{item.name}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[var(--color-primary-subtle)] text-primary border border-primary/20">
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Mobile Drawer Footer */}
-        <div className="border-t border-border bg-card p-3 shrink-0">
-          <div className="flex items-center gap-2 text-[11px] text-text-secondary px-1">
-            <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-            <span className="leading-tight font-medium truncate">
-              {role === "admin" ? "Admin Oversight Active" : "Student Preparation Space"}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ---------------------------------------------------- */}
-      {/* Desktop Persistent Sidebar */}
-      {/* ---------------------------------------------------- */}
-      <aside
-        className={cn(
-          "hidden lg:flex flex-col border-r border-border bg-card shrink-0 transition-all duration-200 ease-in-out sticky top-16 h-[calc(100vh-4rem)] select-none",
-          isCollapsed ? "w-20" : "w-64",
-          className
-        )}
-        aria-label="Sidebar navigation"
-      >
-        {/* Sidebar Header / Brand Sub-header */}
-        <div className="flex h-12 items-center justify-between border-b border-border px-3.5 shrink-0">
-          {!isCollapsed ? (
-            <div className="flex items-center gap-1.5 overflow-hidden">
-              <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-text-muted truncate">
-                {role === "admin" ? "Admin Portal" : "Student Portal"}
-              </span>
-            </div>
-          ) : (
-            <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-primary-subtle)] text-primary">
-              {role === "admin" ? (
-                <ShieldCheck className="h-4 w-4" />
-              ) : (
-                <GraduationCap className="h-4 w-4" />
-              )}
-            </div>
-          )}
-
-          {/* Desktop Collapse / Expand Toggle */}
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            className={cn(
-              "rounded-lg p-1.5 text-text-muted hover:bg-hover-surface hover:text-text-primary transition focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer",
-              isCollapsed && "mx-auto"
-            )}
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </button>
-        </div>
-
-        {/* Desktop Navigation Scroll Container */}
-        <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-3.5">
-          {sections.map((section, idx) => (
-            <div key={section.title} className="space-y-1">
-              {/* Section Header or Divider */}
-              {!isCollapsed ? (
-                <div className="px-2 pb-0.5 pt-1">
-                  <span className="inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary font-mono">
-                    {section.title}
-                  </span>
-                </div>
-              ) : (
-                idx > 0 && <div className="border-t border-border my-2 mx-1" />
-              )}
-
-              {/* Items in Section */}
-              <div className="space-y-0.5 pt-0.5">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-
-                  if (isCollapsed) {
-                    return (
-                      <Tooltip
-                        key={item.href}
-                        content={item.name}
-                        side="right"
-                      >
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex h-9 w-9 items-center justify-center rounded-lg transition duration-150 mx-auto",
-                            item.active
-                              ? "bg-primary text-white shadow-xs"
-                              : "text-text-muted hover:bg-hover-surface hover:text-text-primary"
-                          )}
-                          aria-label={item.name}
-                        >
-                          <Icon className="h-4 w-4 shrink-0" />
-                        </Link>
-                      </Tooltip>
-                    );
-                  }
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "group flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors select-none",
-                        item.active
-                          ? "bg-[var(--color-primary-subtle)] text-primary font-semibold"
-                          : "text-text-secondary hover:bg-hover-surface hover:text-text-primary"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon
-                          className={cn(
-                            "h-4 w-4 shrink-0 transition-colors",
-                            item.active
-                              ? "text-primary"
-                              : "text-text-muted group-hover:text-text-primary"
                           )}
                         />
                         <span className="truncate">{item.name}</span>
@@ -611,17 +341,150 @@ export default function Sidebar({ role, className }: SidebarProps) {
           ))}
         </div>
 
-        {/* Desktop Sidebar Footer */}
-        {!isCollapsed && (
-          <div className="border-t border-border bg-card p-3 shrink-0">
-            <div className="flex items-center gap-2 text-[11px] text-text-secondary px-1">
-              <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-              <span className="leading-tight font-medium truncate">
-                {role === "admin" ? "Admin Oversight Active" : "Student Preparation Space"}
+        {/* Mobile Drawer Footer */}
+        <div className="border-t border-border bg-card p-3 shrink-0">
+          <div className="flex items-center gap-2 text-[11px] text-text-secondary px-1">
+            <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+            <span className="leading-tight font-medium truncate">
+              Personal Preparation Workspace
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ---------------------------------------------------- */}
+      {/* Desktop Persistent Sidebar */}
+      {/* ---------------------------------------------------- */}
+      <aside
+        className={cn(
+          "hidden lg:flex flex-col border-r border-border bg-card shrink-0 transition-all duration-200 ease-in-out sticky top-16 h-[calc(100vh-4rem)] select-none",
+          isCollapsed ? "w-16" : "w-60",
+          className
+        )}
+        aria-label="Sidebar navigation"
+      >
+        {/* Sidebar Header / Brand Sub-header */}
+        <div className="flex h-12 items-center justify-between border-b border-border px-3.5 shrink-0">
+          {!isCollapsed ? (
+            <div className="flex items-center justify-between w-full overflow-hidden pr-1">
+              <div className="flex flex-col min-w-0">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-text-primary truncate">
+                  Personal Workspace
+                </span>
+              </div>
+              <span className="text-[9px] font-mono font-bold text-primary px-1.5 py-0.5 rounded-full bg-[var(--color-primary-subtle)] border border-primary/20 shrink-0">
+                Personal
               </span>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-primary-subtle)] text-primary">
+              <GraduationCap className="h-4 w-4" />
+            </div>
+          )}
+
+          {/* Desktop Collapse / Expand Toggle */}
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-text-muted hover:bg-hover-surface hover:text-text-primary transition shrink-0 cursor-pointer"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronLeft className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
+
+        {/* Desktop Navigation Groups List */}
+        <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3.5">
+          {sections.map((section) => (
+            <div key={section.title} className="space-y-0.5">
+              {!isCollapsed ? (
+                <div className="px-2 pb-1 pt-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted font-mono">
+                    {section.title}
+                  </span>
+                </div>
+              ) : (
+                <div className="my-1.5 border-t border-border/60 mx-1" />
+              )}
+
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+
+                  if (isCollapsed) {
+                    return (
+                      <Tooltip key={item.href} content={item.name} side="right">
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "flex h-9 w-9 mx-auto items-center justify-center rounded-lg transition-colors",
+                            item.active
+                              ? "bg-[var(--color-primary-subtle)] text-primary font-semibold border-l-2 border-primary"
+                              : "text-text-secondary hover:bg-hover-surface hover:text-text-primary"
+                          )}
+                          aria-label={item.name}
+                        >
+                          <Icon
+                            className={cn(
+                              "h-4 w-4",
+                              item.active ? "text-primary" : "text-text-muted"
+                            )}
+                          />
+                        </Link>
+                      </Tooltip>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
+                        item.active
+                          ? "bg-[var(--color-primary-subtle)] text-primary font-semibold border-l-2 border-primary"
+                          : "text-text-secondary hover:bg-hover-surface hover:text-text-primary"
+                      )}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Icon
+                          className={cn(
+                            "h-4 w-4 shrink-0 transition-colors",
+                            item.active ? "text-primary" : "text-text-muted"
+                          )}
+                        />
+                        <span className="truncate">{item.name}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded-full bg-[var(--color-primary-subtle)] text-primary border border-primary/20 shrink-0">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop Sidebar Footer */}
+        <div className="border-t border-border bg-card p-2 shrink-0">
+          {!isCollapsed ? (
+            <div className="flex items-center justify-between text-[10px] text-text-muted px-1.5 py-1">
+              <span className="truncate font-mono">Personal Workspace</span>
+              <span className="text-[9px] font-mono text-primary font-bold">OWNER</span>
+            </div>
+          ) : (
+            <div className="mx-auto flex h-6 w-6 items-center justify-center text-text-muted">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+            </div>
+          )}
+        </div>
       </aside>
     </>
   );

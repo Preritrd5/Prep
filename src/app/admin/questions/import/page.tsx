@@ -1,12 +1,13 @@
 import { PageHeader } from "@/components/ui";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getAllExams, getAllSubjects } from "@/lib/data/syllabus";
 import { getImportBatches } from "@/lib/data/questions";
 import AppLayout from "@/components/layout/AppLayout";
+import AdminQuestionsNavTabs from "@/components/admin/AdminQuestionsNavTabs";
 import ImportWizard from "./ImportWizard";
 
 export default async function AdminImportQuestionsPage() {
-  const { profile } = await requireRole("admin");
+  const { profile } = await requireOwner();
 
   const [exams, subjects, recentBatches] = await Promise.all([
     getAllExams(),
@@ -25,6 +26,8 @@ export default async function AdminImportQuestionsPage() {
           { label: "Bulk Import" },
         ]}
       />
+
+      <AdminQuestionsNavTabs />
 
       <ImportWizard exams={exams} subjects={subjects} recentBatches={recentBatches} />
     </AppLayout>

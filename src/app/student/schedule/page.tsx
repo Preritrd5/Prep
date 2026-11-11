@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getStudentExams, getExamScheduleEvents, getAllExams } from "@/lib/data/syllabus";
 import AppLayout from "@/components/layout/AppLayout";
 import {
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function StudentSchedulePage() {
-  const { profile, user } = await requireRole("student");
+  const { profile, user } = await requireOwner();
 
   const [enrolledExams, allExams] = await Promise.all([
     getStudentExams(user.id),

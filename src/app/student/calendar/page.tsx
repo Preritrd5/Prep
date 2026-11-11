@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import {
   getStudentTasks,
   getExamScheduleEvents,
@@ -7,11 +7,12 @@ import {
   getStudentExams,
 } from "@/lib/data/syllabus";
 import AppLayout from "@/components/layout/AppLayout";
+import RoutineNavTabs from "@/components/routine/RoutineNavTabs";
 import CalendarClient from "./CalendarClient";
 import { PageHeader } from "@/components/ui/page-header";
 
 export default async function StudentCalendarPage() {
-  const { profile, user } = await requireRole("student");
+  const { profile, user } = await requireOwner();
 
   const [tasks, enrolledExams, routines, preferences] = await Promise.all([
     getStudentTasks(user.id),
@@ -26,13 +27,16 @@ export default async function StudentCalendarPage() {
   return (
     <AppLayout profile={profile}>
       <PageHeader
-        title="Study Calendar"
+        title="Interactive Study Calendar"
         description="Interactive timeline with daily, weekly, and monthly views combining study tasks, recurring routines, and official examination deadlines."
         breadcrumbs={[
           { label: "Dashboard", href: "/student/dashboard" },
+          { label: "Routine & Tasks", href: "/student/routine" },
           { label: "Calendar" },
         ]}
       />
+
+      <RoutineNavTabs />
 
       <CalendarClient
         tasks={tasks}

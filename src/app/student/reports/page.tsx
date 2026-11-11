@@ -1,10 +1,11 @@
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getStudentPerformanceAnalytics } from "@/lib/data/analytics";
 import AppLayout from "@/components/layout/AppLayout";
+import AnalyticsNavTabs from "@/components/analytics/AnalyticsNavTabs";
 import StudentReportsClient from "./StudentReportsClient";
 
 export default async function StudentReportsPage() {
-  const { profile, user } = await requireRole("student");
+  const { profile, user } = await requireOwner();
 
   const [daily, weekly, monthly, overall] = await Promise.all([
     getStudentPerformanceAnalytics(user.id, "daily"),
@@ -17,6 +18,7 @@ export default async function StudentReportsPage() {
 
   return (
     <AppLayout profile={profile}>
+      <AnalyticsNavTabs />
       <StudentReportsClient
         dailyAnalytics={daily}
         weeklyAnalytics={weekly}

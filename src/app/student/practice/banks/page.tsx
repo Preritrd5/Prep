@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/ui";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getAllSubjects } from "@/lib/data/syllabus";
 import {
   getStudentPersonalBanks,
@@ -7,10 +7,11 @@ import {
   getStudentBookmarks,
 } from "@/lib/data/questions";
 import AppLayout from "@/components/layout/AppLayout";
+import PracticeNavTabs from "@/components/practice/PracticeNavTabs";
 import PersonalBanksClient from "./PersonalBanksClient";
 
 export default async function StudentPersonalBanksPage() {
-  const { user, profile } = await requireRole("student");
+  const { user, profile } = await requireOwner();
 
   const [personalBanks, personalQuestions, subjects, bookmarkedIds] = await Promise.all([
     getStudentPersonalBanks(user.id),
@@ -22,14 +23,16 @@ export default async function StudentPersonalBanksPage() {
   return (
     <AppLayout profile={profile}>
       <PageHeader
-        title="Personal Question Banks"
+        title="MCQ Practice Center — Question Banks"
         description="Create custom question banks and author your own private questions for personalized revision."
         breadcrumbs={[
           { label: "Dashboard", href: "/student/dashboard" },
-          { label: "Practice", href: "/student/practice/banks" },
-          { label: "Personal Banks" },
+          { label: "Practice", href: "/student/practice/topic" },
+          { label: "Question Banks" },
         ]}
       />
+
+      <PracticeNavTabs />
 
       <PersonalBanksClient
         personalBanks={personalBanks}

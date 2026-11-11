@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getExamTemplateById, getStudentAvailableExams } from "@/lib/data/exams-online";
 import AppLayout from "@/components/layout/AppLayout";
 import InstructionsClient from "./InstructionsClient";
@@ -9,7 +9,7 @@ interface PageProps {
 }
 
 export default async function ExamInstructionsPage({ params }: PageProps) {
-  const { user, profile } = await requireRole("student");
+  const { user, profile } = await requireOwner();
   const { id } = await params;
 
   const template = await getExamTemplateById(id);

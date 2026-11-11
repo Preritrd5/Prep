@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { ExamEventType } from "@/lib/types";
 
 export async function adminCreateExamEventAction(formData: FormData) {
-  const { user } = await requireRole("admin");
+  const { user } = await requireOwner();
 
   const examId = formData.get("examId") as string;
   const eventType = formData.get("eventType") as ExamEventType;
@@ -40,13 +40,13 @@ export async function adminCreateExamEventAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/admin/events");
-  revalidatePath("/student/schedule");
+  revalidatePath("/calendar");
+  revalidatePath("/calendar");
   return { success: true };
 }
 
 export async function adminToggleExamEventAction(eventId: string, currentStatus: boolean) {
-  await requireRole("admin");
+  await requireOwner();
 
   const supabase = await createClient();
 
@@ -59,7 +59,7 @@ export async function adminToggleExamEventAction(eventId: string, currentStatus:
     return { error: error.message };
   }
 
-  revalidatePath("/admin/events");
-  revalidatePath("/student/schedule");
+  revalidatePath("/calendar");
+  revalidatePath("/calendar");
   return { success: true };
 }

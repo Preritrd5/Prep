@@ -11,9 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "PrepTrack — Student Preparation & Competitive Examination Platform",
+  title: "PrepTrack — Personal Examination Preparation Workspace",
   description:
-    "Empowering students with structured preparation, real-time tracking, and administrative examination oversight.",
+    "Single-owner personal workspace for competitive examination preparation, hierarchical syllabus tracking, MCQ question banks, and authentic CBT mock tests.",
   icons: {
     icon: "/icon",
     apple: "/icon",

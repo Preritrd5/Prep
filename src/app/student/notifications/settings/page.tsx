@@ -1,10 +1,10 @@
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getStudentNotificationPreferences } from "@/lib/data/analytics";
 import AppLayout from "@/components/layout/AppLayout";
 import NotificationSettingsClient from "./NotificationSettingsClient";
 
 export default async function StudentNotificationSettingsPage() {
-  const { profile, user } = await requireRole("student");
+  const { profile, user } = await requireOwner();
   const prefs = await getStudentNotificationPreferences(user.id);
 
   return (

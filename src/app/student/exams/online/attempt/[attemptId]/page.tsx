@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getStudentAttemptById } from "@/lib/data/exams-online";
 import LiveExamClient from "./LiveExamClient";
 
@@ -8,7 +8,7 @@ interface PageProps {
 }
 
 export default async function LiveExamPage({ params }: PageProps) {
-  const { user } = await requireRole("student");
+  const { user } = await requireOwner();
   const { attemptId } = await params;
 
   const { attempt, questions, answers } = await getStudentAttemptById(attemptId, user.id);

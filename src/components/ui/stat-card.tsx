@@ -44,12 +44,13 @@ export function StatCard({
     renderedIcon = icon;
   } else if (
     typeof icon === "function" ||
-    (typeof icon === "object" && icon !== null && ("render" in icon || "$$typeof" in icon))
+    (typeof icon === "object" && icon !== null)
   ) {
-    const IconComponent = icon as React.ComponentType<{ className?: string }>;
-    renderedIcon = <IconComponent className="h-5 w-5" />;
-  } else if (icon) {
-    renderedIcon = icon as React.ReactNode;
+    try {
+      renderedIcon = React.createElement(icon as any, { className: "h-5 w-5" });
+    } catch {
+      renderedIcon = null;
+    }
   }
 
   return (

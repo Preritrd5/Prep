@@ -100,7 +100,7 @@ export default function PracticeRunner({
   if (!questions || questions.length === 0) {
     return (
       <EmptyState
-        icon={BookOpen}
+        icon={<BookOpen className="h-6 w-6" />}
         title="No Questions Available"
         description="There are currently no published questions matching this specific selection. Try another topic, subject, or check back after an admin publishes new items."
       />

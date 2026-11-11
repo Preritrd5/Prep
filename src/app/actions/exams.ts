@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAuth, requireRole } from "@/lib/auth";
+import { requireAuth, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export async function enrollStudentExamAction(formData: FormData) {
@@ -33,9 +33,9 @@ export async function enrollStudentExamAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/exams");
-  revalidatePath("/student/dashboard");
-  revalidatePath("/student/syllabus");
+  revalidatePath("/examinations");
+  revalidatePath("/dashboard");
+  revalidatePath("/syllabus");
   return { success: true };
 }
 
@@ -59,14 +59,14 @@ export async function removeStudentExamAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/exams");
-  revalidatePath("/student/dashboard");
-  revalidatePath("/student/syllabus");
+  revalidatePath("/examinations");
+  revalidatePath("/dashboard");
+  revalidatePath("/syllabus");
   return { success: true };
 }
 
 export async function adminCreateExamAction(formData: FormData) {
-  await requireRole("admin");
+  await requireOwner();
 
   const name = (formData.get("name") as string)?.trim();
   const code = (formData.get("code") as string)?.trim().toUpperCase();
@@ -93,12 +93,12 @@ export async function adminCreateExamAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/admin/exams");
+  revalidatePath("/examinations");
   return { success: true };
 }
 
 export async function adminToggleExamStatusAction(formData: FormData) {
-  await requireRole("admin");
+  await requireOwner();
 
   const examId = formData.get("examId") as string;
   const currentStatus = formData.get("currentStatus") === "true";
@@ -114,6 +114,6 @@ export async function adminToggleExamStatusAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/admin/exams");
+  revalidatePath("/examinations");
   return { success: true };
 }

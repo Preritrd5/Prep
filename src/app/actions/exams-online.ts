@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAuth, requireRole } from "@/lib/auth";
+import { requireAuth, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -21,7 +21,7 @@ import { FALLBACK_QUESTIONS, FALLBACK_ANSWER_KEYS } from "@/lib/data/questions";
 // ===========================================================================
 
 export async function adminCreateExamTemplateAction(formData: FormData) {
-  const { user } = await requireRole("admin");
+  const { user } = await requireOwner();
 
   const title = ((formData.get("title") as string) || "").trim();
   const description = ((formData.get("description") as string) || "").trim();
@@ -94,9 +94,9 @@ export async function adminCreateExamTemplateAction(formData: FormData) {
       details_json: { title, examCategory, examType, durationMinutes },
     });
 
-    revalidatePath("/admin/exams/manage");
-    revalidatePath("/admin/exams/monitor");
-    revalidatePath("/student/exams/online");
+    revalidatePath("/online-exams");
+    revalidatePath("/online-exams");
+    revalidatePath("/online-exams");
 
     return { success: true, templateId: data.id };
   } catch (err: any) {
@@ -105,7 +105,7 @@ export async function adminCreateExamTemplateAction(formData: FormData) {
 }
 
 export async function adminToggleExamStatusAction(templateId: string, status: ExamTemplateStatus) {
-  const { user } = await requireRole("admin");
+  const { user } = await requireOwner();
   const adminDb = createAdminClient();
 
   const { error } = await adminDb
@@ -124,14 +124,14 @@ export async function adminToggleExamStatusAction(templateId: string, status: Ex
     details_json: { status },
   });
 
-  revalidatePath("/admin/exams/manage");
-  revalidatePath("/admin/exams/monitor");
-  revalidatePath("/student/exams/online");
+  revalidatePath("/online-exams");
+  revalidatePath("/online-exams");
+  revalidatePath("/online-exams");
   return { success: true };
 }
 
 export async function adminDuplicateExamTemplateAction(templateId: string) {
-  const { user } = await requireRole("admin");
+  const { user } = await requireOwner();
   const adminDb = createAdminClient();
 
   // 1. Fetch source template
@@ -218,12 +218,12 @@ export async function adminDuplicateExamTemplateAction(templateId: string) {
     await adminDb.from("exam_question_mappings").insert(clonedMappings);
   }
 
-  revalidatePath("/admin/exams/manage");
+  revalidatePath("/online-exams");
   return { success: true, newTemplateId };
 }
 
 export async function adminReleaseExamResultsAction(templateId: string) {
-  const { user } = await requireRole("admin");
+  const { user } = await requireOwner();
   const adminDb = createAdminClient();
 
   const { error: tErr } = await adminDb
@@ -249,13 +249,13 @@ export async function adminReleaseExamResultsAction(templateId: string) {
     event_type: "RESULTS_RELEASED",
   });
 
-  revalidatePath("/admin/exams/monitor");
-  revalidatePath("/student/exams/online/history");
+  revalidatePath("/online-exams");
+  revalidatePath("/attempts");
   return { success: true };
 }
 
 export async function adminCancelAttemptAction(attemptId: string, reason: string) {
-  const { user } = await requireRole("admin");
+  const { user } = await requireOwner();
   const adminDb = createAdminClient();
 
   const { error } = await adminDb
@@ -272,7 +272,7 @@ export async function adminCancelAttemptAction(attemptId: string, reason: string
     details_json: { reason },
   });
 
-  revalidatePath("/admin/exams/monitor");
+  revalidatePath("/online-exams");
   return { success: true };
 }
 
@@ -472,7 +472,7 @@ export async function studentStartExamAttemptAction(templateId: string) {
     details_json: { attemptNumber, startedAt: now, expiresAt },
   });
 
-  revalidatePath(`/student/exams/online/${template.id}`);
+  revalidatePath(`/online-exams/template.id`);
   return { success: true, attemptId };
 }
 
@@ -567,8 +567,8 @@ export async function studentSubmitExamAttemptAction(attemptId: string) {
     return { error: result.error || "Failed to finalize evaluation." };
   }
 
-  revalidatePath("/student/exams/online/history");
-  revalidatePath(`/student/exams/online/${attempt.template_id}`);
+  revalidatePath("/attempts");
+  revalidatePath(`/online-exams/attempt.template_id`);
 
   return {
     success: true,
@@ -768,8 +768,100 @@ export async function sweepExpiredExamAttempts(): Promise<number> {
 }
 
 export async function adminSweepExpiredAttemptsAction() {
-  await requireRole("admin");
+  await requireOwner();
   const count = await sweepExpiredExamAttempts();
-  revalidatePath("/admin/exams/monitor");
+  revalidatePath("/online-exams");
   return { success: true, count };
+}
+
+/**
+ * PERSONAL EXAMINATION CREATION ACTION (MODULE PRACTICE & EXAMS)
+ * Allows the workspace owner to create full-length mock tests or practice examinations
+ * with custom timing, negative marking, and question blueprints.
+ */
+export async function createPersonalMCQExamAction(input: {
+  title: string;
+  description?: string;
+  examCategory: ExamCategory;
+  examId?: string | null;
+  examType?: OnlineExamType;
+  instructions?: string;
+  durationMinutes: number;
+  totalQuestions: number;
+  totalMarks: number;
+  passingMarks?: number | null;
+  randomizeQuestions: boolean;
+  randomizeOptions: boolean;
+  hasNegativeMarking: boolean;
+  correctMarks: number;
+  negativeMarks: number;
+  selectedQuestionIds?: string[];
+}) {
+  const { user } = await requireOwner();
+  const adminDb = createAdminClient();
+
+  if (!input.title || input.title.trim().length === 0) {
+    return { error: "Please enter an examination title." };
+  }
+
+  const durationMinutes = input.durationMinutes > 0 ? input.durationMinutes : 60;
+  const totalQuestions = (input.selectedQuestionIds && input.selectedQuestionIds.length > 0)
+    ? input.selectedQuestionIds.length
+    : (input.totalQuestions > 0 ? input.totalQuestions : 10);
+  const totalMarks = input.totalMarks > 0 ? input.totalMarks : (totalQuestions * (input.correctMarks || 1));
+
+  try {
+    const { data: template, error } = await adminDb
+      .from("exam_templates")
+      .insert({
+        title: input.title.trim(),
+        description: input.description?.trim() || null,
+        exam_category: input.examCategory || "General Knowledge",
+        exam_id: input.examId || null,
+        exam_type: input.examType || "Full-Length Mock Test",
+        instructions: input.instructions?.trim() || "1. Answer all questions within the allocated time.\n2. Review your answers before submitting.\n3. Negative marking applies for incorrect answers as configured.",
+        duration_minutes: durationMinutes,
+        total_questions: totalQuestions,
+        total_marks: totalMarks,
+        passing_marks: input.passingMarks || Math.round(totalMarks * 0.4),
+        max_attempts: 10,
+        randomize_questions: input.randomizeQuestions ?? true,
+        randomize_options: input.randomizeOptions ?? false,
+        has_negative_marking: input.hasNegativeMarking ?? true,
+        correct_marks: input.correctMarks || 1.0,
+        negative_marks: input.negativeMarks || 0.25,
+        unattempted_marks: 0.0,
+        result_release_policy: "Immediate",
+        results_published: true,
+        status: "Published",
+        created_by: user.id,
+      })
+      .select("id")
+      .single();
+
+    if (error || !template) {
+      return { error: error?.message || "Failed to create examination template." };
+    }
+
+    // Insert question mappings if specific questions selected
+    if (input.selectedQuestionIds && input.selectedQuestionIds.length > 0) {
+      const mappings = input.selectedQuestionIds.map((qId, idx) => ({
+        template_id: template.id,
+        question_id: qId,
+        order_index: idx + 1,
+        marks: input.correctMarks || 1.0,
+        negative_marks: input.negativeMarks || 0.25,
+      }));
+
+      await adminDb.from("exam_question_mappings").insert(mappings);
+    }
+
+    revalidatePath("/online-exams");
+    revalidatePath("/examinations");
+    revalidatePath("/dashboard");
+
+    return { success: true, templateId: template.id };
+  } catch (err: any) {
+    return { error: err?.message || "Failed to create examination." };
+  }
 }

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getAllExams, getStudentExams, getExamSyllabus } from "@/lib/data/syllabus";
 import AppLayout from "@/components/layout/AppLayout";
 import SyllabusClient from "./SyllabusClient";
@@ -11,7 +11,7 @@ interface SyllabusPageProps {
 }
 
 export default async function StudentSyllabusPage({ searchParams }: SyllabusPageProps) {
-  const { profile, user } = await requireRole("student");
+  const { profile, user } = await requireOwner();
   const params = await searchParams;
 
   const [allExams, enrolledExams] = await Promise.all([

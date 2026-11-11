@@ -1,11 +1,12 @@
 import { PageHeader } from "@/components/ui";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getAllExams, getAllSubjects } from "@/lib/data/syllabus";
 import AppLayout from "@/components/layout/AppLayout";
+import AdminQuestionsNavTabs from "@/components/admin/AdminQuestionsNavTabs";
 import QuestionForm from "./QuestionForm";
 
 export default async function CreateQuestionPage() {
-  const { profile } = await requireRole("admin");
+  const { profile } = await requireOwner();
 
   const [exams, subjects] = await Promise.all([
     getAllExams(),
@@ -23,6 +24,8 @@ export default async function CreateQuestionPage() {
           { label: "Create Question" },
         ]}
       />
+
+      <AdminQuestionsNavTabs />
 
       <QuestionForm exams={exams} subjects={subjects} />
     </AppLayout>

@@ -1,10 +1,10 @@
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getStudentExportData } from "@/lib/data/analytics";
 import AppLayout from "@/components/layout/AppLayout";
 import StudentExportClient from "./StudentExportClient";
 
 export default async function StudentExportPage() {
-  const { profile, user } = await requireRole("student");
+  const { profile, user } = await requireOwner();
   const exportData = await getStudentExportData(user.id);
 
   return (

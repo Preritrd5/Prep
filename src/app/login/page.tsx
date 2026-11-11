@@ -33,13 +33,13 @@ function LoginForm() {
           </div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold font-mono tracking-wider uppercase">
             <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Preparation &amp; Exam Portal</span>
+            <span>Personal Workspace</span>
           </div>
           <h1 className="text-3xl font-extrabold font-heading text-text-primary tracking-tight">
             PrepTrack
           </h1>
           <p className="text-xs text-text-secondary">
-            Competitive Examination Preparation &amp; Academic Governance
+            Personal Examination Preparation Workspace
           </p>
         </div>
 
@@ -55,15 +55,21 @@ function LoginForm() {
                   Sign In
                 </h2>
                 <Badge variant="outline" className="text-[10px] border-primary/40 text-primary bg-primary/5 font-mono">
-                  Student &amp; Admin
+                  Personal Owner
                 </Badge>
               </div>
               <p className="text-xs text-text-secondary">
-                Enter your credentials to access your dashboard.
+                Enter your owner credentials to access your preparation workspace.
               </p>
             </div>
 
             {/* Error Banners */}
+            {errorParam === "owner_restricted" && (
+              <Alert variant="error" className="py-2.5 rounded-xl text-xs">
+                Access restricted. PrepTrack is configured for the single authorized owner only.
+              </Alert>
+            )}
+
             {errorParam === "auth_callback_failed" && (
               <Alert variant="error" className="py-2.5 rounded-xl text-xs">
                 Authentication session verification failed. Please try signing in again.
@@ -142,25 +148,14 @@ function LoginForm() {
               </div>
             </form>
 
-            {/* Informational notice & Navigation */}
+            {/* Informational notice & Privacy */}
             <div className="space-y-3 pt-3 border-t border-border/70">
-              <p className="text-center text-xs text-text-secondary">
-                Don&apos;t have a student account?{" "}
-                <Link
-                  href="/register"
-                  className="font-semibold text-primary hover:underline"
-                >
-                  Register here
-                </Link>
-              </p>
-
               <div className="rounded-xl bg-surface-secondary/70 p-3 text-xs text-text-muted border border-border/80">
                 <div className="flex items-start gap-2.5">
                   <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                   <div className="text-[11px] leading-relaxed">
-                    <span className="font-semibold text-text-primary">Admin Access:</span>{" "}
-                    Administrative accounts sign in using provisioned credentials above.
-                    Admin registration is restricted by platform governance.
+                    <span className="font-semibold text-text-primary">Single-Owner Architecture:</span>{" "}
+                    PrepTrack is a private personal workspace. Only the configured owner is authorized to sign in.
                   </div>
                 </div>
               </div>

@@ -12,8 +12,8 @@ export default async function ExamResultPage({ params }: PageProps) {
   const { user, profile } = await requireAuth();
   const { attemptId } = await params;
 
-  // Student can view their own result; admin can inspect any result
-  const studentId = profile.role === "admin" ? undefined : user.id;
+  // Owner views their own examination results
+  const studentId = user.id;
   const { result, attempt, template, questionsReview } = await getExamResult(attemptId, studentId);
 
   if (!attempt || !template) {

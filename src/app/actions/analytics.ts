@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getGeminiClient, DEFAULT_GEMINI_MODEL } from "@/lib/ai/gemini";
 import type {
   RevisionConfidenceRating,
@@ -19,7 +19,7 @@ import { getStudentPerformanceAnalytics, getWeakTopics } from "@/lib/data/analyt
 // ============================================================================
 
 export async function studentUpdateRevisionAction(formData: FormData) {
-  const { user } = await requireRole("student");
+  const { user } = await requireOwner();
   const supabase = await createClient();
 
   const revisionId = formData.get("revisionId") as string;
@@ -102,13 +102,13 @@ export async function studentUpdateRevisionAction(formData: FormData) {
     });
   }
 
-  revalidatePath("/student/revisions");
-  revalidatePath("/student/dashboard");
+  revalidatePath("/revisions");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
 export async function studentScheduleRevisionAction(formData: FormData) {
-  const { user } = await requireRole("student");
+  const { user } = await requireOwner();
   const supabase = await createClient();
 
   const topicId = formData.get("topicId") as string;
@@ -133,7 +133,7 @@ export async function studentScheduleRevisionAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/revisions");
+  revalidatePath("/revisions");
   return { success: true };
 }
 
@@ -142,7 +142,7 @@ export async function studentScheduleRevisionAction(formData: FormData) {
 // ============================================================================
 
 export async function studentDismissWeakAreaAction(formData: FormData) {
-  const { user } = await requireRole("student");
+  const { user } = await requireOwner();
   const supabase = await createClient();
 
   const topicId = formData.get("topicId") as string;
@@ -162,8 +162,8 @@ export async function studentDismissWeakAreaAction(formData: FormData) {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/student/dashboard");
-  revalidatePath("/student/practice/topic");
+  revalidatePath("/dashboard");
+  revalidatePath("/practice/topic");
   return { success: true };
 }
 
@@ -171,7 +171,7 @@ export async function studentUpdateRecommendationStatusAction(
   recommendationId: string,
   status: RecommendationStatus
 ) {
-  const { user } = await requireRole("student");
+  const { user } = await requireOwner();
   const supabase = await createClient();
 
   // If synthetic recommendation, insert into db as dismissed/accepted
@@ -191,7 +191,7 @@ export async function studentUpdateRecommendationStatusAction(
       .eq("student_id", user.id);
   }
 
-  revalidatePath("/student/dashboard");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
@@ -200,7 +200,7 @@ export async function studentUpdateRecommendationStatusAction(
 // ============================================================================
 
 export async function studentMarkNotificationReadAction(notificationId?: string) {
-  const { user } = await requireRole("student");
+  const { user } = await requireOwner();
   const supabase = await createClient();
 
   if (notificationId) {
@@ -218,12 +218,12 @@ export async function studentMarkNotificationReadAction(notificationId?: string)
       .eq("is_read", false);
   }
 
-  revalidatePath("/student/notifications");
+  revalidatePath("/notifications");
   return { success: true };
 }
 
 export async function studentDeleteNotificationAction(notificationId: string) {
-  const { user } = await requireRole("student");
+  const { user } = await requireOwner();
   const supabase = await createClient();
 
   await supabase
@@ -232,14 +232,14 @@ export async function studentDeleteNotificationAction(notificationId: string) {
     .eq("id", notificationId)
     .eq("student_id", user.id);
 
-  revalidatePath("/student/notifications");
+  revalidatePath("/notifications");
   return { success: true };
 }
 
 export async function studentUpdateNotificationPreferencesAction(
   formData: FormData
 ) {
-  const { user } = await requireRole("student");
+  const { user } = await requireOwner();
   const supabase = await createClient();
 
   const prefs: Partial<StudentNotificationPreferences> = {
@@ -266,7 +266,7 @@ export async function studentUpdateNotificationPreferencesAction(
 
   if (error) return { error: error.message };
 
-  revalidatePath("/student/notifications/settings");
+  revalidatePath("/profile");
   return { success: true };
 }
 
@@ -274,11 +274,24 @@ export async function studentUpdateNotificationPreferencesAction(
 // MODULE 11: GEMINI AI STUDY ASSISTANT (SERVER-SIDE)
 // ============================================================================
 
+export interface AssistantTopicContext {
+  examName?: string;
+  subjectName?: string;
+  topicName?: string;
+}
+
+export interface AssistantHistoryMessage {
+  role: "user" | "assistant";
+  text: string;
+}
+
 export async function studentGeminiAssistantAction(
   userQuery: string,
-  category: "REVISION_PLAN" | "WEAK_AREA_EXPLANATION" | "PRACTICE_ADVICE" | "PROGRESS_SUMMARY" | "GENERAL_ASSIST" = "GENERAL_ASSIST"
+  category: "REVISION_PLAN" | "WEAK_AREA_EXPLANATION" | "PRACTICE_ADVICE" | "PROGRESS_SUMMARY" | "GENERAL_ASSIST" = "GENERAL_ASSIST",
+  topicContext?: AssistantTopicContext,
+  history?: AssistantHistoryMessage[]
 ) {
-  const { user, profile } = await requireRole("student");
+  const { user, profile } = await requireOwner();
   const supabase = await createClient();
 
   if (!userQuery || userQuery.trim().length === 0) {
@@ -302,6 +315,10 @@ STUDENT PREPARATION CONTEXT:
 - Identified Weak Topics Needing Attention: ${weakTopics.length > 0 ? weakTopics.map((w) => `${w.topicTitle} (${w.subjectName}: ${w.reason})`).join("; ") : "None currently flagged"}
 `;
 
+  const topicContextStr = topicContext?.topicName || topicContext?.subjectName
+    ? `\nACTIVE TOPIC FOCUS:\n- Target Examination: ${topicContext.examName || "All Examinations"}\n- Subject: ${topicContext.subjectName || "All Subjects"}\n- Topic: ${topicContext.topicName || "General"}\n`
+    : "";
+
   const systemInstruction = `
 You are the PrepTrack AI Study Assistant for competitive examination aspirants (GATE, UPSC, KAS, Railway, KEA, AE Civil).
 Your role:
@@ -318,11 +335,37 @@ Your role:
   if (apiKey) {
     try {
       const ai = getGeminiClient();
+      const initialPrompt = `${systemInstruction}\n\n${studentContext}${topicContextStr}`;
+      const contents: any[] = [];
+
+      if (history && history.length > 0) {
+        contents.push({
+          role: "user",
+          parts: [{ text: `${initialPrompt}\n\nStudent Request: ${history[0].text}` }],
+        });
+
+        for (let i = 1; i < history.length; i++) {
+          const h = history[i];
+          contents.push({
+            role: h.role === "assistant" ? "model" : "user",
+            parts: [{ text: h.text }],
+          });
+        }
+
+        contents.push({
+          role: "user",
+          parts: [{ text: userQuery }],
+        });
+      } else {
+        contents.push({
+          role: "user",
+          parts: [{ text: `${initialPrompt}\n\nStudent Request: ${userQuery}` }],
+        });
+      }
+
       const response = await ai.models.generateContent({
         model: DEFAULT_GEMINI_MODEL,
-        contents: [
-          { role: "user", parts: [{ text: `${systemInstruction}\n\n${studentContext}\n\nStudent Request: ${userQuery}` }] },
-        ],
+        contents,
       });
       responseText = response.text || "I was unable to generate a detailed response. Please review your dashboard metrics.";
     } catch (err: any) {
@@ -404,7 +447,7 @@ export async function adminLogAuditAction(
   targetId?: string,
   metadata?: Record<string, any>
 ) {
-  const { user } = await requireRole("admin");
+  const { user } = await requireOwner();
   const adminClient = createAdminClient();
 
   await adminClient.from("admin_audit_logs").insert({

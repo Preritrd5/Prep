@@ -34,22 +34,22 @@ export function AppLayout({
       <Navbar profile={profile} />
 
       {/* Main Shell Container */}
-      <div className="flex-1 flex w-full">
+      <div className="flex-1 flex w-full min-w-0">
         {/* Responsive Collapsible Sidebar */}
-        <Sidebar role={profile.role} />
+        <Sidebar />
 
         {/* Viewport Content Area */}
         <main
           id="main-content"
           className={cn(
-            "flex-1 w-full overflow-x-hidden min-h-[calc(100vh-4rem)] flex flex-col",
-            !noPadding && "px-4 sm:px-6 lg:px-8 py-6 sm:py-8",
+            "flex-1 w-full min-w-0 overflow-x-hidden min-h-[calc(100vh-4rem)] flex flex-col",
+            !noPadding && "px-3 sm:px-5 md:px-6 lg:px-8 py-5 sm:py-6 lg:py-8",
             className
           )}
         >
           <div
             className={cn(
-              "w-full mx-auto flex-1 flex flex-col space-y-6 sm:space-y-8",
+              "w-full min-w-0 mx-auto flex-1 flex flex-col space-y-5 sm:space-y-6 lg:space-y-8",
               maxWidthClasses[maxWidth]
             )}
           >

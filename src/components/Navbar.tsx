@@ -12,6 +12,8 @@ import {
   ChevronRight,
   User,
   LayoutDashboard,
+  FileQuestion,
+  Bot,
   ChevronDown,
 } from "lucide-react";
 import { logoutAction } from "@/app/auth/actions";
@@ -26,47 +28,46 @@ interface NavbarProps {
 
 // Route title mapping for breadcrumbs
 const routeTitleMap: Record<string, { portal: string; title: string }> = {
-  "/student/dashboard": { portal: "Student", title: "Dashboard" },
-  "/student/analytics": { portal: "Student", title: "Performance Analytics" },
-  "/student/assistant": { portal: "Student", title: "AI Study Assistant" },
-  "/student/revisions": { portal: "Student", title: "Spaced Revisions" },
-  "/student/reports": { portal: "Student", title: "Preparation Reports" },
-  "/student/notifications": { portal: "Student", title: "Notification Center" },
-  "/student/notifications/settings": { portal: "Student", title: "Notification Settings" },
-  "/student/exams": { portal: "Student", title: "My Examinations" },
-  "/student/exams/online": { portal: "Student", title: "Online Mock Tests" },
-  "/student/exams/online/history": { portal: "Student", title: "Attempts History" },
-  "/student/practice/topic": { portal: "Student", title: "Topic Practice" },
-  "/student/practice/subject": { portal: "Student", title: "Subject Practice" },
-  "/student/practice/exam": { portal: "Student", title: "Exam Practice" },
-  "/student/practice/pyq": { portal: "Student", title: "PYQ Archive" },
-  "/student/practice/bookmarks": { portal: "Student", title: "Saved Bookmarks" },
-  "/student/practice/incorrect": { portal: "Student", title: "Mistake Notebook" },
-  "/student/practice/banks": { portal: "Student", title: "Private Banks" },
-  "/student/practice/history": { portal: "Student", title: "Practice History" },
-  "/student/syllabus": { portal: "Student", title: "Syllabus Tracker" },
-  "/student/routine": { portal: "Student", title: "Daily Routine" },
-  "/student/tasks": { portal: "Student", title: "Study Tasks" },
-  "/student/planner": { portal: "Student", title: "Study Planner" },
-  "/student/calendar": { portal: "Student", title: "Calendar" },
-  "/student/export": { portal: "Student", title: "Data Export" },
-  "/admin/dashboard": { portal: "Admin", title: "Platform Overview" },
-  "/admin/analytics": { portal: "Admin", title: "Platform Analytics" },
-  "/admin/audit-logs": { portal: "Admin", title: "System Audit Logs" },
-  "/admin/questions/quality": { portal: "Admin", title: "Content Quality" },
-  "/admin/exams": { portal: "Admin", title: "Exam Management" },
-  "/admin/exams/manage": { portal: "Admin", title: "Mock Tests Management" },
-  "/admin/exams/create": { portal: "Admin", title: "Create Mock Test" },
-  "/admin/exams/monitor": { portal: "Admin", title: "Live Attempts Monitor" },
-  "/admin/questions": { portal: "Admin", title: "Question Bank" },
-  "/admin/questions/import": { portal: "Admin", title: "Bulk Import" },
-  "/admin/questions/ai": { portal: "Admin", title: "AI MCQ Generator" },
-  "/admin/questions/review": { portal: "Admin", title: "Review Queue" },
-  "/admin/questions/create": { portal: "Admin", title: "Create Question" },
-  "/admin/subjects": { portal: "Admin", title: "Subject Directory" },
-  "/admin/syllabus": { portal: "Admin", title: "Syllabus & Topics" },
-  "/admin/events": { portal: "Admin", title: "Official Exam Events" },
-  "/profile": { portal: "Account", title: "Profile Settings" },
+  "/dashboard": { portal: "Workspace", title: "Dashboard" },
+  "/examinations": { portal: "Workspace", title: "My Examinations" },
+  "/syllabus": { portal: "Workspace", title: "Syllabus Tracker" },
+  "/study-planner": { portal: "Workspace", title: "Study Planner" },
+  "/planner": { portal: "Workspace", title: "Study Planner" },
+  "/routine": { portal: "Workspace", title: "Daily Routine & Tasks" },
+  "/tasks": { portal: "Workspace", title: "Study Tasks" },
+  "/calendar": { portal: "Workspace", title: "Calendar & Exam Dates" },
+  "/practice": { portal: "Workspace", title: "MCQ Practice" },
+  "/practice/topic": { portal: "Workspace", title: "MCQ Practice" },
+  "/practice/subject": { portal: "Workspace", title: "Subject Practice" },
+  "/practice/exam": { portal: "Workspace", title: "Exam Practice" },
+  "/practice/pyq": { portal: "Workspace", title: "PYQ Archive" },
+  "/practice/bookmarks": { portal: "Workspace", title: "Saved Bookmarks" },
+  "/practice/incorrect": { portal: "Workspace", title: "Mistakes Notebook" },
+  "/question-bank": { portal: "Workspace", title: "My Question Bank" },
+  "/question-import": { portal: "Workspace", title: "Bulk Question Import" },
+  "/question-bank/ai": { portal: "Workspace", title: "AI Question Generator" },
+  "/question-bank/create": { portal: "Workspace", title: "Add Question" },
+  "/online-exams": { portal: "Workspace", title: "Online Mock Examinations" },
+  "/online-exams/create": { portal: "Workspace", title: "Create MCQ Examination" },
+  "/attempts": { portal: "Workspace", title: "My Attempts & Results" },
+  "/assistant": { portal: "Workspace", title: "AI Study Assistant" },
+  "/revisions": { portal: "Workspace", title: "Revision Manager" },
+  "/analytics": { portal: "Workspace", title: "Performance Analytics" },
+  "/reports": { portal: "Workspace", title: "Study Reports" },
+  "/notifications": { portal: "Workspace", title: "Notifications" },
+  "/notifications/settings": { portal: "Workspace", title: "Notification Settings" },
+  "/profile": { portal: "Account", title: "Profile & Settings" },
+  // Backward compatibility mappings
+  "/student/dashboard": { portal: "Workspace", title: "Dashboard" },
+  "/student/analytics": { portal: "Workspace", title: "Performance Analytics" },
+  "/student/assistant": { portal: "Workspace", title: "AI Study Assistant" },
+  "/student/revisions": { portal: "Workspace", title: "Revision Manager" },
+  "/student/reports": { portal: "Workspace", title: "Study Reports" },
+  "/student/notifications": { portal: "Workspace", title: "Notifications" },
+  "/student/exams": { portal: "Workspace", title: "My Examinations" },
+  "/student/exams/online": { portal: "Workspace", title: "Online Mock Examinations" },
+  "/student/questions": { portal: "Workspace", title: "My Question Bank" },
+  "/student/syllabus": { portal: "Workspace", title: "Syllabus Tracker" },
 };
 
 export default function Navbar({ profile }: NavbarProps) {
@@ -106,13 +107,13 @@ export default function Navbar({ profile }: NavbarProps) {
   const currentRouteInfo =
     routeTitleMap[pathname] ||
     (pathname.startsWith("/student/exams/online/[id]")
-      ? { portal: "Student", title: "Exam Instructions" }
+      ? { portal: "Workspace", title: "Exam Instructions" }
       : pathname.startsWith("/student/exams/online/result")
-      ? { portal: "Student", title: "Exam Results & Analysis" }
+      ? { portal: "Workspace", title: "Exam Results & Analysis" }
+      : pathname.startsWith("/student/exams/online/attempt")
+      ? { portal: "Workspace", title: "Live Examination Hall" }
       : pathname.startsWith("/student")
-      ? { portal: "Student", title: "Student Portal" }
-      : pathname.startsWith("/admin")
-      ? { portal: "Admin", title: "Admin Portal" }
+      ? { portal: "Workspace", title: "Personal Workspace" }
       : null);
 
   const initials = profile?.full_name
@@ -124,7 +125,7 @@ export default function Navbar({ profile }: NavbarProps) {
         .slice(0, 2)
     : profile?.email
     ? profile.email.charAt(0).toUpperCase()
-    : "U";
+    : "P";
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-card transition-colors select-none">
@@ -145,13 +146,7 @@ export default function Navbar({ profile }: NavbarProps) {
 
           {/* Brand */}
           <Link
-            href={
-              profile?.role === "admin"
-                ? "/admin/dashboard"
-                : profile
-                ? "/student/dashboard"
-                : "/"
-            }
+            href={profile ? "/dashboard" : "/login"}
             className="flex items-center gap-2.5 transition-opacity hover:opacity-95 shrink-0"
             aria-label="PrepTrack Home"
           >
@@ -162,8 +157,8 @@ export default function Navbar({ profile }: NavbarProps) {
               <span className="font-heading text-lg font-bold tracking-tight text-text-primary">
                 Prep<span className="text-primary">Track</span>
               </span>
-              <span className="hidden md:inline-block ml-1.5 text-[10px] font-mono font-semibold text-text-muted px-1.5 py-0.2 rounded-full bg-surface border border-border">
-                v1.0
+              <span className="ml-1.5 text-[10px] font-mono font-bold text-primary px-1.5 py-0.2 rounded-full bg-[var(--color-primary-subtle)] border border-primary/20">
+                Personal
               </span>
             </div>
           </Link>
@@ -189,22 +184,20 @@ export default function Navbar({ profile }: NavbarProps) {
 
           {profile ? (
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Notification Center Link for Students */}
-              {profile.role === "student" && (
-                <Link
-                  href="/student/notifications"
-                  className={cn(
-                    "relative h-9 w-9 flex items-center justify-center rounded-lg text-text-secondary hover:bg-hover-surface hover:text-primary transition focus:outline-none focus:ring-2 focus:ring-primary/20",
-                    pathname.startsWith("/student/notifications") &&
-                      "bg-[var(--color-primary-subtle)] text-primary font-semibold"
-                  )}
-                  title="Notification Center"
-                  aria-label="Notification Center"
-                >
-                  <Bell className="h-4 w-4" />
-                  <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
-                </Link>
-              )}
+              {/* Notification Center Link */}
+              <Link
+                href="/student/notifications"
+                className={cn(
+                  "relative h-9 w-9 flex items-center justify-center rounded-lg text-text-secondary hover:bg-hover-surface hover:text-primary transition focus:outline-none focus:ring-2 focus:ring-primary/20",
+                  pathname.startsWith("/student/notifications") &&
+                    "bg-[var(--color-primary-subtle)] text-primary font-semibold"
+                )}
+                title="Notifications"
+                aria-label="Notifications"
+              >
+                <Bell className="h-4 w-4" />
+                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
+              </Link>
 
               {/* User Account Dropdown */}
               <div className="relative" ref={dropdownRef}>
@@ -225,8 +218,8 @@ export default function Navbar({ profile }: NavbarProps) {
                     <span className="text-xs font-semibold text-text-primary leading-tight max-w-[120px] truncate">
                       {profile.full_name || profile.email.split("@")[0]}
                     </span>
-                    <span className="text-[10px] font-mono text-text-muted capitalize">
-                      {profile.role}
+                    <span className="text-[10px] font-mono text-primary font-semibold">
+                      Owner
                     </span>
                   </div>
                   <ChevronDown className="hidden sm:block h-3.5 w-3.5 text-text-muted" />
@@ -243,38 +236,22 @@ export default function Navbar({ profile }: NavbarProps) {
                     {/* Header info in dropdown */}
                     <div className="px-3 py-2.5 border-b border-border mb-1">
                       <p className="text-xs font-bold text-text-primary truncate font-heading">
-                        {profile.full_name || "PrepTrack User"}
+                        {profile.full_name || "Platform Owner"}
                       </p>
                       <p className="text-[11px] text-text-muted truncate mt-0.5">
                         {profile.email}
                       </p>
                       <div className="mt-2">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono font-semibold ${
-                            profile.role === "admin"
-                              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
-                              : "bg-[var(--color-primary-subtle)] text-primary border border-primary/20"
-                          }`}
-                        >
-                          {profile.role === "admin" ? (
-                            <>
-                              <ShieldCheck className="h-3 w-3" />
-                              Administrator
-                            </>
-                          ) : (
-                            "Student Workspace"
-                          )}
+                        <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono font-semibold bg-[var(--color-primary-subtle)] text-primary border border-primary/20">
+                          <ShieldCheck className="h-3 w-3" />
+                          Personal Workspace Owner
                         </span>
                       </div>
                     </div>
 
                     {/* Navigation shortcuts */}
                     <Link
-                      href={
-                        profile.role === "admin"
-                          ? "/admin/dashboard"
-                          : "/student/dashboard"
-                      }
+                      href="/dashboard"
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-text-primary hover:bg-hover-surface transition"
                       role="menuitem"
@@ -284,13 +261,33 @@ export default function Navbar({ profile }: NavbarProps) {
                     </Link>
 
                     <Link
+                      href="/question-bank"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-text-primary hover:bg-hover-surface transition"
+                      role="menuitem"
+                    >
+                      <FileQuestion className="h-4 w-4 text-text-muted" />
+                      <span>My Question Bank</span>
+                    </Link>
+
+                    <Link
+                      href="/assistant"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-text-primary hover:bg-hover-surface transition"
+                      role="menuitem"
+                    >
+                      <Bot className="h-4 w-4 text-text-muted" />
+                      <span>AI Study Assistant</span>
+                    </Link>
+
+                    <Link
                       href="/profile"
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-text-primary hover:bg-hover-surface transition"
                       role="menuitem"
                     >
                       <User className="h-4 w-4 text-text-muted" />
-                      <span>Account Profile</span>
+                      <span>Profile &amp; Settings</span>
                     </Link>
 
                     <div className="my-1 border-t border-border" />
@@ -314,15 +311,9 @@ export default function Navbar({ profile }: NavbarProps) {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="rounded-lg border border-border px-3.5 py-2 text-xs font-semibold text-text-primary hover:bg-hover-surface transition"
+                className="rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[var(--color-primary-hover)] transition"
               >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="hidden sm:inline-flex rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[var(--color-primary-hover)] transition"
-              >
-                Get Started
+                Owner Sign In
               </Link>
             </div>
           )}

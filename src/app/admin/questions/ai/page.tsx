@@ -1,12 +1,13 @@
 import { PageHeader } from "@/components/ui";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getAllExams, getAllSubjects } from "@/lib/data/syllabus";
 import { getAIGenerationJobs } from "@/lib/data/questions";
 import AppLayout from "@/components/layout/AppLayout";
+import AdminQuestionsNavTabs from "@/components/admin/AdminQuestionsNavTabs";
 import AIGeneratorClient from "./AIGeneratorClient";
 
 export default async function AdminAIGeneratorPage() {
-  const { profile } = await requireRole("admin");
+  const { profile } = await requireOwner();
 
   const [exams, subjects, recentJobs] = await Promise.all([
     getAllExams(),
@@ -25,6 +26,8 @@ export default async function AdminAIGeneratorPage() {
           { label: "AI Generator" },
         ]}
       />
+
+      <AdminQuestionsNavTabs />
 
       <AIGeneratorClient exams={exams} subjects={subjects} recentJobs={recentJobs} />
     </AppLayout>

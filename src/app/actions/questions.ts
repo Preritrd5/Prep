@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAuth, requireRole } from "@/lib/auth";
+import { requireAuth, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import * as XLSX from "xlsx";
@@ -20,7 +20,7 @@ import type {
 // ===========================================================================
 
 export async function adminCreateQuestionAction(formData: FormData) {
-  const { user } = await requireRole("admin");
+  const { user } = await requireOwner();
 
   const questionText = ((formData.get("question_text") as string) || "").trim();
   const subjectId = (formData.get("subject_id") as string) || null;
@@ -121,11 +121,11 @@ export async function adminCreateQuestionAction(formData: FormData) {
       }
     }
 
-    revalidatePath("/admin/questions");
-    revalidatePath("/admin/questions/review");
-    revalidatePath("/student/practice/topic");
-    revalidatePath("/student/practice/exam");
-    revalidatePath("/student/practice/pyq");
+    revalidatePath("/question-bank");
+    revalidatePath("/question-bank");
+    revalidatePath("/practice/topic");
+    revalidatePath("/practice/exam");
+    revalidatePath("/practice/pyq");
 
     return { success: true, questionId };
   } catch (err: any) {
@@ -137,7 +137,7 @@ export async function adminUpdateQuestionStatusAction(
   questionId: string,
   status: QuestionStatus
 ) {
-  await requireRole("admin");
+  await requireOwner();
   const supabase = createAdminClient();
 
   const { error } = await supabase
@@ -149,8 +149,8 @@ export async function adminUpdateQuestionStatusAction(
     return { error: error.message };
   }
 
-  revalidatePath("/admin/questions");
-  revalidatePath("/admin/questions/review");
+  revalidatePath("/question-bank");
+  revalidatePath("/question-bank");
   return { success: true };
 }
 
@@ -158,7 +158,7 @@ export async function adminBulkUpdateQuestionStatusAction(
   questionIds: string[],
   status: QuestionStatus
 ) {
-  await requireRole("admin");
+  await requireOwner();
   if (!questionIds || questionIds.length === 0) {
     return { error: "No questions selected." };
   }
@@ -174,13 +174,13 @@ export async function adminBulkUpdateQuestionStatusAction(
     return { error: error.message };
   }
 
-  revalidatePath("/admin/questions");
-  revalidatePath("/admin/questions/review");
+  revalidatePath("/question-bank");
+  revalidatePath("/question-bank");
   return { success: true, count: questionIds.length };
 }
 
 export async function adminDeleteQuestionAction(questionId: string) {
-  await requireRole("admin");
+  await requireOwner();
   const supabase = createAdminClient();
 
   const { error } = await supabase.from("questions").delete().eq("id", questionId);
@@ -189,8 +189,8 @@ export async function adminDeleteQuestionAction(questionId: string) {
     return { error: error.message };
   }
 
-  revalidatePath("/admin/questions");
-  revalidatePath("/admin/questions/review");
+  revalidatePath("/question-bank");
+  revalidatePath("/question-bank");
   return { success: true };
 }
 
@@ -199,7 +199,7 @@ export async function adminDeleteQuestionAction(questionId: string) {
 // ===========================================================================
 
 export async function importQuestionsBatchAction(formData: FormData) {
-  const { user } = await requireRole("admin");
+  const { user } = await requireOwner();
   const file = formData.get("file") as File | null;
   const defaultSubjectId = (formData.get("default_subject_id") as string) || null;
   const defaultExamId = (formData.get("default_exam_id") as string) || null;
@@ -369,8 +369,8 @@ export async function importQuestionsBatchAction(formData: FormData) {
       imported_by: user.id,
     });
 
-    revalidatePath("/admin/questions");
-    revalidatePath("/admin/questions/review");
+    revalidatePath("/question-bank");
+    revalidatePath("/question-bank");
 
     return {
       success: true,
@@ -390,7 +390,7 @@ export async function importQuestionsBatchAction(formData: FormData) {
 // ===========================================================================
 
 export async function generateAIQuestionsAction(formData: FormData) {
-  const { user } = await requireRole("admin");
+  const { user } = await requireOwner();
 
   const examId = (formData.get("exam_id") as string) || null;
   const examName = (formData.get("exam_name") as string) || undefined;
@@ -521,9 +521,9 @@ export async function generateAIQuestionsAction(formData: FormData) {
       .eq("id", jobId);
   }
 
-  revalidatePath("/admin/questions");
-  revalidatePath("/admin/questions/ai");
-  revalidatePath("/admin/questions/review");
+  revalidatePath("/question-bank");
+  revalidatePath("/question-bank/ai");
+  revalidatePath("/question-bank");
 
   return { success: true, count: insertedCount, totalRequested: count };
 }
@@ -560,7 +560,7 @@ export async function studentCreatePersonalBankAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/practice/banks");
+  revalidatePath("/practice");
   return { success: true, bankId: data.id };
 }
 
@@ -621,7 +621,7 @@ export async function studentCreatePersonalQuestionAction(formData: FormData) {
     explanation: explanation || null,
   });
 
-  revalidatePath("/student/practice/banks");
+  revalidatePath("/practice");
   return { success: true, questionId };
 }
 
@@ -644,7 +644,7 @@ export async function toggleQuestionBookmarkAction(questionId: string) {
   if (existing) {
     // Remove bookmark
     await supabase.from("question_bookmarks").delete().eq("id", existing.id);
-    revalidatePath("/student/practice/bookmarks");
+    revalidatePath("/practice/bookmarks");
     return { bookmarked: false };
   } else {
     // Add bookmark
@@ -652,7 +652,7 @@ export async function toggleQuestionBookmarkAction(questionId: string) {
       student_id: user.id,
       question_id: questionId,
     });
-    revalidatePath("/student/practice/bookmarks");
+    revalidatePath("/practice/bookmarks");
     return { bookmarked: true };
   }
 }
@@ -843,8 +843,8 @@ export async function submitTestSessionAction(data: {
     // Continue if DB tables awaiting migration
   }
 
-  revalidatePath("/student/practice/history");
-  revalidatePath("/student/practice/incorrect");
+  revalidatePath("/practice/history");
+  revalidatePath("/practice/incorrect");
 
   return {
     success: true,

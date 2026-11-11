@@ -82,16 +82,16 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
 
         <div>
           <label className="block text-xs font-semibold text-text-primary mb-1.5">
-            Assigned Platform Role
+            Platform Authorization
           </label>
           <div className="flex items-center gap-2">
-            <Badge variant={profile.role === "admin" ? "secondary" : "primary"}>
+            <Badge variant="primary">
               <Shield className="h-3.5 w-3.5 mr-1" />
-              {profile.role === "admin" ? "Platform Administrator" : "Enrolled Student"}
+              <span>Personal Workspace Owner</span>
             </Badge>
           </div>
           <p className="mt-1.5 text-xs text-text-muted">
-            Role privileges are strictly enforced via PostgreSQL Row Level Security (RLS) policies.
+            Direct owner access to all examinations, question banks, AI study tools, and CBT mocks.
           </p>
         </div>
 

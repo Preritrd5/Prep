@@ -1,11 +1,12 @@
 import { PageHeader } from "@/components/ui";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getQuestions } from "@/lib/data/questions";
 import AppLayout from "@/components/layout/AppLayout";
+import AdminQuestionsNavTabs from "@/components/admin/AdminQuestionsNavTabs";
 import ReviewQueueClient from "./ReviewQueueClient";
 
 export default async function AdminReviewQueuePage() {
-  const { profile } = await requireRole("admin");
+  const { profile } = await requireOwner();
   const questions = await getQuestions();
 
   return (
@@ -19,6 +20,8 @@ export default async function AdminReviewQueuePage() {
           { label: "Review Queue" },
         ]}
       />
+
+      <AdminQuestionsNavTabs />
 
       <ReviewQueueClient initialQuestions={questions} />
     </AppLayout>

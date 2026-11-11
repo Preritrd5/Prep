@@ -1,15 +1,18 @@
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getStudentPerformanceAnalytics, getWeakTopics } from "@/lib/data/analytics";
+import { getAllExams, getAllSubjectsWithTree } from "@/lib/data/syllabus";
 import AppLayout from "@/components/layout/AppLayout";
 import StudyAssistantClient from "./StudyAssistantClient";
 import { PageHeader } from "@/components/ui/page-header";
 
 export default async function StudentAssistantPage() {
-  const { profile, user } = await requireRole("student");
+  const { profile, user } = await requireOwner();
 
-  const [analytics, weakTopics] = await Promise.all([
+  const [analytics, weakTopics, exams, subjects] = await Promise.all([
     getStudentPerformanceAnalytics(user.id, "overall"),
     getWeakTopics(user.id),
+    getAllExams(),
+    getAllSubjectsWithTree(),
   ]);
 
   const displayName = profile.full_name || profile.email.split("@")[0];
@@ -29,6 +32,8 @@ export default async function StudentAssistantPage() {
         analytics={analytics}
         weakTopics={weakTopics}
         studentName={displayName}
+        exams={exams}
+        subjects={subjects}
       />
     </AppLayout>
   );

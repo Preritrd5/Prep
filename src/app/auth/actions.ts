@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAuthorizedOwner } from "@/lib/auth";
 
 export interface AuthActionResult {
   success?: boolean;
@@ -13,75 +14,7 @@ export interface AuthActionResult {
 }
 
 /**
- * Student Registration Action
- */
-export async function registerStudentAction(
-  prevState: AuthActionResult | null,
-  formData: FormData
-): Promise<AuthActionResult> {
-  const fullName = (formData.get("fullName") as string)?.trim();
-  const email = (formData.get("email") as string)?.trim().toLowerCase();
-  const password = formData.get("password") as string;
-  const confirmPassword = formData.get("confirmPassword") as string;
-
-  if (!fullName) {
-    return { error: "Please enter your full name." };
-  }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { error: "Please enter a valid email address." };
-  }
-  if (!password || password.length < 6) {
-    return { error: "Password must be at least 6 characters long." };
-  }
-  if (password !== confirmPassword) {
-    return { error: "Passwords do not match." };
-  }
-
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-      },
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  // Auto-confirm user via service role key so students are not blocked by unconfirmed emails
-  if (data?.user) {
-    try {
-      const admin = createAdminClient();
-      await admin.auth.admin.updateUserById(data.user.id, {
-        email_confirm: true,
-      });
-    } catch {
-      // Continue gracefully if admin client is restricted
-    }
-  }
-
-  // If user identity is created but session is null, email confirmation is active in Supabase project
-  if (data?.user && !data?.session) {
-    return {
-      success: true,
-      requiresEmailConfirmation: true,
-      message:
-        "Registration successful! Your account has been verified. You can now proceed to login.",
-    };
-  }
-
-  // Session was established immediately
-  revalidatePath("/", "layout");
-  redirect("/student/dashboard");
-}
-
-/**
- * User / Admin Login Action
+ * Single-Owner Login Action
  */
 export async function loginAction(
   prevState: AuthActionResult | null,
@@ -145,39 +78,23 @@ export async function loginAction(
     return { error: "Unable to authenticate. Please check your credentials." };
   }
 
-  // Fetch the user's role from the profiles table
-  let role = "student";
-  try {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", data.user.id)
-      .single();
-
-    if (profile?.role) {
-      role = profile.role;
-    }
-  } catch {
-    role = "student";
+  // Validate single-owner access
+  if (!isAuthorizedOwner(data.user)) {
+    await supabase.auth.signOut();
+    return {
+      error:
+        "Access restricted. PrepTrack is a private workspace configured for the authorized owner only.",
+    };
   }
 
   revalidatePath("/", "layout");
 
-  // If a specific valid redirect target was requested and matches role
-  if (redirectTo && !redirectTo.startsWith("//")) {
-    if (redirectTo.startsWith("/admin") && role === "admin") {
-      redirect(redirectTo);
-    }
-    if (redirectTo.startsWith("/student") && role === "student") {
-      redirect(redirectTo);
-    }
+  // Redirect to personal preparation dashboard
+  if (redirectTo && !redirectTo.startsWith("//") && !redirectTo.startsWith("/admin") && !redirectTo.startsWith("/student")) {
+    redirect(redirectTo);
   }
 
-  if (role === "admin") {
-    redirect("/admin/dashboard");
-  } else {
-    redirect("/student/dashboard");
-  }
+  redirect("/dashboard");
 }
 
 /**

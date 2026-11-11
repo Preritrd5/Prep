@@ -25,13 +25,9 @@ import {
 export default async function HomePage() {
   const authData = await getCurrentUser();
 
-  // If user is already authenticated, redirect to their role dashboard
+  // If user is already authenticated, redirect to workspace dashboard
   if (authData) {
-    if (authData.profile.role === "admin") {
-      redirect("/admin/dashboard");
-    } else {
-      redirect("/student/dashboard");
-    }
+    redirect("/student/dashboard");
   }
 
   return (
@@ -60,14 +56,14 @@ export default async function HomePage() {
               </p>
 
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
-                <Link href="/register" className="w-full sm:w-auto">
+                <Link href="/login" className="w-full sm:w-auto">
                   <Button variant="primary" size="lg" className="w-full sm:w-auto" rightIcon={<ArrowRight className="h-4 w-4" />}>
-                    Start Student Preparation
+                    Access Personal Workspace
                   </Button>
                 </Link>
                 <Link href="/login" className="w-full sm:w-auto">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    Existing User Sign In
+                    Sign In
                   </Button>
                 </Link>
               </div>
@@ -189,7 +185,7 @@ export default async function HomePage() {
                   </div>
                   <h2 className="font-heading text-lg font-bold text-text-primary">Diagnostic Analytics</h2>
                   <p className="mt-2 text-xs sm:text-sm text-text-secondary leading-relaxed">
-                    Deep subject accuracy metrics, identified weak areas, percentile estimates, and one-click data portability.
+                    Deep subject accuracy metrics, identified weak areas, revision spaced-repetition schedules, and personal test history.
                   </p>
                 </div>
                 <div className="mt-4 pt-4 border-t border-border flex items-center justify-between text-xs text-success font-semibold">
@@ -232,7 +228,6 @@ export default async function HomePage() {
 
           <div className="flex items-center gap-4">
             <Link href="/login" className="hover:text-primary transition-colors">Sign In</Link>
-            <Link href="/register" className="hover:text-primary transition-colors">Register</Link>
           </div>
         </div>
       </footer>

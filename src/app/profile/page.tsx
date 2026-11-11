@@ -19,7 +19,7 @@ export default async function ProfilePage() {
         title="Account Profile"
         description="Manage your personal details and view your account authorization credentials."
         breadcrumbs={[
-          { label: profile.role === "admin" ? "Admin" : "Student", href: `/${profile.role}/dashboard` },
+          { label: "Dashboard", href: "/student/dashboard" },
           { label: "Profile" },
         ]}
       />
@@ -34,14 +34,14 @@ export default async function ProfilePage() {
                 : profile.email.charAt(0).toUpperCase()}
             </div>
             <h3 className="mt-4 font-heading text-lg font-bold text-text-primary">
-              {profile.full_name || "PrepTrack User"}
+              {profile.full_name || "PrepTrack Owner"}
             </h3>
             <p className="text-xs text-text-muted break-all mt-0.5">{profile.email}</p>
 
             <div className="mt-4">
-              <Badge variant={profile.role === "admin" ? "secondary" : "primary"}>
+              <Badge variant="primary">
                 <ShieldCheck className="h-3.5 w-3.5 mr-1" />
-                Role: <span className="capitalize ml-1">{profile.role}</span>
+                <span>Personal Workspace Owner</span>
               </Badge>
             </div>
 

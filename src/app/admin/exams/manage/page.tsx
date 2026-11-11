@@ -1,11 +1,11 @@
 import { PageHeader } from "@/components/ui";
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getExamTemplates } from "@/lib/data/exams-online";
 import AppLayout from "@/components/layout/AppLayout";
 import AdminExamsClient from "./AdminExamsClient";
 
 export default async function AdminManageExamsPage() {
-  const { profile } = await requireRole("admin");
+  const { profile } = await requireOwner();
   const templates = await getExamTemplates();
 
   return (

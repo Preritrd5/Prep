@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAuth, requireRole } from "@/lib/auth";
+import { requireAuth, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { TopicProgressStatus } from "@/lib/types";
 
@@ -46,8 +46,8 @@ export async function updateTopicProgressAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/syllabus");
-  revalidatePath("/student/dashboard");
+  revalidatePath("/syllabus");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
@@ -79,7 +79,7 @@ export async function createPersonalTopicAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/syllabus");
+  revalidatePath("/syllabus");
   return { success: true };
 }
 
@@ -109,13 +109,13 @@ export async function savePersonalNoteAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/student/syllabus");
-  revalidatePath("/student/dashboard");
+  revalidatePath("/syllabus");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
 export async function adminCreateSubjectAction(formData: FormData) {
-  await requireRole("admin");
+  await requireOwner();
 
   const name = (formData.get("name") as string)?.trim();
   const code = (formData.get("code") as string)?.trim().toUpperCase();
@@ -140,13 +140,13 @@ export async function adminCreateSubjectAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/admin/subjects");
-  revalidatePath("/admin/syllabus");
+  revalidatePath("/syllabus");
+  revalidatePath("/syllabus");
   return { success: true };
 }
 
 export async function adminCreateChapterAction(formData: FormData) {
-  await requireRole("admin");
+  await requireOwner();
 
   const subjectId = formData.get("subjectId") as string;
   const title = (formData.get("title") as string)?.trim();
@@ -169,12 +169,12 @@ export async function adminCreateChapterAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/admin/syllabus");
+  revalidatePath("/syllabus");
   return { success: true };
 }
 
 export async function adminCreateTopicAction(formData: FormData) {
-  await requireRole("admin");
+  await requireOwner();
 
   const chapterId = formData.get("chapterId") as string;
   const title = (formData.get("title") as string)?.trim();
@@ -212,12 +212,12 @@ export async function adminCreateTopicAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/admin/syllabus");
+  revalidatePath("/syllabus");
   return { success: true };
 }
 
 export async function adminMapSubjectToExamAction(formData: FormData) {
-  await requireRole("admin");
+  await requireOwner();
 
   const examId = formData.get("examId") as string;
   const subjectId = formData.get("subjectId") as string;
@@ -242,7 +242,7 @@ export async function adminMapSubjectToExamAction(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/admin/syllabus");
-  revalidatePath("/admin/exams");
+  revalidatePath("/syllabus");
+  revalidatePath("/examinations");
   return { success: true };
 }

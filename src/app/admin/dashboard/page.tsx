@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getAllExams, getAllSubjects, getExamScheduleEvents } from "@/lib/data/syllabus";
 import AppLayout from "@/components/layout/AppLayout";
@@ -28,7 +28,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function AdminDashboardPage() {
-  const { profile } = await requireRole("admin");
+  const { profile } = await requireOwner();
   const supabase = await createClient();
 
   // Fetch real registered students count and recent student list

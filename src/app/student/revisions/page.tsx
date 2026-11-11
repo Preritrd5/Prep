@@ -1,12 +1,13 @@
-import { requireRole } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getStudentRevisionsExtended } from "@/lib/data/analytics";
 import { getStudentExams, getExamSyllabus } from "@/lib/data/syllabus";
 import AppLayout from "@/components/layout/AppLayout";
+import RevisionsNavTabs from "@/components/revisions/RevisionsNavTabs";
 import RevisionsClient from "./RevisionsClient";
 import { PageHeader } from "@/components/ui/page-header";
 
 export default async function StudentRevisionsPage() {
-  const { profile, user } = await requireRole("student");
+  const { profile, user } = await requireOwner();
 
   const [revisions, enrolledExams] = await Promise.all([
     getStudentRevisionsExtended(user.id),
@@ -45,6 +46,8 @@ export default async function StudentRevisionsPage() {
           { label: "Revisions" },
         ]}
       />
+
+      <RevisionsNavTabs />
 
       <RevisionsClient
         revisions={revisions}

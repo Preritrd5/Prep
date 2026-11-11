@@ -34,12 +34,13 @@ export function EmptyState({
     renderedIcon = icon;
   } else if (
     typeof icon === "function" ||
-    (typeof icon === "object" && icon !== null && ("render" in icon || "$$typeof" in icon))
+    (typeof icon === "object" && icon !== null)
   ) {
-    const IconComp = icon as React.ComponentType<{ className?: string }>;
-    renderedIcon = <IconComp className="h-6 w-6" />;
-  } else if (icon) {
-    renderedIcon = icon as React.ReactNode;
+    try {
+      renderedIcon = React.createElement(icon as any, { className: "h-6 w-6" });
+    } catch {
+      renderedIcon = <Inbox className="h-6 w-6" />;
+    }
   } else {
     renderedIcon = <Inbox className="h-6 w-6" />;
   }
