@@ -224,6 +224,12 @@ export default function Sidebar({ className }: SidebarProps) {
       title: "Account",
       items: [
         {
+          name: "Notifications",
+          href: "/notifications",
+          icon: Bell,
+          active: pathname.startsWith("/notifications"),
+        },
+        {
           name: "Profile & Settings",
           href: "/profile",
           icon: ShieldCheck,

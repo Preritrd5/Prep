@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   CheckCircle2,
   Circle,
@@ -65,6 +65,36 @@ export default function TasksClient({
   const [priority, setPriority] = useState(2);
   const [examId, setExamId] = useState("");
   const [subjectId, setSubjectId] = useState("");
+
+  const filteredSubjects = useMemo(() => {
+    if (!examId) return allSubjects;
+    const selectedExam = allExams.find((e) => e.id === examId);
+    if (!selectedExam) return allSubjects;
+
+    const examCode = selectedExam.code || "";
+    let targetCodes: string[] = [];
+    if (examCode === "GATE-CS") targetCodes = ["GATE-EM", "GK-COMP", "GK-APT", "GK-SCITECH"];
+    else if (examCode === "GATE-CE") targetCodes = ["GATE-EM", "CE-STRUCT", "CE-GEO", "GK-APT"];
+    else if (examCode === "KAS-GS" || selectedExam.category === "KAS") targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-APT"];
+    else if (examCode === "UPSC-CSE" || selectedExam.category === "UPSC") targetCodes = ["GK-HIST", "GK-GEOG", "GK-POLITY", "GK-ECON", "GK-ENV", "GK-SCITECH", "GK-CA", "GK-APT"];
+    else if (examCode === "RRB-NTPC" || selectedExam.category === "Railway") targetCodes = ["GK-STATIC", "GK-SCI", "GK-APT", "GK-CA"];
+    else if (examCode === "KEA-LS") targetCodes = ["CE-GEO", "GATE-EM", "GK-POLITY", "GK-APT"];
+    else if (examCode === "KEA-VAO" || examCode === "KEA-SDA") targetCodes = ["GK-POLITY", "GK-HIST", "GK-COMP", "GK-APT"];
+    else if (examCode === "KEA-FDA") targetCodes = ["GK-POLITY", "GK-ECON", "GK-GEOG", "GK-APT"];
+    else if (examCode === "AE-CIVIL") targetCodes = ["CE-STRUCT", "CE-GEO", "GATE-EM", "GK-POLITY"];
+    else return allSubjects;
+
+    return allSubjects.filter((s) => targetCodes.includes(s.code));
+  }, [allSubjects, examId, allExams]);
+
+  useEffect(() => {
+    if (examId && subjectId) {
+      const exists = filteredSubjects.some((s) => s.id === subjectId);
+      if (!exists) {
+        setSubjectId("");
+      }
+    }
+  }, [examId, filteredSubjects, subjectId]);
 
   const filteredTasks = tasks.filter((t) => {
     if (selectedStatus !== "All" && t.status !== selectedStatus) return false;
@@ -435,7 +465,7 @@ export default function TasksClient({
               onChange={(e) => setSubjectId(e.target.value)}
               options={[
                 { label: "None", value: "" },
-                ...allSubjects.map((s) => ({ label: s.name, value: s.id })),
+                ...filteredSubjects.map((s) => ({ label: s.name, value: s.id })),
               ]}
             />
           </div>

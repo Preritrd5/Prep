@@ -186,10 +186,10 @@ export default function Navbar({ profile }: NavbarProps) {
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Notification Center Link */}
               <Link
-                href="/student/notifications"
+                href="/notifications"
                 className={cn(
                   "relative h-9 w-9 flex items-center justify-center rounded-lg text-text-secondary hover:bg-hover-surface hover:text-primary transition focus:outline-none focus:ring-2 focus:ring-primary/20",
-                  pathname.startsWith("/student/notifications") &&
+                  (pathname === "/notifications" || pathname.startsWith("/notifications/")) &&
                     "bg-[var(--color-primary-subtle)] text-primary font-semibold"
                 )}
                 title="Notifications"

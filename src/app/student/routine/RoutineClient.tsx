@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Clock,
@@ -90,6 +90,16 @@ export default function RoutineClient({
 
     return allSubjects.filter((s) => targetCodes.includes(s.code));
   }, [examId, allExams, allSubjects]);
+
+  // Reset subjectId if selected exam doesn't contain it
+  useEffect(() => {
+    if (examId && subjectId) {
+      const exists = filteredSubjects.some((s) => s.id === subjectId);
+      if (!exists) {
+        setSubjectId("");
+      }
+    }
+  }, [examId, filteredSubjects, subjectId]);
 
   const openAddRoutineModal = () => {
     setErrorMsg(null);

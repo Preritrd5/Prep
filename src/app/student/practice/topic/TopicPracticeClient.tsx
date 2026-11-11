@@ -114,6 +114,7 @@ export default function TopicPracticeClient({
             <select
               value={selectedSubjectId}
               onChange={(e) => handleSubjectChange(e.target.value)}
+              style={{ colorScheme: "dark" }}
               className="w-full border border-border rounded-xl px-3 py-2 text-xs font-semibold bg-input text-text-primary shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/25"
             >
               <option value="All">All Curriculum Subjects</option>
@@ -134,6 +135,7 @@ export default function TopicPracticeClient({
               value={selectedChapterId}
               onChange={(e) => handleChapterChange(e.target.value)}
               disabled={selectedSubjectId === "All" || availableChapters.length === 0}
+              style={{ colorScheme: "dark" }}
               className="w-full border border-border rounded-xl px-3 py-2 text-xs font-semibold bg-input text-text-primary shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="All">
@@ -160,6 +162,7 @@ export default function TopicPracticeClient({
               value={selectedTopicId}
               onChange={(e) => setSelectedTopicId(e.target.value)}
               disabled={selectedChapterId === "All" || availableTopics.length === 0}
+              style={{ colorScheme: "dark" }}
               className="w-full border border-border rounded-xl px-3 py-2 text-xs font-semibold bg-input text-text-primary shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="All">
@@ -185,6 +188,7 @@ export default function TopicPracticeClient({
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
+              style={{ colorScheme: "dark" }}
               className="w-full border border-border rounded-xl px-3 py-2 text-xs font-semibold bg-input text-text-primary shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/25"
             >
               <option value="All">All Difficulties (Balanced)</option>
@@ -202,6 +206,7 @@ export default function TopicPracticeClient({
             <select
               value={practiceMode}
               onChange={(e) => setPracticeMode(e.target.value as PracticeMode)}
+              style={{ colorScheme: "dark" }}
               className="w-full border border-border rounded-xl px-3 py-2 text-xs font-semibold bg-input text-text-primary shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/25"
             >
               <option value="Learn">Learn Mode (Instant Explanations)</option>
@@ -217,6 +222,7 @@ export default function TopicPracticeClient({
             <select
               value={questionCount}
               onChange={(e) => setQuestionCount(Number(e.target.value))}
+              style={{ colorScheme: "dark" }}
               className="w-full border border-border rounded-xl px-3 py-2 text-xs font-semibold bg-input text-text-primary shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/25"
             >
               <option value={5}>5 Questions (Quick Drill)</option>

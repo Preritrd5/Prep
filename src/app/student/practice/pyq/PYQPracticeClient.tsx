@@ -48,6 +48,7 @@ export default function PYQPracticeClient({
             <select
               value={selectedExamName}
               onChange={(e) => setSelectedExamName(e.target.value)}
+              style={{ colorScheme: "dark" }}
               className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All PYQ Examinations</option>
@@ -66,6 +67,7 @@ export default function PYQPracticeClient({
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
+              style={{ colorScheme: "dark" }}
               className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Years</option>
@@ -84,6 +86,7 @@ export default function PYQPracticeClient({
             <select
               value={selectedSubjectId}
               onChange={(e) => setSelectedSubjectId(e.target.value)}
+              style={{ colorScheme: "dark" }}
               className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Subjects</option>

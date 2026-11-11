@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
@@ -12,6 +12,7 @@ import {
   Plus,
   FileText,
   Search,
+  Sparkles,
 } from "lucide-react";
 import {
   updateTopicProgressAction,
@@ -26,6 +27,7 @@ import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 interface SyllabusClientProps {
@@ -37,14 +39,18 @@ interface SyllabusClientProps {
 export default function SyllabusClient({
   currentExam,
   allExams,
-  subjects,
+  subjects: initialSubjects,
 }: SyllabusClientProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  // Local state for immediate optimistic updates
+  const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>(
-    subjects[0]?.id || ""
+    initialSubjects[0]?.id || ""
   );
   const [openChapterIds, setOpenChapterIds] = useState<Set<string>>(
-    new Set(subjects[0]?.chapters?.map((c) => c.id) || [])
+    new Set(initialSubjects[0]?.chapters?.map((c) => c.id) || [])
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopicForNote, setSelectedTopicForNote] = useState<Topic | null>(null);
@@ -60,6 +66,44 @@ export default function SyllabusClient({
   const [personalDesc, setPersonalDesc] = useState("");
   const [personalDuration, setPersonalDuration] = useState(60);
   const [isPersonalPending, setIsPersonalPending] = useState(false);
+
+  // Synchronize state when initialSubjects prop changes (e.g. when changing exam)
+  useEffect(() => {
+    setSubjects(initialSubjects);
+    if (initialSubjects.length > 0) {
+      const match = initialSubjects.find((s) => s.id === selectedSubjectId);
+      const nextActiveId = match ? match.id : initialSubjects[0].id;
+      setSelectedSubjectId(nextActiveId);
+      const active = initialSubjects.find((s) => s.id === nextActiveId);
+      if (active?.chapters) {
+        setOpenChapterIds(new Set(active.chapters.map((c) => c.id)));
+      }
+    }
+  }, [initialSubjects]);
+
+  const activeSubject =
+    subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
+
+  // Auto-open chapters when searching
+  useEffect(() => {
+    if (searchQuery.trim().length > 0 && activeSubject?.chapters) {
+      const q = searchQuery.toLowerCase();
+      const matchingChapterIds = new Set<string>();
+      activeSubject.chapters.forEach((chap) => {
+        const hasMatch = (chap.topics || []).some(
+          (t) =>
+            t.title.toLowerCase().includes(q) ||
+            (t.description && t.description.toLowerCase().includes(q))
+        );
+        if (hasMatch) {
+          matchingChapterIds.add(chap.id);
+        }
+      });
+      if (matchingChapterIds.size > 0) {
+        setOpenChapterIds(matchingChapterIds);
+      }
+    }
+  }, [searchQuery, activeSubject]);
 
   const toggleChapter = (chapterId: string) => {
     setOpenChapterIds((prev) => {
@@ -91,9 +135,19 @@ export default function SyllabusClient({
   const overallPercent =
     totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
 
-  const activeSubject =
-    subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
+  // Handle Exam Switching
+  const handleExamChange = (newExamId: string) => {
+    if (!newExamId) return;
+    try {
+      localStorage.setItem("preptrack_active_exam_id", newExamId);
+    } catch {}
 
+    startTransition(() => {
+      router.push(`/syllabus?examId=${encodeURIComponent(newExamId)}`);
+    });
+  };
+
+  // Optimistic Topic Completion Cycling: Not Started -> In Progress -> Completed -> Not Started
   const handleStatusChange = async (
     topicId: string,
     currentStatus: TopicProgressStatus
@@ -104,13 +158,56 @@ export default function SyllabusClient({
       Completed: "Not Started",
     };
     const nextStatus = cycle[currentStatus] || "In Progress";
+
+    // 1. Instant Optimistic UI Update
+    setSubjects((prev) =>
+      prev.map((subj) => ({
+        ...subj,
+        chapters: (subj.chapters || []).map((chap) => ({
+          ...chap,
+          topics: (chap.topics || []).map((top) => {
+            if (top.id === topicId) {
+              return {
+                ...top,
+                progress: {
+                  ...(top.progress || {
+                    id: `local-${topicId}`,
+                    student_id: "",
+                    topic_id: topicId,
+                    exam_id: currentExam?.id || null,
+                    scheduled_date: null,
+                    started_date: null,
+                    revision_count: 0,
+                    notes: null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  }),
+                  status: nextStatus,
+                  actual_minutes: top.progress?.actual_minutes || 0,
+                  last_studied_date: new Date().toISOString(),
+                  completed_date:
+                    nextStatus === "Completed"
+                      ? new Date().toISOString()
+                      : null,
+                },
+              };
+            }
+            return top;
+          }),
+        })),
+      }))
+    );
+
+    // 2. Persist to Server Action
     const formData = new FormData();
     formData.append("topicId", topicId);
     if (currentExam?.id) formData.append("examId", currentExam.id);
     formData.append("status", nextStatus);
+
     await updateTopicProgressAction(formData);
   };
 
+  // Save Note with Optimistic Feedback
   const handleSaveNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTopicForNote || !noteTitle) return;
@@ -118,6 +215,7 @@ export default function SyllabusClient({
     setIsNotePending(true);
     const formData = new FormData();
     formData.append("topicId", selectedTopicForNote.id);
+    if (currentExam?.id) formData.append("examId", currentExam.id);
     formData.append("title", noteTitle);
     formData.append("content", noteContent);
 
@@ -128,11 +226,63 @@ export default function SyllabusClient({
     setNoteContent("");
   };
 
+  // Create Personal Topic with Optimistic UI insertion
   const handleCreatePersonalTopic = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedChapterForPersonal || !personalTitle) return;
 
     setIsPersonalPending(true);
+    const newTopicId = `topic-${Date.now()}`;
+    const newTopic: Topic = {
+      id: newTopicId,
+      chapter_id: selectedChapterForPersonal.id,
+      title: personalTitle.trim(),
+      description: personalDesc.trim() || null,
+      estimated_minutes: personalDuration || 60,
+      official_syllabus_ref: null,
+      textbook_ref: null,
+      textbook_page_start: null,
+      textbook_page_end: null,
+      order_index: (selectedChapterForPersonal.topics?.length || 0) + 1,
+      is_published: true,
+      is_personal: true,
+      created_by: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      progress: {
+        id: `prog-${newTopicId}`,
+        student_id: "",
+        topic_id: newTopicId,
+        exam_id: currentExam?.id || null,
+        status: "Not Started",
+        actual_minutes: 0,
+        scheduled_date: null,
+        started_date: null,
+        completed_date: null,
+        last_studied_date: null,
+        revision_count: 0,
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    };
+
+    // Optimistically insert into chapter
+    setSubjects((prev) =>
+      prev.map((subj) => ({
+        ...subj,
+        chapters: (subj.chapters || []).map((chap) => {
+          if (chap.id === selectedChapterForPersonal.id) {
+            return {
+              ...chap,
+              topics: [...(chap.topics || []), newTopic],
+            };
+          }
+          return chap;
+        }),
+      }))
+    );
+
     const formData = new FormData();
     formData.append("chapterId", selectedChapterForPersonal.id);
     formData.append("title", personalTitle);
@@ -152,23 +302,41 @@ export default function SyllabusClient({
       <Card>
         <CardContent className="p-5 sm:p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex-1 space-y-1.5">
-              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider">
+            <div className="flex-1 space-y-1.5 max-w-xl">
+              <label
+                htmlFor="exam-selector"
+                className="block text-xs font-semibold text-text-secondary uppercase tracking-wider"
+              >
                 Target Examination Syllabus
               </label>
-              <select
-                value={currentExam?.id || ""}
-                onChange={(e) =>
-                  router.push(`/student/syllabus?examId=${e.target.value}`)
-                }
-                className="w-full md:w-auto min-w-[320px] rounded-xl border border-input-border bg-card px-3.5 py-2 text-sm font-bold text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                {allExams.map((e) => (
-                  <option key={e.id} value={e.id} className="bg-card text-text-primary">
-                    {e.name} ({e.category})
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  id="exam-selector"
+                  value={currentExam?.id || ""}
+                  onChange={(e) => handleExamChange(e.target.value)}
+                  disabled={isPending}
+                  className="w-full h-11 appearance-none rounded-xl border border-input-border bg-card px-3.5 py-2 pr-10 text-sm font-bold text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer disabled:opacity-60 transition"
+                  style={{ colorScheme: "dark" }}
+                >
+                  {allExams.map((e) => (
+                    <option
+                      key={e.id}
+                      value={e.id}
+                      className="bg-[#0e1726] text-white py-1.5"
+                    >
+                      {e.name} ({e.category})
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute right-3.5 top-3.5 flex items-center text-text-muted">
+                  <ChevronDown className="h-4 w-4" />
+                </div>
+              </div>
+              {isPending && (
+                <p className="text-[11px] text-primary animate-pulse font-medium">
+                  Loading examination curriculum...
+                </p>
+              )}
             </div>
 
             {/* Overall Progress Widget */}
@@ -225,7 +393,7 @@ export default function SyllabusClient({
                     );
                   }}
                   className={cn(
-                    "w-full text-left rounded-xl p-3.5 transition flex flex-col gap-1.5 border",
+                    "w-full text-left rounded-xl p-3.5 transition flex flex-col gap-1.5 border cursor-pointer",
                     isSelected
                       ? "bg-primary text-white border-primary shadow-sm shadow-primary/20"
                       : "bg-card border-border text-text-primary hover:bg-background-secondary"
@@ -285,7 +453,7 @@ export default function SyllabusClient({
                       placeholder="Search topics..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="rounded-lg border border-input-border bg-card py-1.5 pl-9 pr-3 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      className="rounded-lg border border-input-border bg-card py-1.5 pl-9 pr-3 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 w-48 sm:w-64"
                     />
                   </div>
                 </div>
@@ -295,11 +463,15 @@ export default function SyllabusClient({
                 {/* Chapters List */}
                 {(activeSubject.chapters || []).map((chapter) => {
                   const isOpen = openChapterIds.has(chapter.id);
-                  const topics = (chapter.topics || []).filter((t) =>
-                    searchQuery
-                      ? t.title.toLowerCase().includes(searchQuery.toLowerCase())
-                      : true
-                  );
+                  const q = searchQuery.toLowerCase().trim();
+                  const topics = (chapter.topics || []).filter((t) => {
+                    if (!q) return true;
+                    return (
+                      t.title.toLowerCase().includes(q) ||
+                      (t.description && t.description.toLowerCase().includes(q)) ||
+                      (t.official_syllabus_ref && t.official_syllabus_ref.toLowerCase().includes(q))
+                    );
+                  });
 
                   let cTotal = chapter.topics?.length || 0;
                   let cCompleted =
@@ -343,7 +515,7 @@ export default function SyllabusClient({
                               e.stopPropagation();
                               setSelectedChapterForPersonal(chapter);
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline bg-primary-soft px-2.5 py-1 rounded-md border border-primary/20"
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline bg-primary-soft px-2.5 py-1 rounded-md border border-primary/20 cursor-pointer"
                             title="Add personal topic to chapter"
                           >
                             <Plus className="h-3 w-3" />
@@ -372,7 +544,7 @@ export default function SyllabusClient({
                                         onClick={() =>
                                           handleStatusChange(topic.id, status)
                                         }
-                                        className="focus:outline-none shrink-0"
+                                        className="focus:outline-none shrink-0 cursor-pointer"
                                         title={`Status: ${status}. Click to cycle.`}
                                       >
                                         {status === "Completed" ? (

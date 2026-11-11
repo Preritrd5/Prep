@@ -7,8 +7,9 @@ import {
   saveStoredTopicProgress,
   saveStoredPersonalNote,
   deleteStoredPersonalNote,
+  saveStoredPersonalTopic,
 } from "@/lib/data/local-store";
-import type { TopicProgressStatus, TopicProgress, PersonalNote } from "@/lib/types";
+import type { TopicProgressStatus, TopicProgress, PersonalNote, Topic } from "@/lib/types";
 
 export async function updateTopicProgressAction(formData: FormData) {
   const { user } = await requireAuth();
@@ -90,9 +91,27 @@ export async function createPersonalTopicAction(formData: FormData) {
     return { error: "Topic title is required." };
   }
 
+  const topicRecord: Topic = {
+    id: `topic-personal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    chapter_id: chapterId,
+    title,
+    description,
+    estimated_minutes: estimatedMinutes,
+    official_syllabus_ref: null,
+    textbook_ref: null,
+    textbook_page_start: null,
+    textbook_page_end: null,
+    order_index: 99,
+    is_published: true,
+    is_personal: true,
+    created_by: user.id,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
   try {
     const supabase = await createClient();
-    const { error } = await supabase.from("topics").insert({
+    const { data, error } = await supabase.from("topics").insert({
       chapter_id: chapterId,
       title,
       description,
@@ -100,14 +119,19 @@ export async function createPersonalTopicAction(formData: FormData) {
       is_personal: true,
       is_published: false,
       created_by: user.id,
-    });
+    }).select("id").single();
 
+    if (data?.id) {
+      topicRecord.id = data.id;
+    }
     if (error) {
-      console.warn("[Syllabus] Topic insert failed:", error.message);
+      console.warn("[Syllabus] Topic insert failed, saving to local store:", error.message);
     }
   } catch (err: any) {
-    console.warn("[Syllabus] Database exception:", err?.message);
+    console.warn("[Syllabus] Database exception, saving to local store:", err?.message);
   }
+
+  await saveStoredPersonalTopic(topicRecord);
 
   revalidatePath("/syllabus");
   return { success: true };

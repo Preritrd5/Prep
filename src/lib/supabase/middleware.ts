@@ -66,7 +66,9 @@ export async function updateSession(request: NextRequest) {
   if (pathname.startsWith("/student") || pathname.startsWith("/admin")) {
     const cleanPath = pathname.replace(/\/$/, "");
     const target = legacyMap[cleanPath] || legacyMap[pathname] || "/dashboard";
-    return NextResponse.redirect(new URL(target, request.url));
+    const redirectUrl = new URL(target, request.url);
+    redirectUrl.search = request.nextUrl.search;
+    return NextResponse.redirect(redirectUrl);
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;

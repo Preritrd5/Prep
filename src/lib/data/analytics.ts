@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getStoredNotifications } from "./local-store";
 import type {
   StudentPerformanceAnalytics,
   SubjectAnalyticsSummary,
@@ -694,16 +695,21 @@ export async function getStudentStudyRecommendations(
 // ============================================================================
 
 export async function getStudentNotifications(studentId: string): Promise<StudentNotification[]> {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
+    const { data: notifs, error } = await supabase
+      .from("student_notifications")
+      .select("*")
+      .eq("student_id", studentId)
+      .order("created_at", { ascending: false })
+      .limit(30);
 
-  const { data: notifs } = await supabase
-    .from("student_notifications")
-    .select("*")
-    .eq("student_id", studentId)
-    .order("created_at", { ascending: false })
-    .limit(30);
+    if (!error && notifs && notifs.length > 0) {
+      return notifs as StudentNotification[];
+    }
+  } catch {}
 
-  return (notifs || []) as StudentNotification[];
+  return await getStoredNotifications(studentId);
 }
 
 export async function getStudentNotificationPreferences(

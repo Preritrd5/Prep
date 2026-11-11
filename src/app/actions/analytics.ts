@@ -13,6 +13,7 @@ import type {
   AdminAuditEntity,
 } from "@/lib/types";
 import { getStudentPerformanceAnalytics, getWeakTopics } from "@/lib/data/analytics";
+import { markStoredNotificationRead, deleteStoredNotification } from "@/lib/data/local-store";
 
 // ============================================================================
 // MODULE 5: REVISION ACTIONS (SPACED REPETITION ENGINE)
@@ -201,22 +202,27 @@ export async function studentUpdateRecommendationStatusAction(
 
 export async function studentMarkNotificationReadAction(notificationId?: string) {
   const { user } = await requireOwner();
-  const supabase = await createClient();
 
-  if (notificationId) {
-    await supabase
-      .from("student_notifications")
-      .update({ is_read: true })
-      .eq("id", notificationId)
-      .eq("student_id", user.id);
-  } else {
-    // Mark all read
-    await supabase
-      .from("student_notifications")
-      .update({ is_read: true })
-      .eq("student_id", user.id)
-      .eq("is_read", false);
+  try {
+    const supabase = await createClient();
+    if (notificationId) {
+      await supabase
+        .from("student_notifications")
+        .update({ is_read: true })
+        .eq("id", notificationId)
+        .eq("student_id", user.id);
+    } else {
+      await supabase
+        .from("student_notifications")
+        .update({ is_read: true })
+        .eq("student_id", user.id)
+        .eq("is_read", false);
+    }
+  } catch (err: any) {
+    console.warn("[Analytics] Database notification mark read exception:", err?.message);
   }
+
+  await markStoredNotificationRead(user.id, notificationId);
 
   revalidatePath("/notifications");
   return { success: true };
@@ -224,13 +230,19 @@ export async function studentMarkNotificationReadAction(notificationId?: string)
 
 export async function studentDeleteNotificationAction(notificationId: string) {
   const { user } = await requireOwner();
-  const supabase = await createClient();
 
-  await supabase
-    .from("student_notifications")
-    .delete()
-    .eq("id", notificationId)
-    .eq("student_id", user.id);
+  try {
+    const supabase = await createClient();
+    await supabase
+      .from("student_notifications")
+      .delete()
+      .eq("id", notificationId)
+      .eq("student_id", user.id);
+  } catch (err: any) {
+    console.warn("[Analytics] Database notification delete exception:", err?.message);
+  }
+
+  await deleteStoredNotification(user.id, notificationId);
 
   revalidatePath("/notifications");
   return { success: true };

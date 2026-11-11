@@ -42,6 +42,7 @@ export default function SubjectPracticeClient({
             <select
               value={selectedSubjectId}
               onChange={(e) => setSelectedSubjectId(e.target.value)}
+              style={{ colorScheme: "dark" }}
               className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Subjects (Comprehensive Mock)</option>
@@ -60,6 +61,7 @@ export default function SubjectPracticeClient({
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
+              style={{ colorScheme: "dark" }}
               className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">Mixed Difficulty</option>
@@ -76,6 +78,7 @@ export default function SubjectPracticeClient({
             <select
               value={questionCount}
               onChange={(e) => setQuestionCount(Number(e.target.value))}
+              style={{ colorScheme: "dark" }}
               className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value={5}>5 Questions</option>

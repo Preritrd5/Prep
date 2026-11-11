@@ -120,7 +120,7 @@ export default function NotificationsClient({
         title="Notification Center"
         description="Real-time updates for spaced revisions, pending tasks, published mock examinations, and announcements."
         breadcrumbs={[
-          { label: "Student", href: "/student/dashboard" },
+          { label: "Dashboard", href: "/dashboard" },
           { label: "Notifications" },
         ]}
         actions={
@@ -135,7 +135,7 @@ export default function NotificationsClient({
                 Mark all as read
               </Button>
             )}
-            <Link href="/student/notifications/settings">
+            <Link href="/notifications/settings">
               <Button
                 variant="outline"
                 size="sm"

@@ -169,6 +169,7 @@ export default function PersonalQuestionBankClient({
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
+              style={{ colorScheme: "dark" }}
               className="w-full px-3 py-2 rounded-xl border border-border bg-input text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
             >
               <option value="All">All Curriculum Subjects</option>
@@ -185,6 +186,7 @@ export default function PersonalQuestionBankClient({
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value as any)}
+              style={{ colorScheme: "dark" }}
               className="w-full px-3 py-2 rounded-xl border border-border bg-input text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
             >
               <option value="All">All Difficulties</option>
@@ -199,6 +201,7 @@ export default function PersonalQuestionBankClient({
             <select
               value={selectedSource}
               onChange={(e) => setSelectedSource(e.target.value as any)}
+              style={{ colorScheme: "dark" }}
               className="w-full px-3 py-2 rounded-xl border border-border bg-input text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
             >
               <option value="All">All Sources</option>

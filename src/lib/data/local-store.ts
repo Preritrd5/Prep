@@ -4,12 +4,11 @@ import path from "path";
 import type {
   StudyTask,
   StudyPreferences,
+  Topic,
   TopicProgress,
   PersonalNote,
-  Question,
-  QuestionOption,
-  QuestionAnswerKey,
-  ExamTemplate,
+  StudentNotification,
+  NotificationCategory,
 } from "@/lib/types";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
@@ -157,7 +156,33 @@ export async function saveStoredTopicProgress(progress: TopicProgress): Promise<
 }
 
 // ===========================================================================
-// 4. PERSONAL NOTES STORE
+// 4. PERSONAL TOPICS STORE
+// ===========================================================================
+
+const PERSONAL_TOPICS_FILE = "personal_topics.json";
+
+export async function getStoredPersonalTopics(chapterIds?: string[]): Promise<Topic[]> {
+  const all = readJsonFile<Topic[]>(PERSONAL_TOPICS_FILE, []);
+  if (chapterIds && chapterIds.length > 0) {
+    const set = new Set(chapterIds);
+    return all.filter((t) => t.chapter_id && set.has(t.chapter_id));
+  }
+  return all;
+}
+
+export async function saveStoredPersonalTopic(topic: Topic): Promise<void> {
+  const all = readJsonFile<Topic[]>(PERSONAL_TOPICS_FILE, []);
+  const idx = all.findIndex((t) => t.id === topic.id);
+  if (idx >= 0) {
+    all[idx] = topic;
+  } else {
+    all.push(topic);
+  }
+  writeJsonFile(PERSONAL_TOPICS_FILE, all);
+}
+
+// ===========================================================================
+// 5. PERSONAL NOTES STORE
 // ===========================================================================
 
 const NOTES_FILE = "personal_notes.json";
@@ -185,7 +210,7 @@ export async function deleteStoredPersonalNote(noteId: string, studentId: string
 }
 
 // ===========================================================================
-// 5. QUESTION BOOKMARKS STORE
+// 6. QUESTION BOOKMARKS STORE
 // ===========================================================================
 
 const BOOKMARKS_FILE = "question_bookmarks.json";
@@ -219,4 +244,105 @@ export async function toggleStoredBookmark(studentId: string, questionId: string
     writeJsonFile(BOOKMARKS_FILE, all);
     return true; // bookmarked
   }
+}
+
+// ===========================================================================
+// 7. NOTIFICATIONS STORE
+// ===========================================================================
+
+const NOTIFICATIONS_FILE = "student_notifications.json";
+
+function getSeedNotifications(studentId: string): StudentNotification[] {
+  const now = new Date();
+  const hoursAgo = (h: number) => new Date(now.getTime() - h * 3600000).toISOString();
+
+  return [
+    {
+      id: "notif-seed-1",
+      student_id: studentId,
+      category: "admin_announcement",
+      title: "Welcome to PrepTrack Workspace",
+      message: "Your personal examination preparation system is configured. Track your syllabus, routines, and mock examinations.",
+      link: "/dashboard",
+      is_read: false,
+      entity_type: null,
+      entity_id: null,
+      created_at: hoursAgo(1),
+    },
+    {
+      id: "notif-seed-2",
+      student_id: studentId,
+      category: "upcoming_task",
+      title: "Daily Study Routine Active",
+      message: "Check your recurring daily study slots in Daily Routine & Tasks to stay on schedule.",
+      link: "/routine",
+      is_read: false,
+      entity_type: null,
+      entity_id: null,
+      created_at: hoursAgo(4),
+    },
+    {
+      id: "notif-seed-3",
+      student_id: studentId,
+      category: "recommendation",
+      title: "Syllabus Tracker Ready",
+      message: "Review curriculum topics across GATE, KAS, UPSC, Railway, and KEA examinations.",
+      link: "/syllabus",
+      is_read: false,
+      entity_type: null,
+      entity_id: null,
+      created_at: hoursAgo(12),
+    },
+    {
+      id: "notif-seed-4",
+      student_id: studentId,
+      category: "upcoming_exam",
+      title: "Upcoming Exam Dates",
+      message: "Check exam dates and notification updates in your Calendar & Exam Dates tracker.",
+      link: "/calendar",
+      is_read: true,
+      entity_type: null,
+      entity_id: null,
+      created_at: hoursAgo(24),
+    },
+  ];
+}
+
+export async function getStoredNotifications(studentId: string): Promise<StudentNotification[]> {
+  let all = readJsonFile<StudentNotification[]>(NOTIFICATIONS_FILE, []);
+  let userNotifs = all.filter((n) => n.student_id === studentId);
+  if (userNotifs.length === 0) {
+    const seed = getSeedNotifications(studentId);
+    all = [...all, ...seed];
+    writeJsonFile(NOTIFICATIONS_FILE, all);
+    userNotifs = seed;
+  }
+  return userNotifs.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
+export async function markStoredNotificationRead(
+  studentId: string,
+  notificationId?: string
+): Promise<void> {
+  const all = readJsonFile<StudentNotification[]>(NOTIFICATIONS_FILE, []);
+  if (notificationId) {
+    const match = all.find((n) => n.id === notificationId && n.student_id === studentId);
+    if (match) match.is_read = true;
+  } else {
+    all.forEach((n) => {
+      if (n.student_id === studentId) n.is_read = true;
+    });
+  }
+  writeJsonFile(NOTIFICATIONS_FILE, all);
+}
+
+export async function deleteStoredNotification(
+  studentId: string,
+  notificationId: string
+): Promise<void> {
+  const all = readJsonFile<StudentNotification[]>(NOTIFICATIONS_FILE, []);
+  const filtered = all.filter((n) => !(n.id === notificationId && n.student_id === studentId));
+  writeJsonFile(NOTIFICATIONS_FILE, filtered);
 }

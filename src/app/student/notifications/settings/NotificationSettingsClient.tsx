@@ -39,12 +39,12 @@ export default function NotificationSettingsClient({
         title="Notification Settings"
         description="Configure which study alerts you receive and customize quiet hours."
         breadcrumbs={[
-          { label: "Student", href: "/student/dashboard" },
-          { label: "Notifications", href: "/student/notifications" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Notifications", href: "/notifications" },
           { label: "Preferences" },
         ]}
         actions={
-          <Link href="/student/notifications">
+          <Link href="/notifications">
             <Button variant="outline" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>
               Back to Center
             </Button>

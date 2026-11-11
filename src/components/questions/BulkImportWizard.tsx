@@ -679,6 +679,7 @@ export default function BulkImportWizard({ subjects, exams }: BulkImportWizardPr
                           <select
                             value={q.correctOption}
                             onChange={(e) => updateQuestionField(q.tempId, "correctOption", e.target.value as OptionLabel)}
+                            style={{ colorScheme: "dark" }}
                             className="rounded-lg border border-border bg-input px-2.5 py-1 text-xs font-bold text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/25"
                           >
                             <option value="A">Option A</option>
@@ -708,6 +709,7 @@ export default function BulkImportWizard({ subjects, exams }: BulkImportWizardPr
                           <select
                             value={q.subjectId || defaultSubjectId}
                             onChange={(e) => updateQuestionField(q.tempId, "subjectId", e.target.value)}
+                            style={{ colorScheme: "dark" }}
                             className="rounded-lg border border-border bg-input px-2.5 py-1 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
                           >
                             {subjects.map((s) => (
@@ -821,6 +823,7 @@ export default function BulkImportWizard({ subjects, exams }: BulkImportWizardPr
                     <select
                       value={examNegative}
                       onChange={(e) => setExamNegative(Number(e.target.value))}
+                      style={{ colorScheme: "dark" }}
                       className="w-full rounded-xl border border-border px-3 py-2 bg-input text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
                     >
                       <option value={0}>No Negative Marking (0.0)</option>

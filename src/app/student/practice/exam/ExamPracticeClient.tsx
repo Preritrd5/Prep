@@ -80,6 +80,7 @@ export default function ExamPracticeClient({
             <select
               value={selectedExamId}
               onChange={(e) => setSelectedExamId(e.target.value)}
+              style={{ colorScheme: "dark" }}
               className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Competitive Examinations</option>
@@ -98,6 +99,7 @@ export default function ExamPracticeClient({
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
+              style={{ colorScheme: "dark" }}
               className="border border-border rounded-xl px-3 py-1.5 text-xs font-semibold bg-card text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="All">All Levels</option>

@@ -6,6 +6,7 @@ import {
   getStoredPreferences,
   getStoredTopicProgress,
   getStoredPersonalNotes,
+  getStoredPersonalTopics,
 } from "./local-store";
 import type {
   Exam,
@@ -973,6 +974,30 @@ export async function getExamSyllabus(
           chapter.topics = (topicsData as Topic[]) || [];
         }
       }
+
+      // Merge personal topics from local store
+      try {
+        const chapterIds = chapters.map((c) => c.id);
+        const personalTopics = await getStoredPersonalTopics(chapterIds);
+        if (personalTopics.length > 0) {
+          const personalByChap = new Map<string, Topic[]>();
+          personalTopics.forEach((pt) => {
+            if (pt.chapter_id) {
+              const list = personalByChap.get(pt.chapter_id) || [];
+              list.push(pt);
+              personalByChap.set(pt.chapter_id, list);
+            }
+          });
+          chapters.forEach((chap) => {
+            const extra = personalByChap.get(chap.id);
+            if (extra && extra.length > 0) {
+              const existingIds = new Set((chap.topics || []).map((t) => t.id));
+              const newExtra = extra.filter((t) => !existingIds.has(t.id));
+              chap.topics = [...(chap.topics || []), ...newExtra];
+            }
+          });
+        }
+      } catch {}
 
       // If studentId provided, fetch and attach topic progress
       if (studentId) {
