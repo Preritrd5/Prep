@@ -130,11 +130,6 @@ export default async function StudentDashboardPage() {
                 MCQ Practice
               </Button>
             </Link>
-            <Link href="/student/exams/online">
-              <Button variant="secondary" size="sm" leftIcon={<GraduationCap className="h-4 w-4 text-primary" />}>
-                Mock Tests
-              </Button>
-            </Link>
           </div>
         </div>
       </div>
@@ -590,9 +585,9 @@ export default async function StudentDashboardPage() {
                   title="No Mock Examinations Attempted"
                   description="Simulate real competitive exam environments with server-enforced countdown timers and instant question-level scorecards."
                   action={
-                    <Link href="/student/exams/online">
+                    <Link href="/practice">
                       <Button variant="primary" size="sm" leftIcon={<Play className="h-3.5 w-3.5" />}>
-                        Start Mock Examination
+                        Practice Questions
                       </Button>
                     </Link>
                   }

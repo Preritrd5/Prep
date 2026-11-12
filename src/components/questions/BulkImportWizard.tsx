@@ -120,8 +120,8 @@ export default function BulkImportWizard({ subjects, exams }: BulkImportWizardPr
     try {
       const res = await convertNonMCQAction(nonMCQs);
       if (res.success && res.convertedQuestions) {
-        const convertedMap = new Map(res.convertedQuestions.map((c) => [c.tempId, c]));
-        setExtractedQuestions((prev) =>
+        const convertedMap = new Map(res.convertedQuestions.map((c: ExtractedQuestionItem) => [c.tempId, c]));
+        setExtractedQuestions((prev: ExtractedQuestionItem[]) =>
           prev.map((q) => convertedMap.get(q.tempId) || q)
         );
       } else {

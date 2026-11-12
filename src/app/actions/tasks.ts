@@ -3,17 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { saveStoredRoutine, deleteStoredRoutine } from "@/lib/data/routine-store";
+import { formatDatabaseError } from "@/lib/supabase/db-error";
 import {
-  saveStoredTask,
-  saveStoredTasks,
-  updateStoredTask,
-  deleteStoredTask,
-  saveStoredPreferences,
-  getStoredPreferences,
-  getStoredTasks,
-} from "@/lib/data/local-store";
-import type { TaskStatus, DayOfWeek, RoutineTemplate, StudyTask, StudyPreferences } from "@/lib/types";
+  isSchemaMissingError,
+  readCloudData,
+  writeCloudData,
+} from "@/lib/supabase/cloud-store";
+import type { TaskStatus, DayOfWeek, StudyTask, RoutineTemplate, StudyPreferences } from "@/lib/types";
 
 export async function createStudyTaskAction(formData: FormData) {
   const { user } = await requireAuth();
@@ -33,8 +29,8 @@ export async function createStudyTaskAction(formData: FormData) {
     return { error: "Title and scheduled date are required." };
   }
 
-  const taskRecord: StudyTask = {
-    id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  const newTaskPayload = {
+    id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     student_id: user.id,
     title,
     description,
@@ -43,7 +39,7 @@ export async function createStudyTaskAction(formData: FormData) {
     end_time: endTime,
     duration_minutes: durationMinutes,
     priority,
-    status: "Upcoming",
+    status: "Upcoming" as TaskStatus,
     exam_id: examId,
     subject_id: subjectId,
     topic_id: topicId,
@@ -56,35 +52,28 @@ export async function createStudyTaskAction(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("study_tasks")
-      .insert({
-        student_id: user.id,
-        title,
-        description,
-        scheduled_date: scheduledDate,
-        start_time: startTime,
-        end_time: endTime,
-        duration_minutes: durationMinutes,
-        priority,
-        status: "Upcoming",
-        exam_id: examId,
-        subject_id: subjectId,
-        topic_id: topicId,
-      })
-      .select("id")
-      .single();
+    const { error } = await supabase.from("study_tasks").insert(newTaskPayload);
 
     if (error) {
-      console.warn("[Tasks] Supabase insert failed, saving to local store:", error.message);
-      await saveStoredTask(taskRecord);
-    } else if (data?.id) {
-      taskRecord.id = data.id;
-      await saveStoredTask(taskRecord);
+      if (isSchemaMissingError(error)) {
+        // Fallback directly to Supabase cloud storage bucket
+        const tasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+        tasks.push(newTaskPayload as unknown as StudyTask);
+        await writeCloudData("study_tasks.json", tasks);
+      } else {
+        const err = formatDatabaseError(error, "study_tasks");
+        return { error: err.message };
+      }
     }
   } catch (err: any) {
-    console.warn("[Tasks] Database exception, saving to local store:", err?.message);
-    await saveStoredTask(taskRecord);
+    if (isSchemaMissingError(err)) {
+      const tasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+      tasks.push(newTaskPayload as unknown as StudyTask);
+      await writeCloudData("study_tasks.json", tasks);
+    } else {
+      const errorDetails = formatDatabaseError(err, "study_tasks");
+      return { error: errorDetails.message };
+    }
   }
 
   revalidatePath("/tasks");
@@ -109,16 +98,38 @@ export async function toggleTaskStatusAction(taskId: string, newStatus: TaskStat
 
   try {
     const supabase = await createClient();
-    await supabase
+    const { error } = await supabase
       .from("study_tasks")
       .update(updateData)
       .eq("id", taskId)
       .eq("student_id", user.id);
-  } catch (err: any) {
-    console.warn("[Tasks] Database update exception:", err?.message);
-  }
 
-  await updateStoredTask(taskId, user.id, updateData);
+    if (error) {
+      if (isSchemaMissingError(error)) {
+        const tasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+        const idx = tasks.findIndex((t) => t.id === taskId);
+        if (idx >= 0) {
+          tasks[idx] = { ...tasks[idx], ...updateData };
+          await writeCloudData("study_tasks.json", tasks);
+        }
+      } else {
+        const err = formatDatabaseError(error, "study_tasks");
+        return { error: err.message };
+      }
+    }
+  } catch (err: any) {
+    if (isSchemaMissingError(err)) {
+      const tasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+      const idx = tasks.findIndex((t) => t.id === taskId);
+      if (idx >= 0) {
+        tasks[idx] = { ...tasks[idx], ...updateData };
+        await writeCloudData("study_tasks.json", tasks);
+      }
+    } else {
+      const errorDetails = formatDatabaseError(err, "study_tasks");
+      return { error: errorDetails.message };
+    }
+  }
 
   revalidatePath("/tasks");
   revalidatePath("/calendar");
@@ -131,16 +142,32 @@ export async function deleteStudyTaskAction(taskId: string) {
 
   try {
     const supabase = await createClient();
-    await supabase
+    const { error } = await supabase
       .from("study_tasks")
       .delete()
       .eq("id", taskId)
       .eq("student_id", user.id);
-  } catch (err: any) {
-    console.warn("[Tasks] Database delete exception:", err?.message);
-  }
 
-  await deleteStoredTask(taskId, user.id);
+    if (error) {
+      if (isSchemaMissingError(error)) {
+        const tasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+        const filtered = tasks.filter((t) => t.id !== taskId);
+        await writeCloudData("study_tasks.json", filtered);
+      } else {
+        const err = formatDatabaseError(error, "study_tasks");
+        return { error: err.message };
+      }
+    }
+  } catch (err: any) {
+    if (isSchemaMissingError(err)) {
+      const tasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+      const filtered = tasks.filter((t) => t.id !== taskId);
+      await writeCloudData("study_tasks.json", filtered);
+    } else {
+      const errorDetails = formatDatabaseError(err, "study_tasks");
+      return { error: errorDetails.message };
+    }
+  }
 
   revalidatePath("/tasks");
   revalidatePath("/calendar");
@@ -155,117 +182,117 @@ export async function carryForwardIncompleteTasksAction() {
   const { user } = await requireAuth();
   const todayStr = new Date().toISOString().split("T")[0];
 
-  // 1. Check student preference
-  let autoCarry = true;
   try {
     const supabase = await createClient();
-    const { data: pref } = await supabase
+
+    // 1. Check student preference
+    const { data: pref, error: prefError } = await supabase
       .from("study_preferences")
       .select("auto_carry_forward")
       .eq("student_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (pref) {
+    let autoCarry = true;
+    if (prefError && isSchemaMissingError(prefError)) {
+      const cloudPrefs = await readCloudData<StudyPreferences | null>("study_preferences.json", null);
+      autoCarry = cloudPrefs?.auto_carry_forward ?? true;
+    } else if (pref) {
       autoCarry = pref.auto_carry_forward ?? true;
-    } else {
-      const localPref = await getStoredPreferences(user.id);
-      if (localPref) autoCarry = localPref.auto_carry_forward;
     }
-  } catch {
-    const localPref = await getStoredPreferences(user.id);
-    if (localPref) autoCarry = localPref.auto_carry_forward;
-  }
 
-  if (!autoCarry) {
-    return { success: false, message: "Automatic carry-forward is disabled in your preferences." };
-  }
+    if (!autoCarry) {
+      return { success: false, message: "Automatic carry-forward is disabled in your preferences." };
+    }
 
-  // 2. Find eligible overdue tasks
-  let pastTasks: StudyTask[] = [];
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase
+    // 2. Find eligible overdue tasks
+    const { data: pastTasks, error: tasksError } = await supabase
       .from("study_tasks")
       .select("*")
       .eq("student_id", user.id)
       .lt("scheduled_date", todayStr)
       .in("status", ["Incomplete", "Missed", "Upcoming", "In Progress"]);
 
-    if (data && data.length > 0) {
-      pastTasks = data as StudyTask[];
+    let eligibleList: StudyTask[] = [];
+
+    if (tasksError && isSchemaMissingError(tasksError)) {
+      const cloudTasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+      eligibleList = cloudTasks.filter(
+        (t) =>
+          t.student_id === user.id &&
+          t.scheduled_date < todayStr &&
+          ["Incomplete", "Missed", "Upcoming", "In Progress"].includes(t.status)
+      );
+    } else if (pastTasks) {
+      eligibleList = pastTasks as StudyTask[];
     }
-  } catch {
-    // fallback to local tasks
-  }
 
-  if (pastTasks.length === 0) {
-    const localTasks = await getStoredTasks(user.id);
-    pastTasks = localTasks.filter(
-      (t) =>
-        t.scheduled_date < todayStr &&
-        ["Incomplete", "Missed", "Upcoming", "In Progress"].includes(t.status)
-    );
-  }
+    if (!eligibleList || eligibleList.length === 0) {
+      return { success: true, count: 0, message: "No overdue tasks require carry-forward." };
+    }
 
-  if (pastTasks.length === 0) {
-    return { success: true, count: 0, message: "No overdue tasks require carry-forward." };
-  }
+    // Filter tasks already carried forward
+    const tasksToCarry = eligibleList.filter((t) => !t.is_carried_forward);
+    if (tasksToCarry.length === 0) {
+      return { success: true, count: 0, message: "All overdue tasks are already rescheduled." };
+    }
 
-  // Filter tasks already carried forward
-  const tasksToCarry = pastTasks.filter((t) => !t.is_carried_forward);
-  if (tasksToCarry.length === 0) {
-    return { success: true, count: 0, message: "All overdue tasks are already rescheduled." };
-  }
+    const newTasks: StudyTask[] = tasksToCarry.map((task) => ({
+      id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      student_id: user.id,
+      exam_id: task.exam_id,
+      subject_id: task.subject_id,
+      topic_id: task.topic_id,
+      title: `[Carry-Forward] ${task.title.replace(/^\[Carry-Forward\]\s*/, "")}`,
+      description: task.description
+        ? `${task.description} (Rescheduled from ${task.scheduled_date})`
+        : `Rescheduled from ${task.scheduled_date}`,
+      scheduled_date: todayStr,
+      start_time: task.start_time,
+      end_time: task.end_time,
+      duration_minutes: task.duration_minutes,
+      priority: task.priority,
+      status: "Upcoming",
+      completed_at: null,
+      carried_from_task_id: task.id,
+      is_carried_forward: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
 
-  const newTasks: StudyTask[] = tasksToCarry.map((task) => ({
-    id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    student_id: user.id,
-    exam_id: task.exam_id,
-    subject_id: task.subject_id,
-    topic_id: task.topic_id,
-    title: `[Carry-Forward] ${task.title.replace(/^\[Carry-Forward\]\s*/, "")}`,
-    description: task.description
-      ? `${task.description} (Rescheduled from ${task.scheduled_date})`
-      : `Rescheduled from ${task.scheduled_date}`,
-    scheduled_date: todayStr,
-    start_time: task.start_time,
-    end_time: task.end_time,
-    duration_minutes: task.duration_minutes,
-    priority: task.priority,
-    status: "Upcoming",
-    completed_at: null,
-    carried_from_task_id: task.id,
-    is_carried_forward: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }));
+    const { error: insertError } = await supabase.from("study_tasks").insert(newTasks);
+    if (insertError && isSchemaMissingError(insertError)) {
+      const cloudTasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+      // Mark old ones incomplete
+      const carriedIds = new Set(tasksToCarry.map((t) => t.id));
+      const updated = cloudTasks.map((t) =>
+        carriedIds.has(t.id) ? { ...t, status: "Incomplete" as TaskStatus } : t
+      );
+      updated.push(...newTasks);
+      await writeCloudData("study_tasks.json", updated);
+    } else if (insertError) {
+      const err = formatDatabaseError(insertError, "study_tasks");
+      return { success: false, message: err.message };
+    } else {
+      await supabase
+        .from("study_tasks")
+        .update({ status: "Incomplete", updated_at: new Date().toISOString() })
+        .in("id", tasksToCarry.map((t) => t.id))
+        .eq("student_id", user.id);
+    }
 
-  try {
-    const supabase = await createClient();
-    await supabase.from("study_tasks").insert(newTasks);
-    await supabase
-      .from("study_tasks")
-      .update({ status: "Incomplete", updated_at: new Date().toISOString() })
-      .in("id", tasksToCarry.map((t) => t.id))
-      .eq("student_id", user.id);
+    revalidatePath("/tasks");
+    revalidatePath("/calendar");
+    revalidatePath("/dashboard");
+
+    return {
+      success: true,
+      count: newTasks.length,
+      message: `Successfully carried forward ${newTasks.length} task(s) to today.`,
+    };
   } catch (err: any) {
-    console.warn("[Tasks] Database carry forward exception:", err?.message);
+    const errDetails = formatDatabaseError(err, "study_tasks");
+    return { success: false, error: errDetails.message, message: errDetails.message };
   }
-
-  await saveStoredTasks(newTasks);
-  for (const t of tasksToCarry) {
-    await updateStoredTask(t.id, user.id, { status: "Incomplete" });
-  }
-
-  revalidatePath("/tasks");
-  revalidatePath("/calendar");
-  revalidatePath("/dashboard");
-
-  return {
-    success: true,
-    count: newTasks.length,
-    message: `Successfully carried forward ${newTasks.length} task(s) to today without duplicate creation.`,
-  };
 }
 
 export async function createDailyRoutineAction(formData: FormData) {
@@ -284,8 +311,8 @@ export async function createDailyRoutineAction(formData: FormData) {
     return { error: "Title, Day, Start Time and End Time are required." };
   }
 
-  const routineRecord: RoutineTemplate = {
-    id: `routine-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  const newRoutinePayload = {
+    id: `routine-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     student_id: user.id,
     title,
     day_of_week: dayOfWeek,
@@ -295,7 +322,6 @@ export async function createDailyRoutineAction(formData: FormData) {
     priority,
     exam_id: examId,
     subject_id: subjectId,
-    topic_id: null,
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -303,33 +329,27 @@ export async function createDailyRoutineAction(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("routine_templates")
-      .insert({
-        student_id: user.id,
-        title,
-        day_of_week: dayOfWeek,
-        start_time: startTime,
-        end_time: endTime,
-        duration_minutes: durationMinutes,
-        priority,
-        exam_id: examId,
-        subject_id: subjectId,
-        is_active: true,
-      })
-      .select("id")
-      .single();
+    const { error } = await supabase.from("routine_templates").insert(newRoutinePayload);
 
     if (error) {
-      console.warn("[Tasks] Supabase routine insert failed, saving to fallback store:", error.message);
-      await saveStoredRoutine(routineRecord);
-    } else if (data?.id) {
-      routineRecord.id = data.id;
-      await saveStoredRoutine(routineRecord);
+      if (isSchemaMissingError(error)) {
+        const routines = await readCloudData<RoutineTemplate[]>("routine_templates.json", []);
+        routines.push(newRoutinePayload as unknown as RoutineTemplate);
+        await writeCloudData("routine_templates.json", routines);
+      } else {
+        const err = formatDatabaseError(error, "routine_templates");
+        return { error: err.message };
+      }
     }
   } catch (err: any) {
-    console.warn("[Tasks] Database operation exception, saving to fallback store:", err?.message);
-    await saveStoredRoutine(routineRecord);
+    if (isSchemaMissingError(err)) {
+      const routines = await readCloudData<RoutineTemplate[]>("routine_templates.json", []);
+      routines.push(newRoutinePayload as unknown as RoutineTemplate);
+      await writeCloudData("routine_templates.json", routines);
+    } else {
+      const errDetails = formatDatabaseError(err, "routine_templates");
+      return { error: errDetails.message };
+    }
   }
 
   revalidatePath("/routine");
@@ -342,16 +362,32 @@ export async function deleteDailyRoutineAction(routineId: string) {
 
   try {
     const supabase = await createClient();
-    await supabase
+    const { error } = await supabase
       .from("routine_templates")
       .delete()
       .eq("id", routineId)
       .eq("student_id", user.id);
-  } catch (err: any) {
-    console.warn("[Tasks] Database delete exception:", err?.message);
-  }
 
-  await deleteStoredRoutine(routineId, user.id);
+    if (error) {
+      if (isSchemaMissingError(error)) {
+        const routines = await readCloudData<RoutineTemplate[]>("routine_templates.json", []);
+        const filtered = routines.filter((r) => r.id !== routineId);
+        await writeCloudData("routine_templates.json", filtered);
+      } else {
+        const err = formatDatabaseError(error, "routine_templates");
+        return { error: err.message };
+      }
+    }
+  } catch (err: any) {
+    if (isSchemaMissingError(err)) {
+      const routines = await readCloudData<RoutineTemplate[]>("routine_templates.json", []);
+      const filtered = routines.filter((r) => r.id !== routineId);
+      await writeCloudData("routine_templates.json", filtered);
+    } else {
+      const errDetails = formatDatabaseError(err, "routine_templates");
+      return { error: errDetails.message };
+    }
+  }
 
   revalidatePath("/routine");
   revalidatePath("/dashboard");
@@ -384,26 +420,26 @@ export async function updateStudyPreferencesAction(formData: FormData) {
   try {
     const supabase = await createClient();
     const { error } = await supabase.from("study_preferences").upsert(
-      {
-        student_id: user.id,
-        daily_study_hours: dailyStudyHours,
-        available_days: availableDays,
-        preferred_slot_duration_minutes: preferredSlotMinutes,
-        timezone,
-        auto_carry_forward: autoCarryForward,
-        updated_at: new Date().toISOString(),
-      },
+      prefsPayload,
       { onConflict: "student_id" }
     );
 
     if (error) {
-      console.warn("[Tasks] Supabase preference upsert failed, saving to local store:", error.message);
+      if (isSchemaMissingError(error)) {
+        await writeCloudData("study_preferences.json", prefsPayload);
+      } else {
+        const err = formatDatabaseError(error, "study_preferences");
+        return { error: err.message };
+      }
     }
   } catch (err: any) {
-    console.warn("[Tasks] Database preference exception, saving to local store:", err?.message);
+    if (isSchemaMissingError(err)) {
+      await writeCloudData("study_preferences.json", prefsPayload);
+    } else {
+      const errDetails = formatDatabaseError(err, "study_preferences");
+      return { error: errDetails.message };
+    }
   }
-
-  await saveStoredPreferences(prefsPayload);
 
   revalidatePath("/routine");
   revalidatePath("/planner");

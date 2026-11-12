@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Circle,
@@ -48,11 +49,14 @@ export default function TasksClient({
   allExams,
   allSubjects,
 }: TasksClientProps) {
+  const router = useRouter();
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus | "All">("All");
   const [selectedExamId, setSelectedExamId] = useState<string>("All");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [carryForwardNotice, setCarryForwardNotice] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // Add Task Form State
   const [title, setTitle] = useState("");
@@ -104,11 +108,13 @@ export default function TasksClient({
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim() || !scheduledDate) return;
     setIsPending(true);
+    setModalError(null);
 
     const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
+    formData.append("title", title.trim());
+    formData.append("description", description.trim());
     formData.append("scheduledDate", scheduledDate);
     formData.append("startTime", startTime);
     formData.append("durationMinutes", durationMinutes.toString());
@@ -116,39 +122,70 @@ export default function TasksClient({
     formData.append("examId", examId);
     formData.append("subjectId", subjectId);
 
-    await createStudyTaskAction(formData);
+    const res = await createStudyTaskAction(formData);
     setIsPending(false);
-    setIsAddModalOpen(false);
-    setTitle("");
-    setDescription("");
+
+    if (res?.error) {
+      setModalError(res.error);
+    } else {
+      setIsAddModalOpen(false);
+      setTitle("");
+      setDescription("");
+      setModalError(null);
+      router.refresh();
+    }
   };
 
   const handleToggle = async (task: StudyTask) => {
     const nextStatus: TaskStatus =
       task.status === "Completed" ? "Upcoming" : "Completed";
-    await toggleTaskStatusAction(task.id, nextStatus);
+    const res = await toggleTaskStatusAction(task.id, nextStatus);
+    if (res?.error) {
+      setPageError(res.error);
+    } else {
+      router.refresh();
+    }
   };
 
   const handleDelete = async (taskId: string) => {
     if (!confirm("Delete this study task?")) return;
-    await deleteStudyTaskAction(taskId);
+    const res = await deleteStudyTaskAction(taskId);
+    if (res?.error) {
+      setPageError(res.error);
+    } else {
+      router.refresh();
+    }
   };
 
   const handleCarryForward = async () => {
     setIsPending(true);
     setCarryForwardNotice(null);
+    setPageError(null);
 
     const res = await carryForwardIncompleteTasksAction();
     setIsPending(false);
 
-    if (res?.message) {
+    if (!res?.success) {
+      setPageError(res?.message || "Failed to carry forward tasks.");
+    } else if (res?.message) {
       setCarryForwardNotice(res.message);
+      router.refresh();
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & Carry-Forward Notification */}
+      {/* Top Banner & Error/Notice Notifications */}
+      {pageError && (
+        <Alert
+          variant="error"
+          onClose={() => setPageError(null)}
+          title="Operation Error"
+        >
+          {pageError}
+        </Alert>
+      )}
+
       {carryForwardNotice && (
         <Alert
           variant="info"
@@ -388,10 +425,19 @@ export default function TasksClient({
       {/* Add Task Modal */}
       <Modal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setModalError(null);
+        }}
         title="Create Study Task"
         description="Add a specific preparation assignment to your schedule."
       >
+        {modalError && (
+          <div className="mb-4">
+            <Alert variant="error" title={modalError} onClose={() => setModalError(null)} />
+          </div>
+        )}
+
         <form onSubmit={handleCreateTask} className="space-y-4">
           <Input
             label="Task Title"
@@ -474,7 +520,10 @@ export default function TasksClient({
             <Button
               variant="outline"
               type="button"
-              onClick={() => setIsAddModalOpen(false)}
+              onClick={() => {
+                setIsAddModalOpen(false);
+                setModalError(null);
+              }}
             >
               Cancel
             </Button>

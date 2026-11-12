@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Sparkles,
   Calendar,
@@ -33,6 +34,7 @@ export default function PlannerClient({
   allExams,
   preferences,
 }: PlannerClientProps) {
+  const router = useRouter();
   const [selectedExamId, setSelectedExamId] = useState<string>(
     enrolledExams[0]?.exam_id || allExams[0]?.id || ""
   );
@@ -102,6 +104,7 @@ export default function PlannerClient({
       );
       setProposedPlan(null);
       setInfoMsg(null);
+      router.refresh();
     }
   };
 

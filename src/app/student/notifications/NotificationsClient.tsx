@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, Badge, Button, PageHeader, EmptyState } from "@/components/ui";
+import { Card, Badge, Button, PageHeader, EmptyState, Spinner } from "@/components/ui";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -18,7 +18,6 @@ import {
   Inbox,
   Filter,
   CheckCheck,
-  Loader2,
 } from "lucide-react";
 import type { StudentNotification, NotificationCategory } from "@/lib/types";
 import {
@@ -323,7 +322,7 @@ export default function NotificationsClient({
                 <div className="flex items-center gap-1 shrink-0">
                   {processingId === notif.id ? (
                     <div className="p-1.5 flex items-center justify-center">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <Spinner size="sm" color="primary" label="Updating notification..." />
                     </div>
                   ) : (
                     <>

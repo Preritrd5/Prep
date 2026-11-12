@@ -1,11 +1,13 @@
 import React from "react";
-import { TableSkeleton, PageHeaderSkeleton } from "@/components/ui/page-skeleton";
+import { PageLoading } from "@/components/ui/LoadingState";
 
 export default function QuestionBankLoading() {
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-      <PageHeaderSkeleton />
-      <TableSkeleton rows={8} cols={5} />
+    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <PageLoading
+        message="Loading Question Bank..."
+        submessage="Fetching verified questions, options and explanation blueprints"
+      />
     </div>
   );
 }

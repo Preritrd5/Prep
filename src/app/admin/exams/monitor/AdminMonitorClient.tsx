@@ -109,7 +109,8 @@ export default function AdminMonitorClient({ metrics }: AdminMonitorClientProps)
             <Button
               variant="outline"
               size="sm"
-              icon={<RefreshCw className={`w-4 h-4 ${isPending ? "animate-spin" : ""}`} />}
+              isLoading={isPending}
+              icon={!isPending ? <RefreshCw className="w-4 h-4" /> : undefined}
               onClick={() => window.location.reload()}
             >
               Refresh

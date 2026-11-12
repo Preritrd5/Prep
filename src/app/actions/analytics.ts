@@ -14,13 +14,7 @@ import type {
   RevisionSchedule,
 } from "@/lib/types";
 import { getStudentPerformanceAnalytics, getWeakTopics } from "@/lib/data/analytics";
-import {
-  markStoredNotificationRead,
-  deleteStoredNotification,
-  getStoredRevisionSchedules,
-  saveStoredRevisionSchedule,
-  updateStoredRevisionSchedule,
-} from "@/lib/data/local-store";
+import { formatDatabaseError } from "@/lib/supabase/db-error";
 
 // ============================================================================
 // MODULE 5: REVISION ACTIONS (SPACED REPETITION ENGINE)
@@ -38,34 +32,31 @@ export async function studentUpdateRevisionAction(formData: FormData) {
     return { error: "Missing required revision parameters." };
   }
 
-  // Fetch current revision to calculate next spaced interval
+  // Fetch current revision from Supabase to calculate next spaced interval
   let currentRev: { topic_id: string; revision_number: number; interval_days: number } | null = null;
   try {
-    const { data } = await supabase
+    const { data, error: fetchErr } = await supabase
       .from("revision_schedules")
       .select("topic_id, revision_number, interval_days")
       .eq("id", revisionId)
       .eq("student_id", user.id)
       .single();
-    if (data) currentRev = data;
-  } catch {}
 
-  if (!currentRev) {
-    const storedList = await getStoredRevisionSchedules(user.id);
-    const match = storedList.find((r) => r.id === revisionId);
-    if (match) {
-      currentRev = {
-        topic_id: match.topic_id,
-        revision_number: match.revision_number,
-        interval_days: 1,
-      };
-    } else {
+    if (fetchErr || !data) {
       currentRev = {
         topic_id: "topic-default",
         revision_number: 1,
         interval_days: 1,
       };
+    } else {
+      currentRev = data;
     }
+  } catch (err: any) {
+    currentRev = {
+      topic_id: "topic-default",
+      revision_number: 1,
+      interval_days: 1,
+    };
   }
 
   const todayStr = new Date().toISOString().split("T")[0];
@@ -98,9 +89,9 @@ export async function studentUpdateRevisionAction(formData: FormData) {
   nextDate.setDate(nextDate.getDate() + nextIntervalDays);
   const nextDateStr = nextDate.toISOString().split("T")[0];
 
-  // 1. Mark current revision completed in Supabase
+  // 1. Mark current revision completed in Supabase PostgreSQL
   try {
-    await supabase
+    const { error: updErr } = await supabase
       .from("revision_schedules")
       .update({
         is_completed: true,
@@ -110,43 +101,29 @@ export async function studentUpdateRevisionAction(formData: FormData) {
       })
       .eq("id", revisionId)
       .eq("student_id", user.id);
-  } catch {}
 
-  // Update local store
-  await updateStoredRevisionSchedule(revisionId, user.id, {
-    is_completed: true,
-    completed_date: todayStr,
-    notes: notes || null,
-  });
+    if (updErr) {
+      const err = formatDatabaseError(updErr, "revision_schedules");
+      return { error: err.message };
+    }
+  } catch (err: any) {
+    const errDetails = formatDatabaseError(err, "revision_schedules");
+    return { error: errDetails.message };
+  }
 
   // 2. Schedule next revision cycle if not mastered
   if (shouldCreateNext) {
-    const nextRevisionRecord: RevisionSchedule = {
-      id: `rev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      student_id: user.id,
-      topic_id: currentRev.topic_id,
-      exam_id: null,
-      revision_number: (currentRev.revision_number || 1) + 1,
-      scheduled_date: nextDateStr,
-      is_completed: false,
-      completed_date: null,
-      notes: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
     try {
       await supabase.from("revision_schedules").insert({
-        id: nextRevisionRecord.id,
         student_id: user.id,
         topic_id: currentRev.topic_id,
-        revision_number: nextRevisionRecord.revision_number,
+        revision_number: (currentRev.revision_number || 1) + 1,
         scheduled_date: nextDateStr,
         is_completed: false,
       });
-    } catch {}
-
-    await saveStoredRevisionSchedule(nextRevisionRecord);
+    } catch (insErr: any) {
+      console.warn("[Analytics] Next revision insert:", insErr?.message);
+    }
   }
 
   revalidatePath("/revisions");
@@ -252,23 +229,32 @@ export async function studentMarkNotificationReadAction(notificationId?: string)
   try {
     const supabase = await createClient();
     if (notificationId) {
-      await supabase
+      const { error: updErr } = await supabase
         .from("student_notifications")
         .update({ is_read: true })
         .eq("id", notificationId)
         .eq("student_id", user.id);
+
+      if (updErr) {
+        const err = formatDatabaseError(updErr, "student_notifications");
+        return { error: err.message };
+      }
     } else {
-      await supabase
+      const { error: updErr } = await supabase
         .from("student_notifications")
         .update({ is_read: true })
         .eq("student_id", user.id)
         .eq("is_read", false);
+
+      if (updErr) {
+        const err = formatDatabaseError(updErr, "student_notifications");
+        return { error: err.message };
+      }
     }
   } catch (err: any) {
-    console.warn("[Analytics] Database notification mark read exception:", err?.message);
+    const errDetails = formatDatabaseError(err, "student_notifications");
+    return { error: errDetails.message };
   }
-
-  await markStoredNotificationRead(user.id, notificationId);
 
   revalidatePath("/notifications");
   return { success: true };
@@ -279,16 +265,20 @@ export async function studentDeleteNotificationAction(notificationId: string) {
 
   try {
     const supabase = await createClient();
-    await supabase
+    const { error: delErr } = await supabase
       .from("student_notifications")
       .delete()
       .eq("id", notificationId)
       .eq("student_id", user.id);
-  } catch (err: any) {
-    console.warn("[Analytics] Database notification delete exception:", err?.message);
-  }
 
-  await deleteStoredNotification(user.id, notificationId);
+    if (delErr) {
+      const err = formatDatabaseError(delErr, "student_notifications");
+      return { error: err.message };
+    }
+  } catch (err: any) {
+    const errDetails = formatDatabaseError(err, "student_notifications");
+    return { error: errDetails.message };
+  }
 
   revalidatePath("/notifications");
   return { success: true };

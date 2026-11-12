@@ -3,12 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { formatDatabaseError } from "@/lib/supabase/db-error";
 import {
-  saveStoredEnrollment,
-  removeStoredEnrollment,
-  saveStoredCustomExam,
-} from "@/lib/data/local-store";
-import type { StudentExam, Exam } from "@/lib/types";
+  isSchemaMissingError,
+  readCloudData,
+  writeCloudData,
+} from "@/lib/supabase/cloud-store";
+import type { StudentExam } from "@/lib/types";
 
 export async function enrollStudentExamAction(formData: FormData) {
   const { user } = await requireAuth();
@@ -32,11 +33,9 @@ export async function enrollStudentExamAction(formData: FormData) {
     updated_at: new Date().toISOString(),
   };
 
-  await saveStoredEnrollment(enrollmentRecord);
-
   try {
     const supabase = await createClient();
-    await supabase.from("student_exams").upsert(
+    const { error } = await supabase.from("student_exams").upsert(
       {
         student_id: user.id,
         exam_id: examId,
@@ -47,7 +46,29 @@ export async function enrollStudentExamAction(formData: FormData) {
       },
       { onConflict: "student_id,exam_id" }
     );
-  } catch {}
+
+    if (error) {
+      if (isSchemaMissingError(error)) {
+        const list = await readCloudData<StudentExam[]>("student_exams.json", []);
+        const filtered = list.filter((e) => !(e.student_id === user.id && e.exam_id === examId));
+        filtered.push(enrollmentRecord);
+        await writeCloudData("student_exams.json", filtered);
+      } else {
+        const err = formatDatabaseError(error, "student_exams");
+        return { error: err.message };
+      }
+    }
+  } catch (err: any) {
+    if (isSchemaMissingError(err)) {
+      const list = await readCloudData<StudentExam[]>("student_exams.json", []);
+      const filtered = list.filter((e) => !(e.student_id === user.id && e.exam_id === examId));
+      filtered.push(enrollmentRecord);
+      await writeCloudData("student_exams.json", filtered);
+    } else {
+      const errDetails = formatDatabaseError(err, "student_exams");
+      return { error: errDetails.message };
+    }
+  }
 
   revalidatePath("/examinations");
   revalidatePath("/dashboard");
@@ -63,16 +84,34 @@ export async function removeStudentExamAction(formData: FormData) {
     return { error: "Exam ID missing." };
   }
 
-  await removeStoredEnrollment(user.id, examId);
-
   try {
     const supabase = await createClient();
-    await supabase
+    const { error } = await supabase
       .from("student_exams")
       .delete()
       .eq("student_id", user.id)
       .eq("exam_id", examId);
-  } catch {}
+
+    if (error) {
+      if (isSchemaMissingError(error)) {
+        const list = await readCloudData<StudentExam[]>("student_exams.json", []);
+        const filtered = list.filter((e) => !(e.student_id === user.id && e.exam_id === examId));
+        await writeCloudData("student_exams.json", filtered);
+      } else {
+        const err = formatDatabaseError(error, "student_exams");
+        return { error: err.message };
+      }
+    }
+  } catch (err: any) {
+    if (isSchemaMissingError(err)) {
+      const list = await readCloudData<StudentExam[]>("student_exams.json", []);
+      const filtered = list.filter((e) => !(e.student_id === user.id && e.exam_id === examId));
+      await writeCloudData("student_exams.json", filtered);
+    } else {
+      const errDetails = formatDatabaseError(err, "student_exams");
+      return { error: errDetails.message };
+    }
+  }
 
   revalidatePath("/examinations");
   revalidatePath("/dashboard");
@@ -93,23 +132,9 @@ export async function adminCreateExamAction(formData: FormData) {
     return { error: "Name, Code and Category are required." };
   }
 
-  const customExam: Exam = {
-    id: `exam-${Date.now().toString(36)}`,
-    name,
-    code,
-    category,
-    sub_category: subCategory,
-    description,
-    is_active: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-
-  await saveStoredCustomExam(customExam);
-
   try {
     const supabase = await createClient();
-    await supabase.from("exams").insert({
+    const { error } = await supabase.from("exams").insert({
       name,
       code,
       category,
@@ -117,7 +142,15 @@ export async function adminCreateExamAction(formData: FormData) {
       description,
       is_active: true,
     });
-  } catch {}
+
+    if (error) {
+      const err = formatDatabaseError(error, "exams");
+      return { error: err.message };
+    }
+  } catch (err: any) {
+    const errDetails = formatDatabaseError(err, "exams");
+    return { error: errDetails.message };
+  }
 
   revalidatePath("/examinations");
   return { success: true };
@@ -129,15 +162,20 @@ export async function adminToggleExamStatusAction(formData: FormData) {
   const examId = formData.get("examId") as string;
   const currentStatus = formData.get("currentStatus") === "true";
 
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("exams")
+      .update({ is_active: !currentStatus, updated_at: new Date().toISOString() })
+      .eq("id", examId);
 
-  const { error } = await supabase
-    .from("exams")
-    .update({ is_active: !currentStatus, updated_at: new Date().toISOString() })
-    .eq("id", examId);
-
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      const err = formatDatabaseError(error, "exams");
+      return { error: err.message };
+    }
+  } catch (err: any) {
+    const errDetails = formatDatabaseError(err, "exams");
+    return { error: errDetails.message };
   }
 
   revalidatePath("/examinations");

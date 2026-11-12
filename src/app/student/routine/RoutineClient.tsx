@@ -59,6 +59,9 @@ export default function RoutineClient({
   const [isPrefModalOpen, setIsPrefModalOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [prefError, setPrefError] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [pageSuccess, setPageSuccess] = useState<string | null>(null);
 
   // Routine Form State
   const [title, setTitle] = useState("");
@@ -157,13 +160,22 @@ export default function RoutineClient({
 
   const handleDeleteRoutine = async (id: string) => {
     if (!confirm("Delete this recurring study routine slot?")) return;
-    await deleteDailyRoutineAction(id);
-    router.refresh();
+    setPageError(null);
+    setPageSuccess(null);
+    const res = await deleteDailyRoutineAction(id);
+    if (res?.error) {
+      setPageError(res.error);
+    } else {
+      setPageSuccess("Routine slot removed successfully.");
+      router.refresh();
+    }
   };
 
   const handleUpdatePreferences = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsPending(true);
+    setPrefError(null);
+    setPageError(null);
 
     const formData = new FormData();
     formData.append("dailyStudyHours", dailyHours.toString());
@@ -172,9 +184,16 @@ export default function RoutineClient({
     if (autoCarry) formData.append("autoCarryForward", "on");
     availableDays.forEach((d) => formData.append("availableDays", d));
 
-    await updateStudyPreferencesAction(formData);
+    const res = await updateStudyPreferencesAction(formData);
     setIsPending(false);
-    setIsPrefModalOpen(false);
+
+    if (res?.error) {
+      setPrefError(res.error);
+    } else {
+      setIsPrefModalOpen(false);
+      setPageSuccess("Study preferences successfully saved!");
+      router.refresh();
+    }
   };
 
   const toggleAvailableDay = (day: string) => {
@@ -185,6 +204,18 @@ export default function RoutineClient({
 
   return (
     <div className="space-y-6">
+      {pageError && (
+        <Alert variant="error" onClose={() => setPageError(null)} title="Action Error">
+          {pageError}
+        </Alert>
+      )}
+
+      {pageSuccess && (
+        <Alert variant="success" onClose={() => setPageSuccess(null)} title="Success">
+          {pageSuccess}
+        </Alert>
+      )}
+
       {/* Top Controls: Day Tabs & Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Day of Week Selector */}
@@ -451,10 +482,19 @@ export default function RoutineClient({
       {/* Edit Preferences Modal */}
       <Modal
         isOpen={isPrefModalOpen}
-        onClose={() => setIsPrefModalOpen(false)}
+        onClose={() => {
+          setIsPrefModalOpen(false);
+          setPrefError(null);
+        }}
         title="Study Preference Rules"
         description="Configure rules used by the deterministic study planning and auto carry-forward engines."
       >
+        {prefError && (
+          <div className="mb-4">
+            <Alert variant="error" title={prefError} onClose={() => setPrefError(null)} />
+          </div>
+        )}
+
         <form onSubmit={handleUpdatePreferences} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
@@ -526,7 +566,10 @@ export default function RoutineClient({
             <Button
               variant="outline"
               type="button"
-              onClick={() => setIsPrefModalOpen(false)}
+              onClick={() => {
+                setIsPrefModalOpen(false);
+                setPrefError(null);
+              }}
             >
               Cancel
             </Button>

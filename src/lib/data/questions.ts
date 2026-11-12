@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getStoredBookmarks, getStoredPersonalQuestions } from "./local-store";
 import type {
   Question,
   QuestionBank,
@@ -376,17 +375,10 @@ export async function getQuestions(filters?: {
       query = query.ilike("question_text", `%${filters.searchQuery}%`);
     }
 
-    const storedQuestions = await getStoredPersonalQuestions();
-
     const { data, error } = await query;
     if (error || !data || data.length === 0) {
-      // Merge fallback questions with stored personal questions
+      if (!allowDemoFallback()) return [];
       let res = [...FALLBACK_QUESTIONS];
-      storedQuestions.forEach((sq) => {
-        if (!res.some((q) => q.id === sq.id)) {
-          res.push(sq);
-        }
-      });
       if (filters?.subjectId && filters.subjectId !== "All") {
         res = res.filter((q) => q.subject_id === filters.subjectId);
       }
@@ -409,22 +401,10 @@ export async function getQuestions(filters?: {
       }
       return res;
     }
-    const combined = [...(data as Question[])];
-    storedQuestions.forEach((sq) => {
-      if (!combined.some((q) => q.id === sq.id)) {
-        combined.push(sq);
-      }
-    });
-    return combined;
+    return data as Question[];
   } catch {
-    const storedQuestions = await getStoredPersonalQuestions();
-    let res = [...FALLBACK_QUESTIONS];
-    storedQuestions.forEach((sq) => {
-      if (!res.some((q) => q.id === sq.id)) {
-        res.push(sq);
-      }
-    });
-    return res;
+    if (!allowDemoFallback()) return [];
+    return [...FALLBACK_QUESTIONS];
   }
 }
 
@@ -578,7 +558,7 @@ export async function getStudentBookmarks(studentId: string): Promise<string[]> 
     }
   } catch {}
 
-  return await getStoredBookmarks(studentId);
+  return [];
 }
 
 export async function getStudentIncorrectQuestionIds(studentId: string): Promise<string[]> {

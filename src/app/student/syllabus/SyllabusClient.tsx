@@ -13,7 +13,6 @@ import {
   FileText,
   Search,
   Sparkles,
-  Loader2,
 } from "lucide-react";
 import {
   updateTopicProgressAction,
@@ -28,7 +27,9 @@ import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Spinner } from "@/components/ui/Spinner";
 import { Select } from "@/components/ui/select";
+import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
 interface SyllabusClientProps {
@@ -56,17 +57,20 @@ export default function SyllabusClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTopicForNote, setSelectedTopicForNote] = useState<Topic | null>(null);
   const [selectedChapterForPersonal, setSelectedChapterForPersonal] = useState<Chapter | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   // Note form state
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
   const [isNotePending, setIsNotePending] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   // Personal topic state
   const [personalTitle, setPersonalTitle] = useState("");
   const [personalDesc, setPersonalDesc] = useState("");
   const [personalDuration, setPersonalDuration] = useState(60);
   const [isPersonalPending, setIsPersonalPending] = useState(false);
+  const [personalError, setPersonalError] = useState<string | null>(null);
 
   // Synchronize state when initialSubjects prop changes (e.g. when changing exam)
   useEffect(() => {
@@ -80,7 +84,7 @@ export default function SyllabusClient({
         setOpenChapterIds(new Set(active.chapters.map((c) => c.id)));
       }
     }
-  }, [initialSubjects]);
+  }, [initialSubjects, selectedSubjectId]);
 
   // Sync with localStorage on initial mount if URL does not specify examId
   useEffect(() => {
@@ -93,6 +97,7 @@ export default function SyllabusClient({
         }
       }
     } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const activeSubject =
@@ -218,7 +223,10 @@ export default function SyllabusClient({
     if (currentExam?.id) formData.append("examId", currentExam.id);
     formData.append("status", nextStatus);
 
-    await updateTopicProgressAction(formData);
+    const res = await updateTopicProgressAction(formData);
+    if (res?.error) {
+      setPageError(res.error);
+    }
   };
 
   // Save Note with Optimistic Feedback
@@ -227,17 +235,24 @@ export default function SyllabusClient({
     if (!selectedTopicForNote || !noteTitle) return;
 
     setIsNotePending(true);
+    setNoteError(null);
     const formData = new FormData();
     formData.append("topicId", selectedTopicForNote.id);
     if (currentExam?.id) formData.append("examId", currentExam.id);
     formData.append("title", noteTitle);
     formData.append("content", noteContent);
 
-    await savePersonalNoteAction(formData);
+    const res = await savePersonalNoteAction(formData);
     setIsNotePending(false);
-    setSelectedTopicForNote(null);
-    setNoteTitle("");
-    setNoteContent("");
+    if (res?.error) {
+      setNoteError(res.error);
+    } else {
+      setSelectedTopicForNote(null);
+      setNoteTitle("");
+      setNoteContent("");
+      setNoteError(null);
+      router.refresh();
+    }
   };
 
   // Create Personal Topic with Optimistic UI insertion
@@ -246,6 +261,7 @@ export default function SyllabusClient({
     if (!selectedChapterForPersonal || !personalTitle) return;
 
     setIsPersonalPending(true);
+    setPersonalError(null);
     const newTopicId = `topic-${Date.now()}`;
     const newTopic: Topic = {
       id: newTopicId,
@@ -303,15 +319,27 @@ export default function SyllabusClient({
     formData.append("description", personalDesc);
     formData.append("estimatedMinutes", personalDuration.toString());
 
-    await createPersonalTopicAction(formData);
+    const res = await createPersonalTopicAction(formData);
     setIsPersonalPending(false);
-    setSelectedChapterForPersonal(null);
-    setPersonalTitle("");
-    setPersonalDesc("");
+    if (res?.error) {
+      setPersonalError(res.error);
+    } else {
+      setSelectedChapterForPersonal(null);
+      setPersonalTitle("");
+      setPersonalDesc("");
+      setPersonalError(null);
+      router.refresh();
+    }
   };
 
   return (
     <div className="space-y-6">
+      {pageError && (
+        <Alert variant="error" onClose={() => setPageError(null)} title="Syllabus Notice">
+          {pageError}
+        </Alert>
+      )}
+
       {/* Exam Selector and Overall Progress Header */}
       <Card>
         <CardContent className="p-5 sm:p-6">
@@ -344,16 +372,17 @@ export default function SyllabusClient({
                 </select>
                 <div className="pointer-events-none absolute right-3.5 top-3.5 flex items-center text-text-muted">
                   {isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <Spinner size="sm" color="primary" />
                   ) : (
                     <ChevronDown className="h-4 w-4" />
                   )}
                 </div>
               </div>
               {isPending && (
-                <p className="text-[11px] text-primary animate-pulse font-medium">
-                  Loading examination curriculum...
-                </p>
+                <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-primary font-medium">
+                  <Spinner size="sm" color="primary" />
+                  <span>Loading examination curriculum...</span>
+                </div>
               )}
             </div>
 
@@ -687,7 +716,10 @@ export default function SyllabusClient({
       {/* Note Modal */}
       <Modal
         isOpen={Boolean(selectedTopicForNote)}
-        onClose={() => setSelectedTopicForNote(null)}
+        onClose={() => {
+          setSelectedTopicForNote(null);
+          setNoteError(null);
+        }}
         title={
           selectedTopicForNote
             ? `Personal Note: ${selectedTopicForNote.title}`
@@ -695,6 +727,12 @@ export default function SyllabusClient({
         }
         description="Save key formulas, revision points, and summaries directly to your topic record."
       >
+        {noteError && (
+          <div className="mb-4">
+            <Alert variant="error" title={noteError} onClose={() => setNoteError(null)} />
+          </div>
+        )}
+
         <form onSubmit={handleSaveNote} className="space-y-4">
           <Input
             label="Note Title"
@@ -717,7 +755,10 @@ export default function SyllabusClient({
             <Button
               variant="outline"
               type="button"
-              onClick={() => setSelectedTopicForNote(null)}
+              onClick={() => {
+                setSelectedTopicForNote(null);
+                setNoteError(null);
+              }}
             >
               Cancel
             </Button>
@@ -731,7 +772,10 @@ export default function SyllabusClient({
       {/* Personal Topic Modal */}
       <Modal
         isOpen={Boolean(selectedChapterForPersonal)}
-        onClose={() => setSelectedChapterForPersonal(null)}
+        onClose={() => {
+          setSelectedChapterForPersonal(null);
+          setPersonalError(null);
+        }}
         title={
           selectedChapterForPersonal
             ? `Add Personal Topic to ${selectedChapterForPersonal.title}`
@@ -739,6 +783,12 @@ export default function SyllabusClient({
         }
         description="Personal topics are private to your preparation and count toward your study schedule."
       >
+        {personalError && (
+          <div className="mb-4">
+            <Alert variant="error" title={personalError} onClose={() => setPersonalError(null)} />
+          </div>
+        )}
+
         <form onSubmit={handleCreatePersonalTopic} className="space-y-4">
           <Input
             label="Topic Title"
@@ -768,7 +818,10 @@ export default function SyllabusClient({
             <Button
               variant="outline"
               type="button"
-              onClick={() => setSelectedChapterForPersonal(null)}
+              onClick={() => {
+                setSelectedChapterForPersonal(null);
+                setPersonalError(null);
+              }}
             >
               Cancel
             </Button>

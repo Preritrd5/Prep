@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -17,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
 interface CalendarClientProps {
@@ -34,11 +37,15 @@ export default function CalendarClient({
   routines,
   timezone,
 }: CalendarClientProps) {
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [view, setView] = useState<CalendarView>("month");
   const [selectedDateModal, setSelectedDateModal] = useState<string | null>(null);
   const [taskTitle, setTaskTitle] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState<number>(60);
+  const [priority, setPriority] = useState<number>(2);
   const [isPending, setIsPending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Helper date functions
   const year = currentDate.getFullYear();
@@ -91,19 +98,28 @@ export default function CalendarClient({
 
   const handleCreateTaskOnDate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedDateModal || !taskTitle) return;
+    if (!selectedDateModal || !taskTitle.trim()) return;
 
     setIsPending(true);
-    const formData = new FormData();
-    formData.append("title", taskTitle);
-    formData.append("scheduledDate", selectedDateModal);
-    formData.append("durationMinutes", "60");
-    formData.append("priority", "2");
+    setErrorMsg(null);
 
-    await createStudyTaskAction(formData);
+    const formData = new FormData();
+    formData.append("title", taskTitle.trim());
+    formData.append("scheduledDate", selectedDateModal);
+    formData.append("durationMinutes", durationMinutes.toString());
+    formData.append("priority", priority.toString());
+
+    const res = await createStudyTaskAction(formData);
     setIsPending(false);
-    setSelectedDateModal(null);
-    setTaskTitle("");
+
+    if (res?.error) {
+      setErrorMsg(res.error);
+    } else {
+      setSelectedDateModal(null);
+      setTaskTitle("");
+      setErrorMsg(null);
+      router.refresh();
+    }
   };
 
   const monthName = currentDate.toLocaleDateString("en-US", {
@@ -334,10 +350,19 @@ export default function CalendarClient({
       {/* Quick Add Task on Date Modal */}
       <Modal
         isOpen={Boolean(selectedDateModal)}
-        onClose={() => setSelectedDateModal(null)}
+        onClose={() => {
+          setSelectedDateModal(null);
+          setErrorMsg(null);
+        }}
         title={`Add Study Task for ${selectedDateModal}`}
         description="Quickly schedule a preparation session directly into your calendar."
       >
+        {errorMsg && (
+          <div className="mb-4">
+            <Alert variant="error" title={errorMsg} onClose={() => setErrorMsg(null)} />
+          </div>
+        )}
+
         <form onSubmit={handleCreateTaskOnDate} className="space-y-4">
           <Input
             label="Task Title"
@@ -347,11 +372,40 @@ export default function CalendarClient({
             onChange={(e) => setTaskTitle(e.target.value)}
           />
 
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Duration"
+              value={durationMinutes.toString()}
+              onChange={(e) => setDurationMinutes(parseInt(e.target.value, 10))}
+              options={[
+                { value: "30", label: "30 Minutes" },
+                { value: "45", label: "45 Minutes" },
+                { value: "60", label: "60 Minutes (1 Hour)" },
+                { value: "90", label: "90 Minutes" },
+                { value: "120", label: "120 Minutes (2 Hours)" },
+              ]}
+            />
+
+            <Select
+              label="Priority"
+              value={priority.toString()}
+              onChange={(e) => setPriority(parseInt(e.target.value, 10))}
+              options={[
+                { value: "1", label: "1 (High Priority)" },
+                { value: "2", label: "2 (Medium Priority)" },
+                { value: "3", label: "3 (Low Priority)" },
+              ]}
+            />
+          </div>
+
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/70">
             <Button
               variant="outline"
               type="button"
-              onClick={() => setSelectedDateModal(null)}
+              onClick={() => {
+                setSelectedDateModal(null);
+                setErrorMsg(null);
+              }}
             >
               Cancel
             </Button>

@@ -31,7 +31,7 @@ export default function RouteProgressBar() {
       }, 250);
       return () => clearTimeout(timer);
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, loading]);
 
   // Subscribe to imperative triggers
   useEffect(() => {

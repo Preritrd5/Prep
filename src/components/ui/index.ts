@@ -12,6 +12,8 @@ export * from "./table";
 export * from "./tabs";
 export * from "./tooltip";
 export * from "./alert";
+export * from "./Spinner";
+export * from "./LoadingState";
 export * from "./skeleton";
 export * from "./loading-spinner";
 export * from "./empty-state";

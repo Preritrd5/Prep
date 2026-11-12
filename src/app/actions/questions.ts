@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import * as XLSX from "xlsx";
 import { generateMCQBatch } from "@/lib/ai/question-generator";
 import { FALLBACK_ANSWER_KEYS } from "@/lib/data/questions";
-import { toggleStoredBookmark, saveStoredPersonalQuestion } from "@/lib/data/local-store";
+import { formatDatabaseError } from "@/lib/supabase/db-error";
 import type {
   DifficultyLevel,
   OptionLabel,
@@ -78,7 +78,12 @@ export async function adminCreateQuestionAction(formData: FormData) {
       .select("id")
       .single();
 
-    if (!qError && qData?.id) {
+    if (qError) {
+      const err = formatDatabaseError(qError, "questions");
+      return { error: err.message };
+    }
+
+    if (qData?.id) {
       questionId = qData.id;
 
       // 2. Insert 4 options
@@ -88,14 +93,22 @@ export async function adminCreateQuestionAction(formData: FormData) {
         { question_id: questionId, option_label: "C", option_text: optionC, order_index: 3 },
         { question_id: questionId, option_label: "D", option_text: optionD, order_index: 4 },
       ];
-      await supabase.from("question_options").insert(optionsPayload);
+      const { error: optErr } = await supabase.from("question_options").insert(optionsPayload);
+      if (optErr) {
+        const err = formatDatabaseError(optErr, "question_options");
+        return { error: err.message };
+      }
 
       // 3. Insert secure answer key
-      await supabase.from("question_answer_keys").insert({
+      const { error: keyErr } = await supabase.from("question_answer_keys").insert({
         question_id: questionId,
         correct_option: correctOption,
         explanation: explanation || null,
       });
+      if (keyErr) {
+        const err = formatDatabaseError(keyErr, "question_answer_keys");
+        return { error: err.message };
+      }
 
       // 4. Insert exam mappings if provided
       if (applicableExamsJson) {
@@ -111,47 +124,11 @@ export async function adminCreateQuestionAction(formData: FormData) {
           }
         } catch {}
       }
-    } else {
-      console.warn("[Questions] Supabase question insert failed, saving to local store:", qError?.message);
     }
   } catch (err: any) {
-    console.warn("[Questions] Database exception, saving to local store:", err?.message);
+    const errDetails = formatDatabaseError(err, "questions");
+    return { error: errDetails.message };
   }
-
-  // Always save to resilient local question store
-  const localQ: Question = {
-    id: questionId,
-    bank_id: null,
-    question_text: questionText,
-    subject_id: subjectId,
-    chapter_id: chapterId,
-    topic_id: topicId,
-    difficulty,
-    source_type: sourceType,
-    pyq_exam_name: pyqExamName,
-    pyq_year: pyqYear,
-    source_reference: sourceReference,
-    status,
-    is_personal: false,
-    created_by: user.id,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    options: [
-      { id: `opt-${questionId}-A`, question_id: questionId, option_label: "A", option_text: optionA, order_index: 1, created_at: new Date().toISOString() },
-      { id: `opt-${questionId}-B`, question_id: questionId, option_label: "B", option_text: optionB, order_index: 2, created_at: new Date().toISOString() },
-      { id: `opt-${questionId}-C`, question_id: questionId, option_label: "C", option_text: optionC, order_index: 3, created_at: new Date().toISOString() },
-      { id: `opt-${questionId}-D`, question_id: questionId, option_label: "D", option_text: optionD, order_index: 4, created_at: new Date().toISOString() },
-    ],
-    answer_key: {
-      id: `key-${questionId}`,
-      question_id: questionId,
-      correct_option: correctOption,
-      explanation: explanation || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  };
-  await saveStoredPersonalQuestion(localQ);
 
   revalidatePath("/question-bank");
   revalidatePath("/practice/topic");
@@ -538,43 +515,6 @@ export async function generateAIQuestionsAction(formData: FormData) {
       }
     } catch {}
 
-    // Save locally
-    const localQ: Question = {
-      id: qId,
-      bank_id: null,
-      question_text: q.question,
-      subject_id: subjectId,
-      chapter_id: chapterId,
-      topic_id: topicId,
-      difficulty: q.difficulty,
-      source_type: "AI Generated",
-      pyq_exam_name: null,
-      pyq_year: null,
-      source_reference: `Gemini 2.5 Flash (${language})`,
-      status: "Pending Review",
-      is_personal: false,
-      created_by: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      options: q.options.map((optText, idx) => ({
-        id: `opt-${qId}-${["A", "B", "C", "D"][idx]}`,
-        question_id: qId,
-        option_label: (["A", "B", "C", "D"][idx] as OptionLabel),
-        option_text: optText,
-        order_index: idx + 1,
-        created_at: new Date().toISOString(),
-      })),
-      answer_key: {
-        id: `key-${qId}`,
-        question_id: qId,
-        correct_option: q.correctAnswer as OptionLabel,
-        explanation: q.explanation,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    };
-    await saveStoredPersonalQuestion(localQ);
-
     insertedCount++;
   }
 
@@ -672,62 +612,39 @@ export async function studentCreatePersonalQuestionAction(formData: FormData) {
       .select("id")
       .single();
 
-    if (!qError && qData?.id) {
+    if (qError) {
+      const err = formatDatabaseError(qError, "questions");
+      return { error: err.message };
+    }
+
+    if (qData?.id) {
       questionId = qData.id;
 
-      await supabase.from("question_options").insert([
+      const { error: optErr } = await supabase.from("question_options").insert([
         { question_id: questionId, option_label: "A", option_text: optionA, order_index: 1 },
         { question_id: questionId, option_label: "B", option_text: optionB, order_index: 2 },
         { question_id: questionId, option_label: "C", option_text: optionC, order_index: 3 },
         { question_id: questionId, option_label: "D", option_text: optionD, order_index: 4 },
       ]);
+      if (optErr) {
+        const err = formatDatabaseError(optErr, "question_options");
+        return { error: err.message };
+      }
 
-      await supabase.from("question_answer_keys").insert({
+      const { error: keyErr } = await supabase.from("question_answer_keys").insert({
         question_id: questionId,
         correct_option: correctOption,
         explanation: explanation || null,
       });
-    } else {
-      console.warn("[Questions] Supabase personal question insert failed, saving to local store:", qError?.message);
+      if (keyErr) {
+        const err = formatDatabaseError(keyErr, "question_answer_keys");
+        return { error: err.message };
+      }
     }
   } catch (err: any) {
-    console.warn("[Questions] Database exception, saving to local store:", err?.message);
+    const errDetails = formatDatabaseError(err, "questions");
+    return { error: errDetails.message };
   }
-
-  // Always save to resilient local question store
-  const localQ: Question = {
-    id: questionId,
-    bank_id: bankId,
-    question_text: questionText,
-    subject_id: subjectId,
-    chapter_id: null,
-    topic_id: null,
-    difficulty,
-    source_type: "Student Created",
-    pyq_exam_name: null,
-    pyq_year: null,
-    source_reference: "Personal Notes",
-    status: "Published",
-    is_personal: true,
-    created_by: user.id,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    options: [
-      { id: `opt-${questionId}-A`, question_id: questionId, option_label: "A", option_text: optionA, order_index: 1, created_at: new Date().toISOString() },
-      { id: `opt-${questionId}-B`, question_id: questionId, option_label: "B", option_text: optionB, order_index: 2, created_at: new Date().toISOString() },
-      { id: `opt-${questionId}-C`, question_id: questionId, option_label: "C", option_text: optionC, order_index: 3, created_at: new Date().toISOString() },
-      { id: `opt-${questionId}-D`, question_id: questionId, option_label: "D", option_text: optionD, order_index: 4, created_at: new Date().toISOString() },
-    ],
-    answer_key: {
-      id: `key-${questionId}`,
-      question_id: questionId,
-      correct_option: correctOption,
-      explanation: explanation || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  };
-  await saveStoredPersonalQuestion(localQ);
 
   revalidatePath("/practice");
   revalidatePath("/question-bank");
@@ -744,35 +661,40 @@ export async function toggleQuestionBookmarkAction(questionId: string) {
   let bookmarked = false;
   try {
     const supabase = await createClient();
-    const { data: existing } = await supabase
+    const { data: existing, error: fetchErr } = await supabase
       .from("question_bookmarks")
       .select("id")
       .eq("student_id", user.id)
       .eq("question_id", questionId)
-      .single();
+      .maybeSingle();
+
+    if (fetchErr) {
+      const err = formatDatabaseError(fetchErr, "question_bookmarks");
+      return { error: err.message };
+    }
 
     if (existing) {
-      await supabase.from("question_bookmarks").delete().eq("id", existing.id);
+      const { error: delErr } = await supabase.from("question_bookmarks").delete().eq("id", existing.id);
+      if (delErr) {
+        const err = formatDatabaseError(delErr, "question_bookmarks");
+        return { error: err.message };
+      }
       bookmarked = false;
     } else {
-      await supabase.from("question_bookmarks").insert({
+      const { error: insErr } = await supabase.from("question_bookmarks").insert({
         student_id: user.id,
         question_id: questionId,
       });
+      if (insErr) {
+        const err = formatDatabaseError(insErr, "question_bookmarks");
+        return { error: err.message };
+      }
       bookmarked = true;
     }
-  } catch {
-    bookmarked = await toggleStoredBookmark(user.id, questionId);
+  } catch (err: any) {
+    const errDetails = formatDatabaseError(err, "question_bookmarks");
+    return { error: errDetails.message };
   }
-
-  // Also ensure local store stays in sync
-  try {
-    const localResult = await toggleStoredBookmark(user.id, questionId);
-    // If supabase succeeded, align local store state
-    if (localResult !== bookmarked) {
-      await toggleStoredBookmark(user.id, questionId);
-    }
-  } catch {}
 
   revalidatePath("/practice/bookmarks");
   revalidatePath("/dashboard");

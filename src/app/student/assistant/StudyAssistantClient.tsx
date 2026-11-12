@@ -34,6 +34,7 @@ import type {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/Spinner";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -722,8 +723,8 @@ How can I help optimize your preparation today? You can select a target exam & s
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white shrink-0">
                     <Bot className="h-4 w-4" />
                   </div>
-                  <div className="rounded-2xl bg-card border border-border p-4 text-xs text-text-muted shadow-xs flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                  <div className="rounded-2xl bg-card border border-border p-4 text-xs text-text-muted shadow-xs flex items-center gap-2.5">
+                    <Spinner size="sm" color="primary" label="Thinking..." />
                     <span>
                       Synthesizing study guidance grounded in your preparation history...
                     </span>

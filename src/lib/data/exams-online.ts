@@ -13,7 +13,6 @@ import type {
   ExamTemplateStatus,
 } from "@/lib/types";
 import { FALLBACK_QUESTIONS, allowDemoFallback } from "./questions";
-import { getStoredExamAttempts, getStoredExamAttemptById } from "./local-store";
 
 // ===========================================================================
 // FALLBACK SEED EXAM TEMPLATES (Used if remote PostgreSQL is awaiting migration)
@@ -317,7 +316,6 @@ export async function getStudentAvailableExams(studentId: string): Promise<{
       .order("created_at", { ascending: false });
 
     // 2. Fetch student's past attempts
-    const storedAttempts = await getStoredExamAttempts(studentId);
     const { data: attempts } = await supabase
       .from("exam_attempts")
       .select("*")
@@ -325,28 +323,15 @@ export async function getStudentAvailableExams(studentId: string): Promise<{
       .order("started_at", { ascending: false });
 
     const activeTemplates = (templates && templates.length > 0) ? (templates as ExamTemplate[]) : FALLBACK_EXAM_TEMPLATES;
-    
-    let combinedAttempts: ExamAttempt[] = [];
-    if (attempts && attempts.length > 0) {
-      combinedAttempts = [...(attempts as ExamAttempt[])];
-      storedAttempts.forEach((sa) => {
-        if (!combinedAttempts.some((a) => a.id === sa.id)) {
-          combinedAttempts.push(sa);
-        }
-      });
-    } else {
-      combinedAttempts = storedAttempts;
-    }
 
     return {
       availableExams: activeTemplates,
-      studentAttempts: combinedAttempts,
+      studentAttempts: (attempts as ExamAttempt[]) || [],
     };
   } catch {
-    const storedAttempts = await getStoredExamAttempts(studentId);
     return {
       availableExams: FALLBACK_EXAM_TEMPLATES,
-      studentAttempts: storedAttempts,
+      studentAttempts: [],
     };
   }
 }
@@ -394,30 +379,10 @@ export async function getStudentAttemptById(
     }
   } catch {}
 
-  // Fallback to local stored attempt
-  const stored = await getStoredExamAttemptById(attemptId);
-  if (stored) {
-    if (studentId && stored.attempt.student_id !== studentId) {
-      return { attempt: null, questions: [], answers: [] };
-    }
-    // Attach template if not present
-    if (!stored.attempt.template) {
-      stored.attempt.template = FALLBACK_EXAM_TEMPLATES.find(
-        (t) => t.id === stored.attempt.template_id
-      );
-    }
-    return {
-      attempt: stored.attempt,
-      questions: stored.questions,
-      answers: stored.answers,
-    };
-  }
-
   return { attempt: null, questions: [], answers: [] };
 }
 
 export async function getStudentExamAttempts(studentId: string): Promise<ExamAttempt[]> {
-  const storedAttempts = await getStoredExamAttempts(studentId);
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -427,18 +392,11 @@ export async function getStudentExamAttempts(studentId: string): Promise<ExamAtt
       .order("started_at", { ascending: false });
 
     if (!error && data && data.length > 0) {
-      const combined = [...(data as ExamAttempt[])];
-      storedAttempts.forEach((sa) => {
-        if (!combined.some((a) => a.id === sa.id)) {
-          combined.push(sa);
-        }
-      });
-      return combined;
+      return data as ExamAttempt[];
     }
-    return storedAttempts;
-  } catch {
-    return storedAttempts;
-  }
+  } catch {}
+
+  return [];
 }
 
 export async function getExamResult(
@@ -484,14 +442,6 @@ export async function getExamResult(
 
     let attemptData = rawAttemptData;
     let resultData = rawResultData;
-
-    if (!attemptData) {
-      const stored = await getStoredExamAttemptById(attemptId);
-      if (stored) {
-        attemptData = stored.attempt as any;
-        resultData = (stored.result || null) as any;
-      }
-    }
 
     if (!attemptData) {
       return { result: null, attempt: null, template: null, questionsReview: [] };

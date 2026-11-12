@@ -36,4 +36,5 @@ supabase/.temp/
 
 # Local fallback data storage
 .data/
+.data_backup/
 

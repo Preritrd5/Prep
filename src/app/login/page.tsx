@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, Button, Badge, Alert } from "@/components/ui";
+import { Card, CardContent, Button, Badge, Alert, InitialAppLoading } from "@/components/ui";
 import { useActionState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -171,9 +171,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
+        <InitialAppLoading message="Preparing secure login..." />
       }
     >
       <LoginForm />

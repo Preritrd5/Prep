@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getExamSyllabus, getStudyPreferences } from "@/lib/data/syllabus";
-import { saveStoredTasks } from "@/lib/data/local-store";
+import { formatDatabaseError } from "@/lib/supabase/db-error";
+import {
+  isSchemaMissingError,
+  readCloudData,
+  writeCloudData,
+} from "@/lib/supabase/cloud-store";
 import type { StudyTask } from "@/lib/types";
 
 export interface GeneratedPlanItem {
@@ -204,13 +209,25 @@ export async function saveGeneratedPlanAction(planItemsJson: string) {
     const supabase = await createClient();
     const { error } = await supabase.from("study_tasks").insert(newTasks);
     if (error) {
-      console.warn("[Planner] Supabase tasks insert failed, saving to local store:", error.message);
+      if (isSchemaMissingError(error)) {
+        const tasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+        tasks.push(...newTasks);
+        await writeCloudData("study_tasks.json", tasks);
+      } else {
+        const err = formatDatabaseError(error, "study_tasks");
+        return { error: err.message };
+      }
     }
   } catch (err: any) {
-    console.warn("[Planner] Database exception, saving to local store:", err?.message);
+    if (isSchemaMissingError(err)) {
+      const tasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+      tasks.push(...newTasks);
+      await writeCloudData("study_tasks.json", tasks);
+    } else {
+      const errDetails = formatDatabaseError(err, "study_tasks");
+      return { error: errDetails.message };
+    }
   }
-
-  await saveStoredTasks(newTasks);
 
   revalidatePath("/tasks");
   revalidatePath("/calendar");

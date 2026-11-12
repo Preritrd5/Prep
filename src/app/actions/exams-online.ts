@@ -19,12 +19,7 @@ import type {
 } from "@/lib/types";
 import { FALLBACK_EXAM_TEMPLATES } from "@/lib/data/exams-online";
 import { FALLBACK_QUESTIONS, FALLBACK_ANSWER_KEYS } from "@/lib/data/questions";
-import {
-  saveStoredExamAttempt,
-  saveStoredExamAnswer,
-  finalizeStoredExamAttempt,
-  getStoredExamAttemptById,
-} from "@/lib/data/local-store";
+import { formatDatabaseError } from "@/lib/supabase/db-error";
 
 // ===========================================================================
 // ADMIN ACTIONS: EXAMINATION TEMPLATE MANAGEMENT (MODULE 1 & 2)
@@ -416,17 +411,18 @@ export async function studentStartExamAttemptAction(templateId: string) {
       .select("id")
       .single();
 
-    if (!attErr && attemptRecord?.id) {
-      attemptId = attemptRecord.id;
-      isDbAttempt = true;
+    if (attErr || !attemptRecord?.id) {
+      const err = formatDatabaseError(attErr, "exam_attempts");
+      return { error: err.message };
     }
+
+    attemptId = attemptRecord.id;
   } catch (err: any) {
-    console.warn("[ExamsOnline] Supabase attempt insert fallback:", err?.message);
+    const errDetails = formatDatabaseError(err, "exam_attempts");
+    return { error: errDetails.message };
   }
 
-  // 7. Prepare Snapshot Questions
-  const snapshotQuestions: ExamAttemptQuestion[] = [];
-
+  // 7. Prepare Snapshot Questions in Supabase PostgreSQL
   for (let i = 0; i < candidateQuestions.length; i++) {
     const q = candidateQuestions[i];
     let options = (q.options || []).map((opt: any) => ({
@@ -438,104 +434,65 @@ export async function studentStartExamAttemptAction(templateId: string) {
       options = [...options].sort(() => Math.random() - 0.5);
     }
 
-    const snapQId = `snap-${attemptId}-${i + 1}`;
-    const snapQ: ExamAttemptQuestion = {
-      id: snapQId,
-      attempt_id: attemptId,
-      question_id: q.id,
-      section_id: q.section_id || null,
-      section_name: q.section_name || "General Section",
-      order_index: i + 1,
-      question_text: q.question_text,
-      options_json: options,
-      marks: q.marks || template.correct_marks,
-      negative_marks: q.negative_marks || template.negative_marks,
-      created_at: now.toISOString(),
-    };
-    snapshotQuestions.push(snapQ);
+    try {
+      const { data: insertedSnapQ } = await adminDb
+        .from("exam_attempt_questions")
+        .insert({
+          attempt_id: attemptId,
+          question_id: q.id,
+          section_id: q.section_id || null,
+          section_name: q.section_name || "General Section",
+          order_index: i + 1,
+          question_text: q.question_text,
+          options_json: options,
+          marks: q.marks || template.correct_marks,
+          negative_marks: q.negative_marks || template.negative_marks,
+        })
+        .select("id")
+        .single();
 
-    if (isDbAttempt) {
-      try {
-        const { data: insertedSnapQ } = await adminDb
-          .from("exam_attempt_questions")
-          .insert({
-            attempt_id: attemptId,
-            question_id: q.id,
-            section_id: q.section_id || null,
-            section_name: q.section_name || "General Section",
-            order_index: i + 1,
-            question_text: q.question_text,
-            options_json: options,
-            marks: q.marks || template.correct_marks,
-            negative_marks: q.negative_marks || template.negative_marks,
-          })
-          .select("id")
+      if (insertedSnapQ) {
+        let correctOpt = "A";
+        let exp = "Correct standard answer";
+
+        const { data: keyData } = await adminDb
+          .from("question_answer_keys")
+          .select("correct_option, explanation")
+          .eq("question_id", q.id)
           .single();
 
-        if (insertedSnapQ) {
-          let correctOpt = "A";
-          let exp = "Correct standard answer";
-
-          const { data: keyData } = await adminDb
-            .from("question_answer_keys")
-            .select("correct_option, explanation")
-            .eq("question_id", q.id)
-            .single();
-
-          if (keyData) {
-            correctOpt = keyData.correct_option;
-            exp = keyData.explanation || "";
-          } else if (FALLBACK_ANSWER_KEYS[q.id]) {
-            correctOpt = FALLBACK_ANSWER_KEYS[q.id].correct;
-            exp = FALLBACK_ANSWER_KEYS[q.id].explanation;
-          }
-
-          await adminDb.from("exam_attempt_answer_keys").insert({
-            attempt_id: attemptId,
-            attempt_question_id: insertedSnapQ.id,
-            correct_option: correctOpt,
-            explanation: exp,
-          });
+        if (keyData) {
+          correctOpt = keyData.correct_option;
+          exp = keyData.explanation || "";
+        } else if (FALLBACK_ANSWER_KEYS[q.id]) {
+          correctOpt = FALLBACK_ANSWER_KEYS[q.id].correct;
+          exp = FALLBACK_ANSWER_KEYS[q.id].explanation;
         }
-      } catch {}
+
+        await adminDb.from("exam_attempt_answer_keys").insert({
+          attempt_id: attemptId,
+          attempt_question_id: insertedSnapQ.id,
+          correct_option: correctOpt,
+          explanation: exp,
+        });
+      }
+    } catch (snapErr: any) {
+      console.error("[ExamsOnline] Failed to snapshot question:", snapErr?.message);
     }
   }
 
-  // 8. Always persist to resilient local store
-  const localAttemptRecord: ExamAttempt = {
-    id: attemptId,
-    student_id: user.id,
-    template_id: template.id,
-    template,
-    attempt_number: attemptNumber,
-    started_at: now.toISOString(),
-    expires_at: expiresAt.toISOString(),
-    submitted_at: null,
-    status: "In Progress",
-    score: 0,
-    max_marks: template.total_marks,
-    percentage: 0,
-    correct_count: 0,
-    incorrect_count: 0,
-    unanswered_count: 0,
-    time_taken_seconds: 0,
-    result_release_status: template.result_release_policy,
-    created_at: now.toISOString(),
-    updated_at: now.toISOString(),
-  };
-
-  await saveStoredExamAttempt(localAttemptRecord, snapshotQuestions);
-
   // Log Audit Event
-  await adminDb.from("exam_audit_events").insert({
-    template_id: template.id,
-    attempt_id: attemptId,
-    user_id: user.id,
-    event_type: "ATTEMPT_STARTED",
-    details_json: { attemptNumber, startedAt: now, expiresAt },
-  });
+  try {
+    await adminDb.from("exam_audit_events").insert({
+      template_id: template.id,
+      attempt_id: attemptId,
+      user_id: user.id,
+      event_type: "ATTEMPT_STARTED",
+      details_json: { attemptNumber, startedAt: now, expiresAt },
+    });
+  } catch {}
 
-  revalidatePath(`/online-exams/template.id`);
+  revalidatePath(`/online-exams/${template.id}`);
   return { success: true, attemptId };
 }
 
@@ -555,23 +512,26 @@ export async function studentAutosaveExamAnswerAction(data: {
 
   const adminDb = createAdminClient();
 
-  // 1. Fetch attempt and verify ownership & validity
+  // 1. Fetch attempt from Supabase PostgreSQL and verify ownership & validity
   let attempt: any = null;
   try {
-    const { data: dbAttempt } = await adminDb
+    const { data: dbAttempt, error: attError } = await adminDb
       .from("exam_attempts")
       .select("student_id, status, expires_at")
       .eq("id", attemptId)
       .single();
-    if (dbAttempt) attempt = dbAttempt;
-  } catch {}
 
-  if (!attempt) {
-    const stored = await getStoredExamAttemptById(attemptId);
-    if (stored) attempt = stored.attempt;
+    if (attError || !dbAttempt) {
+      const err = formatDatabaseError(attError, "exam_attempts");
+      return { error: err.message };
+    }
+    attempt = dbAttempt;
+  } catch (err: any) {
+    const errDetails = formatDatabaseError(err, "exam_attempts");
+    return { error: errDetails.message };
   }
 
-  if (!attempt || attempt.student_id !== user.id) {
+  if (attempt.student_id !== user.id) {
     return { error: "Unauthorized attempt access." };
   }
 
@@ -592,20 +552,9 @@ export async function studentAutosaveExamAnswerAction(data: {
     };
   }
 
-  // 3. Persist Answer to Local Store & Remote DB
-  await saveStoredExamAnswer(attemptId, {
-    id: `ans-${attemptId}-${attemptQuestionId}`,
-    attempt_id: attemptId,
-    attempt_question_id: attemptQuestionId,
-    selected_option: selectedOption,
-    is_marked_for_review: isMarkedForReview,
-    is_visited: true,
-    time_spent_seconds: timeSpentSeconds || 0,
-    saved_at: now.toISOString(),
-  });
-
+  // 3. Persist Answer to Supabase PostgreSQL
   try {
-    await adminDb.from("exam_attempt_answers").upsert(
+    const { error: ansError } = await adminDb.from("exam_attempt_answers").upsert(
       {
         attempt_id: attemptId,
         attempt_question_id: attemptQuestionId,
@@ -617,7 +566,15 @@ export async function studentAutosaveExamAnswerAction(data: {
       },
       { onConflict: "attempt_id,attempt_question_id" }
     );
-  } catch {}
+
+    if (ansError) {
+      const err = formatDatabaseError(ansError, "exam_attempt_answers");
+      return { error: err.message };
+    }
+  } catch (err: any) {
+    const errDetails = formatDatabaseError(err, "exam_attempt_answers");
+    return { error: errDetails.message };
+  }
 
   return { success: true, savedAt: now.toISOString() };
 }
@@ -631,20 +588,23 @@ export async function studentSubmitExamAttemptAction(attemptId: string) {
 
   let attempt: any = null;
   try {
-    const { data: dbAttempt } = await adminDb
+    const { data: dbAttempt, error: attErr } = await adminDb
       .from("exam_attempts")
       .select("student_id, status, template_id, template:exam_templates(*)")
       .eq("id", attemptId)
       .single();
-    if (dbAttempt) attempt = dbAttempt;
-  } catch {}
 
-  if (!attempt) {
-    const stored = await getStoredExamAttemptById(attemptId);
-    if (stored) attempt = stored.attempt;
+    if (attErr || !dbAttempt) {
+      const err = formatDatabaseError(attErr, "exam_attempts");
+      return { error: err.message };
+    }
+    attempt = dbAttempt;
+  } catch (err: any) {
+    const errDetails = formatDatabaseError(err, "exam_attempts");
+    return { error: errDetails.message };
   }
 
-  if (!attempt || attempt.student_id !== user.id) {
+  if (attempt.student_id !== user.id) {
     return { error: "Unauthorized attempt access." };
   }
 
@@ -681,49 +641,38 @@ async function internalEvaluateAndFinalizeAttempt(
   const adminDb = createAdminClient();
 
   try {
-    // 1. Fetch Attempt & Template
+    // 1. Fetch Attempt & Template from Supabase PostgreSQL
     let attempt: any = null;
     try {
-      const { data: dbAttempt } = await adminDb
+      const { data: dbAttempt, error: attErr } = await adminDb
         .from("exam_attempts")
         .select("*, template:exam_templates(*)")
         .eq("id", attemptId)
         .single();
-      if (dbAttempt) attempt = dbAttempt;
-    } catch {}
-
-    const storedAttempt = await getStoredExamAttemptById(attemptId);
-    if (!attempt && storedAttempt) {
-      attempt = storedAttempt.attempt;
+      if (attErr || !dbAttempt) {
+        const err = formatDatabaseError(attErr, "exam_attempts");
+        return { success: false, error: err.message };
+      }
+      attempt = dbAttempt;
+    } catch (err: any) {
+      const errDetails = formatDatabaseError(err, "exam_attempts");
+      return { success: false, error: errDetails.message };
     }
 
-    if (!attempt) return { success: false, error: "Attempt not found." };
     const template = (attempt.template as ExamTemplate) ||
       FALLBACK_EXAM_TEMPLATES.find((t) => t.id === attempt.template_id) ||
       FALLBACK_EXAM_TEMPLATES[0];
 
     // 2. Fetch Snapshot Questions, Answers, and Answer Keys
-    let questions: any[] = [];
-    let answers: any[] = [];
-    let keys: any[] = [];
+    const [qRes, ansRes, keyRes] = await Promise.all([
+      adminDb.from("exam_attempt_questions").select("*").eq("attempt_id", attemptId),
+      adminDb.from("exam_attempt_answers").select("*").eq("attempt_id", attemptId),
+      adminDb.from("exam_attempt_answer_keys").select("*").eq("attempt_id", attemptId),
+    ]);
 
-    try {
-      const [qRes, ansRes, keyRes] = await Promise.all([
-        adminDb.from("exam_attempt_questions").select("*").eq("attempt_id", attemptId),
-        adminDb.from("exam_attempt_answers").select("*").eq("attempt_id", attemptId),
-        adminDb.from("exam_attempt_answer_keys").select("*").eq("attempt_id", attemptId),
-      ]);
-      questions = qRes.data || [];
-      answers = ansRes.data || [];
-      keys = keyRes.data || [];
-    } catch {}
-
-    if (questions.length === 0 && storedAttempt) {
-      questions = storedAttempt.questions || [];
-    }
-    if (answers.length === 0 && storedAttempt) {
-      answers = storedAttempt.answers || [];
-    }
+    const questions = qRes.data || [];
+    const answers = ansRes.data || [];
+    const keys = keyRes.data || [];
 
     const ansMap = new Map(answers.map((a: any) => [a.attempt_question_id, a]));
     const keyMap = new Map(keys.map((k: any) => [k.attempt_question_id, k]));
@@ -820,10 +769,7 @@ async function internalEvaluateAndFinalizeAttempt(
       evaluated_at: now,
     };
 
-    // Finalize in local store
-    await finalizeStoredExamAttempt(attemptId, resultRecord, submissionType);
-
-    // 3. Update DB Attempt Record if DB is accessible
+    // 3. Update DB Attempt Record in Supabase PostgreSQL
     try {
       await adminDb
         .from("exam_attempts")

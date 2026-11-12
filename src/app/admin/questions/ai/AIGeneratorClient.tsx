@@ -1,13 +1,12 @@
 "use client";
 
-import { Card, Badge, Button, Alert, Input, Textarea, Select } from "@/components/ui";
+import { Card, Badge, Button, Alert, Input, Textarea, Select, Spinner } from "@/components/ui";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
   Sparkles,
   ArrowLeft,
   Clock,
-  Loader2,
 } from "lucide-react";
 import type { Exam, Subject, AIQuestionGenerationJob } from "@/lib/types";
 import { generateAIQuestionsAction } from "@/app/actions/questions";
@@ -219,7 +218,7 @@ export default function AIGeneratorClient({
                 >
                   {isPending ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Spinner size="sm" color="white" label="Generating questions..." />
                       Generating {count} MCQs with Gemini 2.5 Flash...
                     </>
                   ) : (

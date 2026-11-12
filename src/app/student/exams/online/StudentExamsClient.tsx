@@ -191,7 +191,7 @@ export default function StudentExamsClient({
                   {activeAttempt ? (
                     <Link
                       href={`/student/exams/online/attempt/${activeAttempt.id}`}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-warning text-white font-semibold text-xs shadow-sm hover:bg-warning/90 transition-all animate-pulse"
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-warning text-white font-semibold text-xs shadow-sm hover:bg-warning/90 transition-all"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" /> Resume Active Attempt
                     </Link>

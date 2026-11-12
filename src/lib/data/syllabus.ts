@@ -1,17 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { allowDemoFallback } from "./questions";
-import { getStoredRoutines } from "./routine-store";
-import {
-  getStoredTasks,
-  getStoredPreferences,
-  getStoredTopicProgress,
-  getStoredPersonalNotes,
-  getStoredPersonalTopics,
-  getStoredCustomExams,
-  getStoredEnrollments,
-  getStoredExamEvents,
-  getStoredRevisionSchedules,
-} from "./local-store";
+import { readCloudData } from "@/lib/supabase/cloud-store";
 import type {
   Exam,
   StudentExam,
@@ -317,7 +306,6 @@ export const FALLBACK_SUBJECTS: Subject[] = [
 // ===========================================================================
 
 export async function getAllExams(): Promise<Exam[]> {
-  const customExams = await getStoredCustomExams();
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -326,35 +314,15 @@ export async function getAllExams(): Promise<Exam[]> {
       .eq("is_active", true)
       .order("name", { ascending: true });
 
-    if (error || !data || data.length === 0) {
-      const merged = [...FALLBACK_EXAMS];
-      customExams.forEach((ce) => {
-        if (!merged.some((e) => e.id === ce.id || e.code === ce.code)) {
-          merged.push(ce);
-        }
-      });
-      return merged;
+    if (!error && data && data.length > 0) {
+      return data as Exam[];
     }
-    const combined = [...(data as Exam[])];
-    customExams.forEach((ce) => {
-      if (!combined.some((e) => e.id === ce.id || e.code === ce.code)) {
-        combined.push(ce);
-      }
-    });
-    return combined;
-  } catch {
-    const merged = [...FALLBACK_EXAMS];
-    customExams.forEach((ce) => {
-      if (!merged.some((e) => e.id === ce.id || e.code === ce.code)) {
-        merged.push(ce);
-      }
-    });
-    return merged;
-  }
+  } catch {}
+
+  return FALLBACK_EXAMS;
 }
 
 export async function getStudentExams(studentId: string): Promise<StudentExam[]> {
-  const storedEnrollments = await getStoredEnrollments(studentId);
   const allAvailableExams = await getAllExams();
   const examMap = new Map(allAvailableExams.map((e) => [e.id, e]));
 
@@ -366,22 +334,25 @@ export async function getStudentExams(studentId: string): Promise<StudentExam[]>
       .eq("student_id", studentId)
       .order("priority", { ascending: true });
 
-    if (error || !data || data.length === 0) {
-      return storedEnrollments.map((se) => ({
+    if (!error && data && data.length > 0) {
+      return (data as StudentExam[]).map((se) => ({
         ...se,
         exam: se.exam || examMap.get(se.exam_id),
       }));
     }
-    return (data as StudentExam[]).map((se) => ({
-      ...se,
-      exam: se.exam || examMap.get(se.exam_id),
-    }));
-  } catch {
-    return storedEnrollments.map((se) => ({
-      ...se,
-      exam: se.exam || examMap.get(se.exam_id),
-    }));
+  } catch {}
+
+  const cloudExams = await readCloudData<StudentExam[]>("student_exams.json", []);
+  if (cloudExams.length > 0) {
+    return cloudExams
+      .filter((se) => se.student_id === studentId || !se.student_id)
+      .map((se) => ({
+        ...se,
+        exam: se.exam || examMap.get(se.exam_id),
+      }));
   }
+
+  return [];
 }
 
 export async function getAllSubjects(): Promise<Subject[]> {
@@ -1028,31 +999,40 @@ export async function getExamSyllabus(
         }
       }
 
-      // Merge personal topics from local store
-      try {
-        const chapterIds = chapters.map((c) => c.id);
-        const personalTopics = await getStoredPersonalTopics(chapterIds);
-        if (personalTopics.length > 0) {
-          const personalByChap = new Map<string, Topic[]>();
-          personalTopics.forEach((pt) => {
-            if (pt.chapter_id) {
-              const list = personalByChap.get(pt.chapter_id) || [];
-              list.push(pt);
-              personalByChap.set(pt.chapter_id, list);
-            }
-          });
-          chapters.forEach((chap) => {
-            const extra = personalByChap.get(chap.id);
-            if (extra && extra.length > 0) {
-              const existingIds = new Set((chap.topics || []).map((t) => t.id));
-              const newExtra = extra.filter((t) => !existingIds.has(t.id));
-              chap.topics = [...(chap.topics || []), ...newExtra];
-            }
-          });
-        }
-      } catch {}
+      // Merge personal topics from Supabase
+      if (studentId) {
+        try {
+          const chapterIds = chapters.map((c) => c.id);
+          const { data: personalTopicsData } = await supabase
+            .from("topics")
+            .select("*")
+            .eq("is_personal", true)
+            .eq("created_by", studentId)
+            .in("chapter_id", chapterIds);
 
-      // Fetch and attach topic progress (merges Supabase data with resilient local store)
+          if (personalTopicsData && personalTopicsData.length > 0) {
+            const personalTopics = personalTopicsData as Topic[];
+            const personalByChap = new Map<string, Topic[]>();
+            personalTopics.forEach((pt) => {
+              if (pt.chapter_id) {
+                const list = personalByChap.get(pt.chapter_id) || [];
+                list.push(pt);
+                personalByChap.set(pt.chapter_id, list);
+              }
+            });
+            chapters.forEach((chap) => {
+              const extra = personalByChap.get(chap.id);
+              if (extra && extra.length > 0) {
+                const existingIds = new Set((chap.topics || []).map((t) => t.id));
+                const newExtra = extra.filter((t) => !existingIds.has(t.id));
+                chap.topics = [...(chap.topics || []), ...newExtra];
+              }
+            });
+          }
+        } catch {}
+      }
+
+      // Fetch and attach topic progress from Supabase
       const allTopicIds: string[] = [];
       chapters.forEach((chap) => {
         (chap.topics || []).forEach((top) => {
@@ -1060,33 +1040,25 @@ export async function getExamSyllabus(
         });
       });
 
-      if (allTopicIds.length > 0) {
-        let progressList: TopicProgress[] = [];
+      if (allTopicIds.length > 0 && studentId) {
         try {
           const { data: progressData, error } = await supabase
             .from("topic_progress")
             .select("*")
+            .eq("student_id", studentId)
             .in("topic_id", allTopicIds);
 
           if (!error && progressData && progressData.length > 0) {
-            progressList = progressData as TopicProgress[];
-          }
-        } catch {
-          // allow fallback
-        }
+            const progressMap = new Map<string, TopicProgress>();
+            (progressData as TopicProgress[]).forEach((p) => progressMap.set(p.topic_id, p));
 
-        const localProgress = await getStoredTopicProgress(studentId, allTopicIds);
-        const progressMap = new Map<string, TopicProgress>();
-        localProgress.forEach((p) => progressMap.set(p.topic_id, p));
-        progressList.forEach((p) => progressMap.set(p.topic_id, p));
-
-        if (progressMap.size > 0) {
-          chapters.forEach((chap) => {
-            (chap.topics || []).forEach((top) => {
-              top.progress = progressMap.get(top.id) as TopicProgress | undefined;
+            chapters.forEach((chap) => {
+              (chap.topics || []).forEach((top) => {
+                top.progress = progressMap.get(top.id) as TopicProgress | undefined;
+              });
             });
-          });
-        }
+          }
+        } catch {}
       }
 
       subject.chapters = chapters;
@@ -1127,46 +1099,27 @@ export async function getExamSyllabus(
         chapters: JSON.parse(JSON.stringify(BOOK_CHAPTERS_FALLBACK[s.code] || [])),
       }));
 
-    // Attach stored personal topics and progress to fallback subjects
-    try {
-      const allTopicIds: string[] = [];
-      const chapterIds: string[] = [];
-      subjects.forEach((subj) => {
-        (subj.chapters || []).forEach((c: Chapter) => {
-          chapterIds.push(c.id);
-          (c.topics || []).forEach((t: Topic) => {
-            if (t.id) allTopicIds.push(t.id);
-          });
-        });
-      });
+    if (studentId) {
+      try {
+        const cloudProgress = await readCloudData<TopicProgress[]>("topic_progress.json", []);
+        if (cloudProgress.length > 0) {
+          const pMap = new Map<string, TopicProgress>();
+          cloudProgress
+            .filter((p) => p.student_id === studentId || !p.student_id)
+            .forEach((p) => pMap.set(p.topic_id, p));
 
-      const personalTopics = await getStoredPersonalTopics(chapterIds);
-      if (personalTopics.length > 0) {
-        subjects.forEach((subj) => {
-          (subj.chapters || []).forEach((c: Chapter) => {
-            const extra = personalTopics.filter((pt) => pt.chapter_id === c.id);
-            if (extra.length > 0) {
-              const existingIds = new Set((c.topics || []).map((t: Topic) => t.id));
-              const newExtra = extra.filter((t) => !existingIds.has(t.id));
-              c.topics = [...(c.topics || []), ...newExtra];
-              newExtra.forEach((t) => allTopicIds.push(t.id));
-            }
-          });
-        });
-      }
-
-      const storedProg = await getStoredTopicProgress(studentId, allTopicIds);
-      if (storedProg.length > 0) {
-        const progMap = new Map(storedProg.map((p) => [p.topic_id, p]));
-        subjects.forEach((subj) => {
-          (subj.chapters || []).forEach((c: Chapter) => {
-            (c.topics || []).forEach((t: Topic) => {
-              t.progress = progMap.get(t.id);
+          subjects.forEach((subj) => {
+            ((subj.chapters || []) as Chapter[]).forEach((chap: Chapter) => {
+              ((chap.topics || []) as Topic[]).forEach((top: Topic) => {
+                if (pMap.has(top.id)) {
+                  top.progress = pMap.get(top.id);
+                }
+              });
             });
           });
-        });
-      }
-    } catch {}
+        }
+      } catch {}
+    }
 
     return { exam, subjects };
   }
@@ -1176,7 +1129,6 @@ export async function getStudentTasks(
   studentId: string,
   filterStatus?: string
 ): Promise<StudyTask[]> {
-  let tasks: StudyTask[] = [];
   try {
     const supabase = await createClient();
     let query = supabase
@@ -1191,23 +1143,16 @@ export async function getStudentTasks(
 
     const { data, error } = await query;
     if (!error && data && data.length > 0) {
-      tasks = data as StudyTask[];
+      return data as StudyTask[];
     }
   } catch {}
 
-  if (tasks.length === 0) {
-    const localTasks = await getStoredTasks(studentId);
-    let filtered = localTasks;
-    if (filterStatus && filterStatus !== "All") {
-      filtered = filtered.filter((t) => t.status === filterStatus);
-    }
-    tasks = filtered.map((t) => ({
-      ...t,
-      exam: t.exam_id ? FALLBACK_EXAMS.find((e) => e.id === t.exam_id) : undefined,
-      subject: t.subject_id ? FALLBACK_SUBJECTS.find((s) => s.id === t.subject_id) : undefined,
-    }));
+  const cloudTasks = await readCloudData<StudyTask[]>("study_tasks.json", []);
+  let filtered = cloudTasks.filter((t) => t.student_id === studentId || !t.student_id);
+  if (filterStatus && filterStatus !== "All") {
+    filtered = filtered.filter((t) => t.status === filterStatus);
   }
-  return tasks;
+  return filtered.sort((a, b) => (a.scheduled_date > b.scheduled_date ? 1 : -1));
 }
 
 export async function getStudentRoutines(studentId: string): Promise<RoutineTemplate[]> {
@@ -1222,21 +1167,10 @@ export async function getStudentRoutines(studentId: string): Promise<RoutineTemp
     if (!error && data && data.length > 0) {
       return data as RoutineTemplate[];
     }
+  } catch {}
 
-    const localRoutines = await getStoredRoutines(studentId);
-    return localRoutines.map((r) => ({
-      ...r,
-      exam: r.exam_id ? FALLBACK_EXAMS.find((e) => e.id === r.exam_id) : undefined,
-      subject: r.subject_id ? FALLBACK_SUBJECTS.find((s) => s.id === r.subject_id) : undefined,
-    }));
-  } catch {
-    const localRoutines = await getStoredRoutines(studentId);
-    return localRoutines.map((r) => ({
-      ...r,
-      exam: r.exam_id ? FALLBACK_EXAMS.find((e) => e.id === r.exam_id) : undefined,
-      subject: r.subject_id ? FALLBACK_SUBJECTS.find((s) => s.id === r.subject_id) : undefined,
-    }));
-  }
+  const cloudRoutines = await readCloudData<RoutineTemplate[]>("routine_templates.json", []);
+  return cloudRoutines.filter((r) => r.student_id === studentId || !r.student_id);
 }
 
 export async function getStudyPreferences(studentId: string): Promise<StudyPreferences> {
@@ -1265,8 +1199,8 @@ export async function getStudyPreferences(studentId: string): Promise<StudyPrefe
     }
   } catch {}
 
-  const stored = await getStoredPreferences(studentId);
-  return stored || defaultPrefs;
+  const cloudPrefs = await readCloudData<StudyPreferences>("study_preferences.json", defaultPrefs);
+  return cloudPrefs || defaultPrefs;
 }
 
 export const DEFAULT_EXAM_SCHEDULE_EVENTS: ExamScheduleEvent[] = [
@@ -1318,7 +1252,6 @@ export const DEFAULT_EXAM_SCHEDULE_EVENTS: ExamScheduleEvent[] = [
 ];
 
 export async function getExamScheduleEvents(examIds?: string[]): Promise<ExamScheduleEvent[]> {
-  const storedEvents = await getStoredExamEvents(examIds);
   try {
     const supabase = await createClient();
     let query = supabase
@@ -1332,41 +1265,19 @@ export async function getExamScheduleEvents(examIds?: string[]): Promise<ExamSch
     }
 
     const { data, error } = await query;
-    if (error || !data || data.length === 0) {
-      let merged = [...DEFAULT_EXAM_SCHEDULE_EVENTS];
-      if (examIds && examIds.length > 0) {
-        merged = merged.filter((ev) => examIds.includes(ev.exam_id));
-      }
-      storedEvents.forEach((sev) => {
-        if (!merged.some((e) => e.id === sev.id)) {
-          merged.push(sev);
-        }
-      });
-      return merged;
+    if (!error && data && data.length > 0) {
+      return data as ExamScheduleEvent[];
     }
-    const combined = [...(data as ExamScheduleEvent[])];
-    storedEvents.forEach((sev) => {
-      if (!combined.some((e) => e.id === sev.id)) {
-        combined.push(sev);
-      }
-    });
-    return combined;
-  } catch {
-    let merged = [...DEFAULT_EXAM_SCHEDULE_EVENTS];
-    if (examIds && examIds.length > 0) {
-      merged = merged.filter((ev) => examIds.includes(ev.exam_id));
-    }
-    storedEvents.forEach((sev) => {
-      if (!merged.some((e) => e.id === sev.id)) {
-        merged.push(sev);
-      }
-    });
-    return merged;
+  } catch {}
+
+  let merged = [...DEFAULT_EXAM_SCHEDULE_EVENTS];
+  if (examIds && examIds.length > 0) {
+    merged = merged.filter((ev) => examIds.includes(ev.exam_id));
   }
+  return merged;
 }
 
 export async function getStudentRevisions(studentId: string): Promise<RevisionSchedule[]> {
-  const storedRevisions = await getStoredRevisionSchedules(studentId);
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -1375,13 +1286,12 @@ export async function getStudentRevisions(studentId: string): Promise<RevisionSc
       .eq("student_id", studentId)
       .order("scheduled_date", { ascending: true });
 
-    if (error || !data || data.length === 0) {
-      return storedRevisions;
+    if (!error && data && data.length > 0) {
+      return data as RevisionSchedule[];
     }
-    return data as RevisionSchedule[];
-  } catch {
-    return storedRevisions;
-  }
+  } catch {}
+
+  return [];
 }
 
 export async function getStudentNotes(studentId: string): Promise<PersonalNote[]> {
@@ -1398,5 +1308,5 @@ export async function getStudentNotes(studentId: string): Promise<PersonalNote[]
     }
   } catch {}
 
-  return await getStoredPersonalNotes(studentId);
+  return [];
 }

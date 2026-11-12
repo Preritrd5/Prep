@@ -1,12 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  getStoredNotifications,
-  getStoredEnrollments,
-  getStoredTopicProgress,
-  getStoredTasks,
-  getStoredExamAttempts,
-} from "./local-store";
 import { FALLBACK_EXAMS, FALLBACK_SUBJECTS } from "./syllabus";
 import type {
   StudentPerformanceAnalytics,
@@ -42,13 +35,8 @@ export async function getStudentPerformanceAnalytics(
     if (data) studentExams = data;
   } catch {}
 
-  const localEnrollments = await getStoredEnrollments(studentId);
-  const totalExaminationsSelected =
-    studentExams.length > 0 ? studentExams.length : Math.max(1, localEnrollments.length);
-  const examIds =
-    studentExams.length > 0
-      ? studentExams.map((se: any) => se.exam_id)
-      : localEnrollments.map((le) => le.exam_id);
+  const totalExaminationsSelected = studentExams.length;
+  const examIds = studentExams.map((se: any) => se.exam_id);
 
   // 2. Syllabus Topics & Topic Progress
   let totalSyllabusTopics = 0;
@@ -75,16 +63,6 @@ export async function getStudentPerformanceAnalytics(
         completedTopics = progressRows?.length || 0;
       }
     } catch {}
-  }
-
-  // Merge with resilient local topic progress
-  const localProg = await getStoredTopicProgress(studentId);
-  const localCompleted = localProg.filter((p) => p.status === "Completed").length;
-  if (completedTopics === 0 && localCompleted > 0) {
-    completedTopics = localCompleted;
-  }
-  if (totalSyllabusTopics === 0) {
-    totalSyllabusTopics = Math.max(15, localProg.length);
   }
 
   const pendingTopics = Math.max(0, totalSyllabusTopics - completedTopics);
@@ -116,11 +94,7 @@ export async function getStudentPerformanceAnalytics(
     if (data) tasks = data;
   } catch {}
 
-  const localTasks = await getStoredTasks(studentId);
-  let allTasks = tasks;
-  if (allTasks.length === 0 && localTasks.length > 0) {
-    allTasks = localTasks as any[];
-  }
+  const allTasks = tasks;
 
   const tasksCompleted = allTasks.filter((t: any) => t.status === "Completed").length;
   const incompleteTasks = allTasks.filter((t: any) => t.status !== "Completed").length;
@@ -172,27 +146,13 @@ export async function getStudentPerformanceAnalytics(
     if (examResults) results = examResults;
   } catch {}
 
-  const storedAttempts = await getStoredExamAttempts(studentId);
-  const finalizedAttempts = storedAttempts.filter(
-    (a) => (a.status === "Evaluated" || a.status === "Results Released" || a.status === "Submitted") && Boolean(a.result)
-  );
-
-  const totalMockExaminationsAttempted =
-    results.length > 0 ? results.length : finalizedAttempts.length;
+  const totalMockExaminationsAttempted = results.length;
   const bestMockScore =
-    results.length > 0
-      ? Math.max(...results.map((r: any) => Number(r.total_score)))
-      : finalizedAttempts.length > 0
-      ? Math.max(...finalizedAttempts.map((a) => a.result?.total_score || 0))
-      : 0;
+    results.length > 0 ? Math.max(...results.map((r: any) => Number(r.total_score))) : 0;
   const averageMockScore =
     results.length > 0
       ? Number(
           (results.reduce((acc: number, r: any) => acc + Number(r.total_score), 0) / results.length).toFixed(1)
-        )
-      : finalizedAttempts.length > 0
-      ? Number(
-          (finalizedAttempts.reduce((acc, a) => acc + (a.result?.total_score || 0), 0) / finalizedAttempts.length).toFixed(1)
         )
       : 0;
 
@@ -262,10 +222,8 @@ export async function getSubjectWiseAnalytics(
   }
 
   const { data: enrolled } = await examsQuery;
-  const enrolledExams = (enrolled && enrolled.length > 0)
-    ? enrolled
-    : await getStoredEnrollments(studentId);
-  const examIds = (enrolledExams || []).map((e: any) => e.exam_id);
+  const enrolledExams = enrolled || [];
+  const examIds = enrolledExams.map((e: any) => e.exam_id);
 
   // Get subjects mapped to these exams
   let subjectMappings: any[] = [];
@@ -780,7 +738,7 @@ export async function getStudentNotifications(studentId: string): Promise<Studen
     }
   } catch {}
 
-  return await getStoredNotifications(studentId);
+  return [];
 }
 
 export async function getStudentNotificationPreferences(

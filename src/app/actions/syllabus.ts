@@ -3,13 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { formatDatabaseError } from "@/lib/supabase/db-error";
 import {
-  saveStoredTopicProgress,
-  saveStoredPersonalNote,
-  deleteStoredPersonalNote,
-  saveStoredPersonalTopic,
-} from "@/lib/data/local-store";
-import type { TopicProgressStatus, TopicProgress, PersonalNote, Topic } from "@/lib/types";
+  isSchemaMissingError,
+  readCloudData,
+  writeCloudData,
+} from "@/lib/supabase/cloud-store";
+import type { TopicProgressStatus, TopicProgress, Topic, PersonalNote } from "@/lib/types";
 
 export async function updateTopicProgressAction(formData: FormData) {
   const { user } = await requireAuth();
@@ -26,6 +26,7 @@ export async function updateTopicProgressAction(formData: FormData) {
 
   const now = new Date().toISOString();
   const updatePayload: Record<string, any> = {
+    id: `prog-${user.id}-${topicId}`,
     student_id: user.id,
     topic_id: topicId,
     exam_id: examId,
@@ -42,23 +43,6 @@ export async function updateTopicProgressAction(formData: FormData) {
     updatePayload.completed_date = now;
   }
 
-  const progressRecord: TopicProgress = {
-    id: `prog-${user.id}-${topicId}`,
-    student_id: user.id,
-    topic_id: topicId,
-    exam_id: examId,
-    status,
-    actual_minutes: actualMinutes,
-    notes,
-    scheduled_date: null,
-    started_date: status === "In Progress" || status === "Completed" ? now : null,
-    completed_date: status === "Completed" ? now : null,
-    last_studied_date: now,
-    revision_count: 0,
-    created_at: now,
-    updated_at: now,
-  };
-
   try {
     const supabase = await createClient();
     const { error } = await supabase
@@ -66,13 +50,31 @@ export async function updateTopicProgressAction(formData: FormData) {
       .upsert(updatePayload, { onConflict: "student_id,topic_id,exam_id" });
 
     if (error) {
-      console.warn("[Syllabus] Supabase topic progress upsert failed, saving to local store:", error.message);
+      if (isSchemaMissingError(error)) {
+        const list = await readCloudData<TopicProgress[]>("topic_progress.json", []);
+        const filtered = list.filter(
+          (p) => !(p.student_id === user.id && p.topic_id === topicId && p.exam_id === examId)
+        );
+        filtered.push(updatePayload as unknown as TopicProgress);
+        await writeCloudData("topic_progress.json", filtered);
+      } else {
+        const err = formatDatabaseError(error, "topic_progress");
+        return { error: err.message };
+      }
     }
   } catch (err: any) {
-    console.warn("[Syllabus] Database exception, saving to local store:", err?.message);
+    if (isSchemaMissingError(err)) {
+      const list = await readCloudData<TopicProgress[]>("topic_progress.json", []);
+      const filtered = list.filter(
+        (p) => !(p.student_id === user.id && p.topic_id === topicId && p.exam_id === examId)
+      );
+      filtered.push(updatePayload as unknown as TopicProgress);
+      await writeCloudData("topic_progress.json", filtered);
+    } else {
+      const errDetails = formatDatabaseError(err, "topic_progress");
+      return { error: errDetails.message };
+    }
   }
-
-  await saveStoredTopicProgress(progressRecord);
 
   revalidatePath("/syllabus");
   revalidatePath("/dashboard");
@@ -91,19 +93,14 @@ export async function createPersonalTopicAction(formData: FormData) {
     return { error: "Topic title is required." };
   }
 
-  const topicRecord: Topic = {
-    id: `topic-personal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  const newTopicRecord = {
+    id: `topic-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     chapter_id: chapterId,
     title,
     description,
     estimated_minutes: estimatedMinutes,
-    official_syllabus_ref: null,
-    textbook_ref: null,
-    textbook_page_start: null,
-    textbook_page_end: null,
-    order_index: 99,
-    is_published: true,
     is_personal: true,
+    is_published: false,
     created_by: user.id,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -111,27 +108,28 @@ export async function createPersonalTopicAction(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from("topics").insert({
-      chapter_id: chapterId,
-      title,
-      description,
-      estimated_minutes: estimatedMinutes,
-      is_personal: true,
-      is_published: false,
-      created_by: user.id,
-    }).select("id").single();
+    const { error } = await supabase.from("topics").insert(newTopicRecord);
 
-    if (data?.id) {
-      topicRecord.id = data.id;
-    }
     if (error) {
-      console.warn("[Syllabus] Topic insert failed, saving to local store:", error.message);
+      if (isSchemaMissingError(error)) {
+        const list = await readCloudData<Topic[]>("personal_topics.json", []);
+        list.push(newTopicRecord as unknown as Topic);
+        await writeCloudData("personal_topics.json", list);
+      } else {
+        const err = formatDatabaseError(error, "topics");
+        return { error: err.message };
+      }
     }
   } catch (err: any) {
-    console.warn("[Syllabus] Database exception, saving to local store:", err?.message);
+    if (isSchemaMissingError(err)) {
+      const list = await readCloudData<Topic[]>("personal_topics.json", []);
+      list.push(newTopicRecord as unknown as Topic);
+      await writeCloudData("personal_topics.json", list);
+    } else {
+      const errDetails = formatDatabaseError(err, "topics");
+      return { error: errDetails.message };
+    }
   }
-
-  await saveStoredPersonalTopic(topicRecord);
 
   revalidatePath("/syllabus");
   return { success: true };
@@ -149,8 +147,8 @@ export async function savePersonalNoteAction(formData: FormData) {
     return { error: "Title and content cannot be empty." };
   }
 
-  const noteRecord: PersonalNote = {
-    id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  const notePayload = {
+    id: `note-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     student_id: user.id,
     topic_id: topicId,
     exam_id: examId,
@@ -162,22 +160,28 @@ export async function savePersonalNoteAction(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    const { error } = await supabase.from("personal_notes").insert({
-      student_id: user.id,
-      topic_id: topicId,
-      exam_id: examId,
-      title,
-      content,
-    });
+    const { error } = await supabase.from("personal_notes").insert(notePayload);
 
     if (error) {
-      console.warn("[Syllabus] Personal note insert failed, saving to local store:", error.message);
+      if (isSchemaMissingError(error)) {
+        const list = await readCloudData<PersonalNote[]>("personal_notes.json", []);
+        list.push(notePayload as unknown as PersonalNote);
+        await writeCloudData("personal_notes.json", list);
+      } else {
+        const err = formatDatabaseError(error, "personal_notes");
+        return { error: err.message };
+      }
     }
   } catch (err: any) {
-    console.warn("[Syllabus] Database exception, saving to local store:", err?.message);
+    if (isSchemaMissingError(err)) {
+      const list = await readCloudData<PersonalNote[]>("personal_notes.json", []);
+      list.push(notePayload as unknown as PersonalNote);
+      await writeCloudData("personal_notes.json", list);
+    } else {
+      const errDetails = formatDatabaseError(err, "personal_notes");
+      return { error: errDetails.message };
+    }
   }
-
-  await saveStoredPersonalNote(noteRecord);
 
   revalidatePath("/syllabus");
   revalidatePath("/dashboard");
@@ -189,16 +193,32 @@ export async function deletePersonalNoteAction(noteId: string) {
 
   try {
     const supabase = await createClient();
-    await supabase
+    const { error } = await supabase
       .from("personal_notes")
       .delete()
       .eq("id", noteId)
       .eq("student_id", user.id);
-  } catch (err: any) {
-    console.warn("[Syllabus] Database exception:", err?.message);
-  }
 
-  await deleteStoredPersonalNote(noteId, user.id);
+    if (error) {
+      if (isSchemaMissingError(error)) {
+        const list = await readCloudData<PersonalNote[]>("personal_notes.json", []);
+        const filtered = list.filter((n) => n.id !== noteId);
+        await writeCloudData("personal_notes.json", filtered);
+      } else {
+        const err = formatDatabaseError(error, "personal_notes");
+        return { error: err.message };
+      }
+    }
+  } catch (err: any) {
+    if (isSchemaMissingError(err)) {
+      const list = await readCloudData<PersonalNote[]>("personal_notes.json", []);
+      const filtered = list.filter((n) => n.id !== noteId);
+      await writeCloudData("personal_notes.json", filtered);
+    } else {
+      const errDetails = formatDatabaseError(err, "personal_notes");
+      return { error: errDetails.message };
+    }
+  }
 
   revalidatePath("/syllabus");
   revalidatePath("/dashboard");
@@ -219,15 +239,21 @@ export async function adminCreateSubjectAction(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    await supabase.from("subjects").insert({
+    const { error } = await supabase.from("subjects").insert({
       name,
       code,
       category,
       description,
       is_published: true,
     });
+
+    if (error) {
+      const err = formatDatabaseError(error, "subjects");
+      return { error: err.message };
+    }
   } catch (err: any) {
-    console.warn("[Syllabus] Database exception:", err?.message);
+    const errDetails = formatDatabaseError(err, "subjects");
+    return { error: errDetails.message };
   }
 
   revalidatePath("/syllabus");
@@ -247,14 +273,20 @@ export async function adminCreateChapterAction(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    await supabase.from("chapters").insert({
+    const { error } = await supabase.from("chapters").insert({
       subject_id: subjectId,
       title,
       description,
       is_published: true,
     });
+
+    if (error) {
+      const err = formatDatabaseError(error, "chapters");
+      return { error: err.message };
+    }
   } catch (err: any) {
-    console.warn("[Syllabus] Database exception:", err?.message);
+    const errDetails = formatDatabaseError(err, "chapters");
+    return { error: errDetails.message };
   }
 
   revalidatePath("/syllabus");
@@ -283,7 +315,7 @@ export async function adminCreateTopicAction(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    await supabase.from("topics").insert({
+    const { error } = await supabase.from("topics").insert({
       chapter_id: chapterId,
       title,
       description,
@@ -295,8 +327,14 @@ export async function adminCreateTopicAction(formData: FormData) {
       is_published: true,
       is_personal: false,
     });
+
+    if (error) {
+      const err = formatDatabaseError(error, "topics");
+      return { error: err.message };
+    }
   } catch (err: any) {
-    console.warn("[Syllabus] Database exception:", err?.message);
+    const errDetails = formatDatabaseError(err, "topics");
+    return { error: errDetails.message };
   }
 
   revalidatePath("/syllabus");
@@ -316,7 +354,7 @@ export async function adminMapSubjectToExamAction(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    await supabase.from("exam_subject_mappings").upsert(
+    const { error } = await supabase.from("exam_subject_mappings").upsert(
       {
         exam_id: examId,
         subject_id: subjectId,
@@ -324,8 +362,14 @@ export async function adminMapSubjectToExamAction(formData: FormData) {
       },
       { onConflict: "exam_id,subject_id" }
     );
+
+    if (error) {
+      const err = formatDatabaseError(error, "exam_subject_mappings");
+      return { error: err.message };
+    }
   } catch (err: any) {
-    console.warn("[Syllabus] Database exception:", err?.message);
+    const errDetails = formatDatabaseError(err, "exam_subject_mappings");
+    return { error: errDetails.message };
   }
 
   revalidatePath("/syllabus");

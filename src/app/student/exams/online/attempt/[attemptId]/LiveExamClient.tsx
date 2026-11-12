@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Badge, Modal } from "@/components/ui";
+import { Button, Badge, Modal, Spinner } from "@/components/ui";
 import { useState, useEffect, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -295,7 +295,7 @@ export default function LiveExamClient({
             <div className="flex items-center gap-2 text-text-muted">
               {saveStatus === "Saving" ? (
                 <span className="text-[11px] text-warning flex items-center gap-1 font-medium">
-                  <RotateCcw className="w-3 h-3 animate-spin" /> Saving...
+                  <Spinner size="sm" color="current" className="w-3 h-3 border-[1.5px]" label="Saving..." /> Saving...
                 </span>
               ) : (
                 <span className="text-[11px] text-success flex items-center gap-1 font-medium">

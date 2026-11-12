@@ -2,6 +2,7 @@
 
 import { Card, Badge, Button, Modal, Input, Select, Textarea, Alert, EmptyState } from "@/components/ui";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   BookOpen,
@@ -22,6 +23,7 @@ interface ExamsClientProps {
 }
 
 export default function ExamsClient({ allExams, enrolledExams }: ExamsClientProps) {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedExamToEnroll, setSelectedExamToEnroll] = useState<Exam | null>(null);
   const [targetDate, setTargetDate] = useState<string>("");
@@ -29,6 +31,7 @@ export default function ExamsClient({ allExams, enrolledExams }: ExamsClientProp
   const [notes, setNotes] = useState<string>("");
   const [isPending, setIsPending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const categories = ["All", ...Array.from(new Set(allExams.map((e) => e.category)))];
 
@@ -45,6 +48,7 @@ export default function ExamsClient({ allExams, enrolledExams }: ExamsClientProp
 
     setIsPending(true);
     setErrorMsg(null);
+    setPageError(null);
 
     const formData = new FormData();
     formData.append("examId", selectedExamToEnroll.id);
@@ -61,20 +65,35 @@ export default function ExamsClient({ allExams, enrolledExams }: ExamsClientProp
       setSelectedExamToEnroll(null);
       setTargetDate("");
       setNotes("");
+      setErrorMsg(null);
+      router.refresh();
     }
   };
 
   const handleRemove = async (examId: string) => {
     if (!confirm("Remove this examination from your active preparation list?")) return;
     setIsPending(true);
+    setPageError(null);
     const formData = new FormData();
     formData.append("examId", examId);
-    await removeStudentExamAction(formData);
+    const res = await removeStudentExamAction(formData);
     setIsPending(false);
+
+    if (res?.error) {
+      setPageError(res.error);
+    } else {
+      router.refresh();
+    }
   };
 
   return (
     <div className="space-y-8">
+      {pageError && (
+        <Alert variant="error" onClose={() => setPageError(null)} title="Action Failed">
+          {pageError}
+        </Alert>
+      )}
+
       {/* Enrolled Examinations Section */}
       <section className="space-y-4">
         <div>
